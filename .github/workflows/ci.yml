@@ -33,22 +33,32 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 1.8.3
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
     - name: Install dependencies
+      shell: bash
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
+        poetry install --with dev
 
     - name: Lint with ruff
+      shell: bash
       run: |
-        ruff check src tests
+        poetry run ruff check src tests
 
-    - name: Type check with mypy
+    - name: Type check with pyright
+      shell: bash
       run: |
-        mypy src
+        poetry run pyright
 
     - name: Test with pytest
+      shell: bash
       run: |
-        pytest tests -v --cov=db_types --cov-report=xml --cov-report=html --cov-report=term
+        poetry run pytest tests -v --cov=db_types --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=59
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -74,12 +84,20 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 1.8.3
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
     - name: Install dependencies with Pydantic
+      shell: bash
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev,pydantic]"
-        pip install "${{ matrix.pydantic-version }}"
+        poetry install --with dev --extras pydantic
+        poetry add "${{ matrix.pydantic-version }}"
 
     - name: Test Pydantic integration
+      shell: bash
       run: |
-        pytest tests/test_pydantic_integration.py -v
+        poetry run pytest tests/test_pydantic_integration.py -v --no-cov

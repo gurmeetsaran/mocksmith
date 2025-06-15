@@ -1,4 +1,5 @@
 """Pydantic integration for database types."""
+
 # pyright: reportOptionalMemberAccess=false
 
 from typing import Any, Callable, Dict, Type

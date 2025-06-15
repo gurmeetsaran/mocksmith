@@ -171,7 +171,7 @@ def demonstrate_pydantic_features():
 
     # 3a. Missing required field
     try:
-        Employee(employee_id=3, username="test")  # Missing email
+        Employee(employee_id=3, username="test")  # type: ignore  # Missing email intentionally
     except ValidationError as e:
         print(f"   ✗ Missing required field: {e.errors()[0]['msg']}")
 
