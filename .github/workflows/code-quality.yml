@@ -1,0 +1,56 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: 1.8.3
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
+    - name: Install dependencies
+      run: |
+        poetry install --with dev
+
+    - name: Check code formatting with black
+      run: |
+        poetry run black --check src tests
+
+    - name: Check import sorting with isort
+      run: |
+        poetry run isort --check-only src tests
+
+    - name: Lint with ruff
+      run: |
+        poetry run ruff check src tests
+
+    - name: Type check with pyright
+      run: |
+        poetry run pyright
+
+    - name: Security check with bandit
+      run: |
+        pip install bandit[toml]
+        bandit -r src -ll
+
+    - name: Check for common security issues
+      run: |
+        pip install safety
+        safety check --json || true

@@ -1,5 +1,13 @@
 # python-db-types
 
+[![CI](https://github.com/gurmeetsaran/python-db-types/actions/workflows/ci.yml/badge.svg)](https://github.com/gurmeetsaran/python-db-types/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/gurmeetsaran/python-db-types/branch/main/graph/badge.svg)](https://codecov.io/gh/gurmeetsaran/python-db-types)
+[![PyPI version](https://badge.fury.io/py/python-db-types.svg)](https://badge.fury.io/py/python-db-types)
+[![Python Versions](https://img.shields.io/pypi/pyversions/python-db-types.svg)](https://pypi.org/project/python-db-types/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+
 Specialized database types with validation for Python dataclasses and Pydantic models.
 
 ## Features
@@ -23,7 +31,7 @@ class Product(BaseModel):
     name: Annotated[str, Field(max_length=100)]
     price: Annotated[Decimal, Field(decimal_places=2, max_digits=10)]
     in_stock: bool = True
-    
+
     @validator('price')
     def validate_price(cls, v):
         if v < 0:
@@ -44,7 +52,7 @@ class Product(BaseModel):
 
 ✨ **Benefits:**
 - Same clean syntax for both Pydantic and dataclasses
-- Automatic SQL constraint validation  
+- Automatic SQL constraint validation
 - Type conversion (string "99.99" → Decimal)
 - Better IDE support and type hints
 - Write once, use with either framework
@@ -76,11 +84,11 @@ class User(BaseModel):
     id: Integer()
     username: Varchar(30)
     email: Varchar(255)
-    
+
     # Optional fields (use Optional[...])
     bio: Optional[Text(max_length=1000)] = None
     phone: Optional[Varchar(20)] = None
-    
+
     # Fields with defaults
     is_active: Boolean() = True
     balance: Money() = Decimal("0.00")
@@ -137,11 +145,11 @@ class User:
     id: Integer()
     username: Varchar(50)
     email: Varchar(100)
-    
-    # Optional fields  
+
+    # Optional fields
     bio: Optional[Text()] = None
     age: Optional[Integer()] = None
-    
+
     # Fields with defaults
     active: Boolean() = True
     balance: Money() = Decimal("0.00")
@@ -176,8 +184,8 @@ except ValueError as e:
 # Convert to SQL-compatible dictionary
 sql_data = user.to_sql_dict()
 print(sql_data)
-# Output: {'id': 1, 'username': 'john_doe', 'email': 'john@example.com', 
-#          'bio': 'Python developer', 'age': 30, 'active': True, 
+# Output: {'id': 1, 'username': 'john_doe', 'email': 'john@example.com',
+#          'bio': 'Python developer', 'age': 30, 'active': True,
 #          'balance': '1250.50', 'joined_date': '2023-01-15'}
 ```
 
@@ -197,7 +205,7 @@ class Product(BaseModel):
     cost: Optional[Money()] = None
     in_stock: Boolean() = True
     created_at: Timestamp() = Field(default_factory=datetime.now)
-    
+
     @property
     def profit_margin(self) -> Optional[Decimal]:
         if self.cost and self.price:
@@ -224,7 +232,7 @@ class UserAccount(BaseModel):
     is_verified: Boolean() = False
     balance: Money() = Decimal("0.00")
     created_at: Timestamp() = Field(default_factory=datetime.now)
-    
+
     class Config:
         # JSON serialization settings
         json_encoders = {
@@ -282,7 +290,7 @@ class Product:
 
 **Numeric Types:**
 - `Integer()` → 32-bit integer
-- `BigInt()` → 64-bit integer  
+- `BigInt()` → 64-bit integer
 - `SmallInt()` → 16-bit integer
 - `DecimalType(precision, scale)` → Fixed-point decimal
 - `Money()` → Alias for Decimal(19, 4)
@@ -315,10 +323,10 @@ from db_types import Varchar, Integer, Text
 class Example(BaseModel):
     # Required field
     required_field: Varchar(50)
-    
+
     # Optional field (can be None)
     optional_field: Optional[Varchar(50)] = None
-    
+
     # Field with default value
     status: Varchar(20) = "active"
 ```
@@ -338,13 +346,13 @@ from db_types import Money, Boolean, Date, Timestamp
 class Order(BaseModel):
     # String to Decimal conversion
     total: Money()
-    
-    # Flexible boolean parsing  
+
+    # Flexible boolean parsing
     is_paid: Boolean()
-    
+
     # String to date conversion
     order_date: Date()
-    
+
     # String to datetime conversion
     created_at: Timestamp()
 
@@ -367,13 +375,13 @@ class Product(BaseModel):
     name: Varchar(50)
     price: Money()
     quantity: Integer()
-    
+
     @field_validator('price')
     def price_must_be_positive(cls, v):
         if v <= 0:
             raise ValueError('Price must be positive')
         return v
-    
+
     @field_validator('quantity')
     def quantity_non_negative(cls, v):
         if v < 0:
@@ -399,7 +407,7 @@ class StrictModel(BaseModel):
             datetime: lambda v: v.isoformat()
         }
     )
-    
+
     name: Varchar(100)
     price: Money()
     updated_at: Timestamp()
@@ -427,7 +435,7 @@ class Customer:
     email: Varchar(100)
     phone: Optional[Varchar(20)]
     date_of_birth: Optional[Date()]
-    
+
 @validate_dataclass
 @dataclass
 class Order:
@@ -572,7 +580,7 @@ user = UserAuth(
 user2 = UserAuth(
     user_id=2,
     username="jane_doe",
-    email="jane@example.com", 
+    email="jane@example.com",
     password_hash=hash_password("another_password"),
     is_verified="yes",  # Automatically converted to True
     last_login=None,
@@ -617,30 +625,6 @@ sql_data = [emp.to_sql_dict() for emp in employees]
 ```
 
 ## Advanced Features
-
-### Using db_field for Dataclasses
-
-The `db_field` function provides an alternative way to define database fields in dataclasses with default values:
-
-```python
-from dataclasses import dataclass
-from db_types import VARCHAR, INTEGER, BOOLEAN
-from db_types.dataclass_integration import validate_dataclass, db_field
-
-@validate_dataclass
-@dataclass
-class Product:
-    # Using db_field for fields with defaults
-    name: str = db_field(VARCHAR(100))
-    description: str = db_field(VARCHAR(500), default="")
-    price: float = db_field(DECIMAL(10, 2), default=0.0)
-    in_stock: bool = db_field(BOOLEAN(), default=True)
-
-# Create product with defaults
-product = Product(name="Laptop")  # Other fields use defaults
-print(product.description)  # ""
-print(product.in_stock)     # True
-```
 
 ### Custom Validation
 

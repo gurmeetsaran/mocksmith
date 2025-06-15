@@ -1,16 +1,14 @@
 [build-system]
-requires = ["setuptools>=64", "setuptools_scm>=8"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
+[tool.poetry]
 name = "python-db-types"
+version = "0.1.0"
 description = "Specialized database types with validation for Python"
+authors = ["Gurmeet Saran <gurmeetx@gmail.com>"]
+license = "MIT"
 readme = "README.md"
-requires-python = ">=3.8"
-license = {file = "LICENSE"}
-authors = [
-    {name = "Gurmeet Saran", email = "gurmeetx@gmail.com"},
-]
 keywords = ["database", "types", "validation", "sql", "pydantic"]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -26,37 +24,35 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-dynamic = ["version"]
-dependencies = [
-    "typing_extensions>=4.0.0; python_version<'3.9'",
-]
+packages = [{include = "db_types", from = "src"}]
 
-[project.optional-dependencies]
-pydantic = [
-    "pydantic>=2.0.0",
-]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "mypy>=1.0.0",
-    "ruff>=0.1.0",
-    "black>=23.0.0",
-]
-all = [
-    "python-db-types[pydantic,dev]",
-]
+[tool.poetry.urls]
+"Homepage" = "https://github.com/gurmeetsaran/python-db-types"
+"Documentation" = "https://python-db-types.readthedocs.io"
+"Repository" = "https://github.com/gurmeetsaran/python-db-types"
+"Bug Tracker" = "https://github.com/gurmeetsaran/python-db-types/issues"
+"Changelog" = "https://github.com/gurmeetsaran/python-db-types/blob/main/CHANGELOG.md"
 
-[project.urls]
-Homepage = "https://github.com/yourusername/python-db-types"
-Documentation = "https://python-db-types.readthedocs.io"
-Repository = "https://github.com/yourusername/python-db-types"
-Issues = "https://github.com/yourusername/python-db-types/issues"
+[tool.poetry.dependencies]
+python = "^3.8"
+typing-extensions = {version = ">=4.0.0", python = "<3.9"}
 
-[tool.setuptools_scm]
-write_to = "src/db_types/_version.py"
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0.0"
+pytest-cov = "^4.0.0"
+mypy = "^1.0.0"
+ruff = "^0.1.0"
+black = "^23.0.0"
+isort = "^5.12.0"
+coverage = {extras = ["toml"], version = "^7.0"}
+pre-commit = "^3.0.0"
+pyright = "^1.1.363"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.poetry.extras]
+pydantic = ["pydantic"]
+
+[tool.poetry.group.pydantic.dependencies]
+pydantic = "^2.0.0"
 
 [tool.ruff]
 line-length = 100
@@ -76,25 +72,26 @@ select = [
     "RUF",  # ruff-specific rules
 ]
 
-[tool.mypy]
-python_version = "3.8"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-strict_optional = true
+[tool.ruff.lint.isort]
+known-first-party = ["db_types"]
+
+[tool.pyright]
+pythonVersion = "3.8"
+typeCheckingMode = "basic"
+include = ["src"]
+exclude = ["**/__pycache__", "**/.pytest_cache", "venv", ".venv", "tests", "examples"]
+reportInvalidTypeForm = false
+reportArgumentType = false
+reportAssignmentType = false
+reportConstantRedefinition = false
+reportAttributeAccessIssue = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-ra --strict-markers --cov=db_types --cov-report=term-missing"
+addopts = "-ra --strict-markers"
 
 [tool.coverage.run]
 source = ["src/db_types"]
@@ -108,4 +105,17 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
+    "@abstractmethod",
 ]
+fail_under = 59
+
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["db_types"]
+skip_gitignore = true

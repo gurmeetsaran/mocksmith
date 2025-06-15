@@ -27,10 +27,10 @@ class DBType(ABC, Generic[T]):
     @abstractmethod
     def validate(self, value: Any) -> None:
         """Validate the value against type constraints.
-        
+
         Args:
             value: Value to validate
-            
+
         Raises:
             ValueError: If validation fails
         """
@@ -38,10 +38,10 @@ class DBType(ABC, Generic[T]):
 
     def serialize(self, value: Any) -> Any:
         """Serialize Python value to database-compatible format.
-        
+
         Args:
             value: Python value to serialize
-            
+
         Returns:
             Serialized value
         """
@@ -53,17 +53,19 @@ class DBType(ABC, Generic[T]):
 
     def deserialize(self, value: Any) -> Optional[T]:
         """Deserialize database value to Python type.
-        
+
         Args:
             value: Database value to deserialize
-            
+
         Returns:
             Python value
         """
         if value is None:
             return None
 
-        return self._deserialize(value)
+        deserialized = self._deserialize(value)
+        self.validate(deserialized)
+        return deserialized
 
     @abstractmethod
     def _serialize(self, value: T) -> Any:

@@ -1,7 +1,7 @@
 """Temporal database types."""
 
 from datetime import date, datetime, time
-from typing import Type, Union
+from typing import Any, Type, Union
 
 from db_types.types.base import DBType
 
@@ -17,7 +17,7 @@ class DATE(DBType[date]):
     def python_type(self) -> Type[date]:
         return date
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -28,7 +28,7 @@ class DATE(DBType[date]):
             try:
                 date.fromisoformat(value)
             except ValueError as e:
-                raise ValueError(f"Invalid date string: {e}")
+                raise ValueError(f"Invalid date string: {e}") from e
 
     def _serialize(self, value: Union[date, datetime, str]) -> str:
         if isinstance(value, datetime):
@@ -39,7 +39,7 @@ class DATE(DBType[date]):
             # Validate and normalize
             return date.fromisoformat(value).isoformat()
 
-    def _deserialize(self, value: any) -> date:
+    def _deserialize(self, value: Any) -> date:
         if isinstance(value, date) and not isinstance(value, datetime):
             return value
         elif isinstance(value, datetime):
@@ -67,7 +67,7 @@ class TIME(DBType[time]):
     def python_type(self) -> Type[time]:
         return time
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -78,7 +78,7 @@ class TIME(DBType[time]):
             try:
                 time.fromisoformat(value)
             except ValueError as e:
-                raise ValueError(f"Invalid time string: {e}")
+                raise ValueError(f"Invalid time string: {e}") from e
 
     def _serialize(self, value: Union[time, datetime, str]) -> str:
         if isinstance(value, datetime):
@@ -97,7 +97,7 @@ class TIME(DBType[time]):
 
         return time_val.isoformat()
 
-    def _deserialize(self, value: any) -> time:
+    def _deserialize(self, value: Any) -> time:
         if isinstance(value, time) and not isinstance(value, datetime):
             return value
         elif isinstance(value, datetime):
@@ -127,7 +127,7 @@ class TIMESTAMP(DBType[datetime]):
     def python_type(self) -> Type[datetime]:
         return datetime
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -138,7 +138,7 @@ class TIMESTAMP(DBType[datetime]):
             try:
                 datetime.fromisoformat(value)
             except ValueError as e:
-                raise ValueError(f"Invalid datetime string: {e}")
+                raise ValueError(f"Invalid datetime string: {e}") from e
 
         if isinstance(value, datetime) and self.with_timezone and value.tzinfo is None:
             raise ValueError("Timestamp with timezone requires timezone-aware datetime")
@@ -160,7 +160,7 @@ class TIMESTAMP(DBType[datetime]):
 
         return dt_value.isoformat()
 
-    def _deserialize(self, value: any) -> datetime:
+    def _deserialize(self, value: Any) -> datetime:
         if isinstance(value, datetime):
             return value
         elif isinstance(value, date):

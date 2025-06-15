@@ -1,8 +1,8 @@
 """Dataclass integration for database types."""
 
 import sys
-from dataclasses import Field, dataclass, field, fields
-from typing import Any, Dict, Type, TypeVar, Union, get_args, get_origin, get_type_hints
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, Type, TypeVar, Union, get_args, get_origin
 
 if sys.version_info >= (3, 9):
     from typing import Annotated
@@ -11,7 +11,7 @@ else:
 
 from db_types.types.base import DBType
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class DBTypeDescriptor:
@@ -20,9 +20,9 @@ class DBTypeDescriptor:
     def __init__(self, db_type: DBType, field_name: str):
         self.db_type = db_type
         self.field_name = field_name
-        self.private_name = f'_{field_name}'
+        self.private_name = f"_{field_name}"
 
-    def __get__(self, obj: Any, objtype: Type[Any] = None) -> Any:
+    def __get__(self, obj: Any, objtype: Optional[Type[Any]] = None) -> Any:
         if obj is None:
             return self
         return getattr(obj, self.private_name, None)
@@ -36,29 +36,9 @@ class DBTypeDescriptor:
         delattr(obj, self.private_name)
 
 
-def db_field(db_type: DBType, **kwargs) -> Field:
-    """Create a dataclass field with database type validation.
-    
-    Args:
-        db_type: Database type instance
-        **kwargs: Additional field arguments
-        
-    Returns:
-        Dataclass field
-    """
-    # No automatic defaults - let user control this
-
-    # Store db_type in metadata
-    metadata = kwargs.get('metadata', {})
-    metadata['db_type'] = db_type
-    kwargs['metadata'] = metadata
-
-    return field(**kwargs)
-
-
 def validate_dataclass(cls: Type[T]) -> Type[T]:
     """Decorator to add database type validation to a dataclass.
-    
+
     Usage:
         @validate_dataclass
         @dataclass
@@ -66,11 +46,13 @@ def validate_dataclass(cls: Type[T]) -> Type[T]:
             name: Annotated[str, VARCHAR(50)]
             age: Annotated[int, INTEGER()]
     """
-    if not hasattr(cls, '__dataclass_fields__'):
+    if not hasattr(cls, "__dataclass_fields__"):
         raise TypeError(f"{cls.__name__} must be a dataclass")
 
     # Get type hints with annotations
-    hints = get_type_hints(cls, include_extras=True)
+    # Note: include_extras is only available in Python 3.11+
+    # For earlier versions, we manually handle Annotated types below
+    hints = cls.__annotations__.copy()
 
     # Process each field
     for field_name, field_type in hints.items():
@@ -78,7 +60,7 @@ def validate_dataclass(cls: Type[T]) -> Type[T]:
             continue
 
         db_type = None
-        
+
         # Handle Optional[T] which is Union[T, None]
         if get_origin(field_type) is Union:
             # Get the non-None type from Optional
@@ -96,14 +78,9 @@ def validate_dataclass(cls: Type[T]) -> Type[T]:
                     db_type = arg
                     break
                 # Handle case where DBTypeValidator is present (when Pydantic is installed)
-                elif hasattr(arg, 'db_type') and isinstance(getattr(arg, 'db_type'), DBType):
+                elif hasattr(arg, "db_type") and isinstance(arg.db_type, DBType):
                     db_type = arg.db_type
                     break
-
-        # Check metadata for db_field usage
-        field_obj = cls.__dataclass_fields__[field_name]
-        if 'db_type' in field_obj.metadata:
-            db_type = field_obj.metadata['db_type']
 
         # If we found a DBType, add descriptor
         if db_type:
@@ -111,25 +88,28 @@ def validate_dataclass(cls: Type[T]) -> Type[T]:
             setattr(cls, field_name, descriptor)
 
             # Store original init BEFORE dataclass modifies it
-            if not hasattr(cls, '_original_init_stored'):
+            if not hasattr(cls, "_original_init_stored"):
                 cls._original_init_stored = True
                 original_init = cls.__init__
-                
-                def new_init(self, *args, **kwargs):
-                    # Call original dataclass __init__ first
-                    original_init(self, *args, **kwargs)
-                    
-                    # Then validate through descriptors
-                    for field_name in self.__dataclass_fields__:
-                        if hasattr(type(self), field_name):
-                            descriptor = getattr(type(self), field_name)
-                            if isinstance(descriptor, DBTypeDescriptor):
-                                # Get the value set by dataclass init
-                                value = getattr(self, descriptor.private_name, None)
-                                # Validate it through the descriptor
-                                setattr(self, field_name, value)
-                
-                cls.__init__ = new_init
+
+                def make_new_init(orig_init):
+                    def new_init(self, *init_args, **init_kwargs):
+                        # Call original dataclass __init__ first
+                        orig_init(self, *init_args, **init_kwargs)
+
+                        # Then validate through descriptors
+                        for field_name in self.__dataclass_fields__:
+                            if hasattr(type(self), field_name):
+                                descriptor = getattr(type(self), field_name)
+                                if isinstance(descriptor, DBTypeDescriptor):
+                                    # Get the value set by dataclass init
+                                    value = getattr(self, descriptor.private_name, None)
+                                    # Validate it through the descriptor
+                                    setattr(self, field_name, value)
+
+                    return new_init
+
+                cls.__init__ = make_new_init(original_init)
 
     # Add helper methods
     def get_db_types(self) -> Dict[str, DBType]:
@@ -177,7 +157,7 @@ class DBDataclass:
 
     def __post_init__(self):
         """Validate all fields after initialization."""
-        if hasattr(self, 'validate_all'):
+        if hasattr(self, "validate_all"):
             self.validate_all()
 
     def get_db_types(self) -> Dict[str, DBType]:
@@ -194,8 +174,7 @@ class DBDataclass:
 
 
 __all__ = [
-    'DBDataclass',
-    'DBTypeDescriptor',
-    'db_field',
-    'validate_dataclass',
+    "DBDataclass",
+    "DBTypeDescriptor",
+    "validate_dataclass",
 ]
