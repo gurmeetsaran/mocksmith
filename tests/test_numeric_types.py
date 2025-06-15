@@ -1,10 +1,9 @@
 """Tests for numeric database types."""
 
-import pytest
 from decimal import Decimal
-from db_types.types.numeric import (
-    INTEGER, BIGINT, SMALLINT, DECIMAL, NUMERIC, FLOAT, REAL, DOUBLE
-)
+
+import pytest
+from db_types.types.numeric import BIGINT, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, REAL, SMALLINT
 
 
 class TestINTEGER:
@@ -12,7 +11,7 @@ class TestINTEGER:
         int_type = INTEGER()
         assert int_type.sql_type == "INTEGER"
         assert int_type.python_type == int
-    
+
     def test_validation_success(self):
         int_type = INTEGER()
         int_type.validate(0)
@@ -21,22 +20,22 @@ class TestINTEGER:
         int_type.validate(2147483647)  # max value
         int_type.validate(-2147483648)  # min value
         int_type.validate(100.0)  # float with no decimal
-    
+
     def test_validation_failure(self):
         int_type = INTEGER()
-        
+
         with pytest.raises(ValueError, match="out of range"):
             int_type.validate(2147483648)  # too large
-        
+
         with pytest.raises(ValueError, match="out of range"):
             int_type.validate(-2147483649)  # too small
-        
+
         with pytest.raises(ValueError, match="Expected integer"):
             int_type.validate(10.5)  # non-integer float
-        
+
         with pytest.raises(ValueError, match="Expected numeric"):
             int_type.validate("not a number")
-    
+
     def test_serialize(self):
         int_type = INTEGER()
         assert int_type.serialize(100) == 100
@@ -49,7 +48,7 @@ class TestBIGINT:
         bigint = BIGINT()
         bigint.validate(9223372036854775807)  # max
         bigint.validate(-9223372036854775808)  # min
-        
+
         with pytest.raises(ValueError, match="out of range"):
             bigint.validate(9223372036854775808)
 
@@ -59,7 +58,7 @@ class TestSMALLINT:
         smallint = SMALLINT()
         smallint.validate(32767)  # max
         smallint.validate(-32768)  # min
-        
+
         with pytest.raises(ValueError, match="out of range"):
             smallint.validate(32768)
 
@@ -71,31 +70,31 @@ class TestDECIMAL:
         assert dec.scale == 2
         assert dec.sql_type == "DECIMAL(10,2)"
         assert dec.python_type == Decimal
-    
+
     def test_validation_success(self):
         dec = DECIMAL(5, 2)
         dec.validate("123.45")
         dec.validate(123.45)
         dec.validate(Decimal("123.45"))
         dec.validate(123)  # integer is ok
-    
+
     def test_validation_precision(self):
         dec = DECIMAL(5, 2)
-        
+
         with pytest.raises(ValueError, match="exceeds precision"):
             dec.validate("12345.67")  # too many total digits
-    
+
     def test_validation_scale(self):
         dec = DECIMAL(5, 2)
-        
-        with pytest.raises(ValueError, match="exceeds scale"):
-            dec.validate("123.456")  # too many decimal places
-    
+
+        with pytest.raises(ValueError, match="decimal places, exceeds scale"):
+            dec.validate("12.456")  # too many decimal places
+
     def test_serialize(self):
         dec = DECIMAL(5, 2)
         assert dec.serialize(123.45) == "123.45"
         assert dec.serialize(Decimal("123.45")) == "123.45"
-    
+
     def test_deserialize(self):
         dec = DECIMAL(5, 2)
         result = dec.deserialize("123.45")
@@ -115,11 +114,11 @@ class TestFLOAT:
         float_type = FLOAT()
         assert float_type.sql_type == "FLOAT"
         assert float_type.python_type == float
-    
+
     def test_with_precision(self):
         float_type = FLOAT(24)
         assert float_type.sql_type == "FLOAT(24)"
-    
+
     def test_serialize(self):
         float_type = FLOAT()
         assert float_type.serialize(123.45) == 123.45

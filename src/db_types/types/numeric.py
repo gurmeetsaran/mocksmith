@@ -144,20 +144,32 @@ class DECIMAL(DBType[Decimal]):
         try:
             dec_value = Decimal(str(value))
         except Exception as e:
-            raise ValueError(f"Cannot convert {value} to Decimal: {e}")
+            raise ValueError(f"Cannot convert {value} to Decimal: {e}") from e
 
         # Check precision and scale
         sign, digits, exponent = dec_value.as_tuple()
 
-        # Total digits
+        # Calculate decimal places
+        decimal_places = -exponent if exponent < 0 else 0
+        if decimal_places > self.scale:
+            raise ValueError(
+                f"Value has {decimal_places} decimal places, exceeds scale {self.scale}"
+            )
+
+        # Check total significant digits
+        # For DECIMAL(10,2), we can have at most 10 total digits
         total_digits = len(digits)
         if total_digits > self.precision:
             raise ValueError(f"Value has {total_digits} digits, exceeds precision {self.precision}")
 
-        # Decimal places
-        decimal_places = -exponent if exponent < 0 else 0
-        if decimal_places > self.scale:
-            raise ValueError(f"Value has {decimal_places} decimal places, exceeds scale {self.scale}")
+        # Also check that integer part doesn't exceed precision - scale
+        # For DECIMAL(10,2), integer part can have at most 8 digits
+        integer_digits = total_digits - decimal_places
+        max_integer_digits = self.precision - self.scale
+        if integer_digits > max_integer_digits:
+            raise ValueError(
+                f"Integer part has {integer_digits} digits, exceeds maximum {max_integer_digits}"
+            )
 
     def _serialize(self, value: Union[int, float, Decimal, str]) -> str:
         return str(Decimal(str(value)))

@@ -1,0 +1,77 @@
+name: PR Title Check
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - synchronize
+
+permissions:
+  pull-requests: read
+
+jobs:
+  conventional-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Configure allowed types according to conventional commits
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+
+          # Configure allowed scopes (optional)
+          scopes: |
+            core
+            types
+            pydantic
+            dataclass
+            tests
+            docs
+            deps
+
+          # Require scope to be provided
+          requireScope: false
+
+          # Disallow uppercase letters at the beginning of the subject
+          subjectPattern: ^[a-z].*$
+
+          # Subject must not end with a period
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            doesn't match the configured pattern. Please ensure that the subject
+            starts with a lowercase letter and doesn't end with a period.
+
+          # Warn on breaking changes in the title
+          validateSingleCommit: false
+
+          # Help message for users
+          helpMessage: |
+            Pull request titles must follow the Conventional Commits specification:
+            https://www.conventionalcommits.org/
+
+            Format: <type>(<scope>): <subject>
+
+            Examples:
+              ✅ feat: add support for PostgreSQL arrays
+              ✅ fix(pydantic): correct validation for decimal types
+              ✅ docs: update README with new examples
+              ✅ refactor(types): simplify base type implementation
+              ✅ test: add integration tests for dataclasses
+
+              ❌ Feature: Add new type
+              ❌ FEAT: add new type
+              ❌ feat: Add new type.
+              ❌ add new feature

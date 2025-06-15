@@ -41,16 +41,19 @@ dev = [
     "mypy>=1.0.0",
     "ruff>=0.1.0",
     "black>=23.0.0",
+    "isort>=5.12.0",
+    "coverage[toml]>=7.0",
 ]
 all = [
     "python-db-types[pydantic,dev]",
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/python-db-types"
+Homepage = "https://github.com/gurmeetsaran/python-db-types"
 Documentation = "https://python-db-types.readthedocs.io"
-Repository = "https://github.com/yourusername/python-db-types"
-Issues = "https://github.com/yourusername/python-db-types/issues"
+Repository = "https://github.com/gurmeetsaran/python-db-types"
+Issues = "https://github.com/gurmeetsaran/python-db-types/issues"
+Changelog = "https://github.com/gurmeetsaran/python-db-types/blob/main/CHANGELOG.md"
 
 [tool.setuptools_scm]
 write_to = "src/db_types/_version.py"
@@ -108,4 +111,17 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
     "if TYPE_CHECKING:",
+    "@abstractmethod",
 ]
+fail_under = 80
+
+[tool.black]
+line-length = 100
+target-version = ["py38"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["db_types"]
+skip_gitignore = true
