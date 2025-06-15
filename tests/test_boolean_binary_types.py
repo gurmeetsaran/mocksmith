@@ -1,6 +1,7 @@
 """Tests for boolean and binary database types."""
 
 import pytest
+
 from db_types.types.binary import BINARY, BLOB, VARBINARY
 from db_types.types.boolean import BOOLEAN
 

@@ -31,13 +31,12 @@ repos:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+  - repo: https://github.com/RobertCraigie/pyright-python
+    rev: v1.1.363
     hooks:
-      - id: mypy
-        language_version: python3
+      - id: pyright
+        args: [--pythonversion=3.8, src/]
+        pass_filenames: false
         additional_dependencies:
           - pydantic>=2.0.0
           - typing-extensions>=4.0.0
-        args: [--config-file=pyproject.toml, src/]
-        pass_filenames: false

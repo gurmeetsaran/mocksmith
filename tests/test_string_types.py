@@ -1,6 +1,7 @@
 """Tests for string database types."""
 
 import pytest
+
 from db_types.types.string import CHAR, TEXT, VARCHAR
 
 

@@ -4,6 +4,8 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Optional
 
+from pydantic import BaseModel, Field, ValidationError, field_validator
+
 from db_types import (
     Binary,
     Blob,
@@ -20,7 +22,6 @@ from db_types import (
     Timestamp,
     Varchar,
 )
-from pydantic import BaseModel, Field, ValidationError, field_validator
 
 
 class Employee(BaseModel):

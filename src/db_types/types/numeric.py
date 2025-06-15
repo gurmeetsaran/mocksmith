@@ -1,7 +1,7 @@
 """Numeric database types."""
 
 from decimal import Decimal
-from typing import Optional, Type, Union
+from typing import Any, Optional, Type, Union
 
 from db_types.types.base import DBType
 
@@ -20,7 +20,7 @@ class INTEGER(DBType[int]):
     def python_type(self) -> Type[int]:
         return int
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -37,7 +37,7 @@ class INTEGER(DBType[int]):
     def _serialize(self, value: Union[int, float]) -> int:
         return int(value)
 
-    def _deserialize(self, value: any) -> int:
+    def _deserialize(self, value: Any) -> int:
         return int(value)
 
 
@@ -55,7 +55,7 @@ class BIGINT(DBType[int]):
     def python_type(self) -> Type[int]:
         return int
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -72,7 +72,7 @@ class BIGINT(DBType[int]):
     def _serialize(self, value: Union[int, float]) -> int:
         return int(value)
 
-    def _deserialize(self, value: any) -> int:
+    def _deserialize(self, value: Any) -> int:
         return int(value)
 
 
@@ -90,7 +90,7 @@ class SMALLINT(DBType[int]):
     def python_type(self) -> Type[int]:
         return int
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -107,7 +107,7 @@ class SMALLINT(DBType[int]):
     def _serialize(self, value: Union[int, float]) -> int:
         return int(value)
 
-    def _deserialize(self, value: any) -> int:
+    def _deserialize(self, value: Any) -> int:
         return int(value)
 
 
@@ -134,7 +134,7 @@ class DECIMAL(DBType[Decimal]):
     def python_type(self) -> Type[Decimal]:
         return Decimal
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -147,9 +147,13 @@ class DECIMAL(DBType[Decimal]):
             raise ValueError(f"Cannot convert {value} to Decimal: {e}") from e
 
         # Check precision and scale
-        sign, digits, exponent = dec_value.as_tuple()
+        _, digits, exponent = dec_value.as_tuple()
 
         # Calculate decimal places
+        # Handle special values (Infinity, NaN)
+        if isinstance(exponent, str):
+            # Special values like 'F' (Infinity), 'n' (NaN)
+            raise ValueError(f"Special value not allowed: {dec_value}")
         decimal_places = -exponent if exponent < 0 else 0
         if decimal_places > self.scale:
             raise ValueError(
@@ -174,7 +178,7 @@ class DECIMAL(DBType[Decimal]):
     def _serialize(self, value: Union[int, float, Decimal, str]) -> str:
         return str(Decimal(str(value)))
 
-    def _deserialize(self, value: any) -> Decimal:
+    def _deserialize(self, value: Any) -> Decimal:
         return Decimal(str(value))
 
     def __repr__(self) -> str:
@@ -206,7 +210,7 @@ class FLOAT(DBType[float]):
     def python_type(self) -> Type[float]:
         return float
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -216,7 +220,7 @@ class FLOAT(DBType[float]):
     def _serialize(self, value: Union[int, float]) -> float:
         return float(value)
 
-    def _deserialize(self, value: any) -> float:
+    def _deserialize(self, value: Any) -> float:
         return float(value)
 
 
@@ -231,7 +235,7 @@ class REAL(DBType[float]):
     def python_type(self) -> Type[float]:
         return float
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -241,7 +245,7 @@ class REAL(DBType[float]):
     def _serialize(self, value: Union[int, float]) -> float:
         return float(value)
 
-    def _deserialize(self, value: any) -> float:
+    def _deserialize(self, value: Any) -> float:
         return float(value)
 
 
@@ -256,7 +260,7 @@ class DOUBLE(DBType[float]):
     def python_type(self) -> Type[float]:
         return float
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -266,5 +270,5 @@ class DOUBLE(DBType[float]):
     def _serialize(self, value: Union[int, float]) -> float:
         return float(value)
 
-    def _deserialize(self, value: any) -> float:
+    def _deserialize(self, value: Any) -> float:
         return float(value)

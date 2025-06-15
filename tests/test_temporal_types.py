@@ -3,6 +3,7 @@
 from datetime import date, datetime, time, timezone
 
 import pytest
+
 from db_types.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
 
 

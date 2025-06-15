@@ -1,6 +1,6 @@
 """Binary database types."""
 
-from typing import Optional, Type, Union
+from typing import Any, Optional, Type, Union
 
 from db_types.types.base import DBType
 
@@ -22,7 +22,7 @@ class BINARY(DBType[bytes]):
     def python_type(self) -> Type[bytes]:
         return bytes
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -51,7 +51,7 @@ class BINARY(DBType[bytes]):
         # Pad with zeros to match BINARY behavior
         return byte_value.ljust(self.length, b"\x00")
 
-    def _deserialize(self, value: any) -> bytes:
+    def _deserialize(self, value: Any) -> bytes:
         if isinstance(value, bytes):
             return value.rstrip(b"\x00")  # Remove padding
         elif isinstance(value, bytearray):
@@ -87,7 +87,7 @@ class VARBINARY(DBType[bytes]):
     def python_type(self) -> Type[bytes]:
         return bytes
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -113,7 +113,7 @@ class VARBINARY(DBType[bytes]):
         else:
             return value
 
-    def _deserialize(self, value: any) -> bytes:
+    def _deserialize(self, value: Any) -> bytes:
         if isinstance(value, bytes):
             return value
         elif isinstance(value, bytearray):
@@ -147,7 +147,7 @@ class BLOB(DBType[bytes]):
     def python_type(self) -> Type[bytes]:
         return bytes
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -174,7 +174,7 @@ class BLOB(DBType[bytes]):
         else:
             return value
 
-    def _deserialize(self, value: any) -> bytes:
+    def _deserialize(self, value: Any) -> bytes:
         if isinstance(value, bytes):
             return value
         elif isinstance(value, bytearray):

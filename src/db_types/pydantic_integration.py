@@ -1,25 +1,22 @@
 """Pydantic integration for database types."""
+# pyright: reportOptionalMemberAccess=false
 
-from typing import Any, Callable, Type
+from typing import Any, Callable, Dict, Type
 
 try:
-    from pydantic import BaseModel, Field, field_serializer, field_validator
-    from pydantic.fields import FieldInfo
+    from pydantic import BaseModel
     from pydantic_core import core_schema
 
     PYDANTIC_AVAILABLE = True
 except ImportError:
     PYDANTIC_AVAILABLE = False
     BaseModel = None
-    Field = None
-    field_validator = None
-    field_serializer = None
-    FieldInfo = None
     core_schema = None
 
 from db_types.types.base import DBType
 
-if PYDANTIC_AVAILABLE:
+if PYDANTIC_AVAILABLE and core_schema is not None:
+    assert core_schema is not None  # Type assertion for pyright
 
     class DBTypeAnnotation:
         """Custom Pydantic annotation for database types."""
@@ -79,7 +76,7 @@ if PYDANTIC_AVAILABLE:
             )
 
     # Example base model with DB type support
-    class DBModel(BaseModel):
+    class DBModel(BaseModel):  # type: ignore
         """Base Pydantic model with database type support."""
 
         class Config:
@@ -87,7 +84,7 @@ if PYDANTIC_AVAILABLE:
             validate_assignment = True
 
         @classmethod
-        def get_db_types(cls) -> dict[str, DBType]:
+        def get_db_types(cls) -> Dict[str, DBType]:
             """Get all database type fields in the model.
 
             Returns:
@@ -103,7 +100,7 @@ if PYDANTIC_AVAILABLE:
                             break
             return db_types
 
-        def to_sql_dict(self) -> dict[str, Any]:
+        def to_sql_dict(self) -> Dict[str, Any]:
             """Convert model to dictionary with SQL-compatible values.
 
             Returns:

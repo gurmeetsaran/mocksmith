@@ -2,7 +2,7 @@
 
 import sys
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Type, TypeVar, Union, get_args, get_origin, get_type_hints
+from typing import Any, Dict, Optional, Type, TypeVar, Union, get_args, get_origin
 
 if sys.version_info >= (3, 9):
     from typing import Annotated
@@ -50,7 +50,9 @@ def validate_dataclass(cls: Type[T]) -> Type[T]:
         raise TypeError(f"{cls.__name__} must be a dataclass")
 
     # Get type hints with annotations
-    hints = get_type_hints(cls, include_extras=True)
+    # Note: include_extras is only available in Python 3.11+
+    # For earlier versions, we manually handle Annotated types below
+    hints = cls.__annotations__.copy()
 
     # Process each field
     for field_name, field_type in hints.items():

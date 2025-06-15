@@ -1,6 +1,6 @@
 """String database types."""
 
-from typing import Optional, Type
+from typing import Any, Optional, Type
 
 from db_types.types.base import DBType
 
@@ -22,7 +22,7 @@ class VARCHAR(DBType[str]):
     def python_type(self) -> Type[str]:
         return str
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -35,7 +35,7 @@ class VARCHAR(DBType[str]):
     def _serialize(self, value: str) -> str:
         return value
 
-    def _deserialize(self, value: any) -> str:
+    def _deserialize(self, value: Any) -> str:
         return str(value)
 
     def __repr__(self) -> str:
@@ -59,7 +59,7 @@ class CHAR(DBType[str]):
     def python_type(self) -> Type[str]:
         return str
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -73,7 +73,7 @@ class CHAR(DBType[str]):
         # Pad with spaces to match CHAR behavior
         return value.ljust(self.length)
 
-    def _deserialize(self, value: any) -> str:
+    def _deserialize(self, value: Any) -> str:
         # Strip trailing spaces to match typical CHAR retrieval
         return str(value).rstrip()
 
@@ -96,7 +96,7 @@ class TEXT(DBType[str]):
     def python_type(self) -> Type[str]:
         return str
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -109,7 +109,7 @@ class TEXT(DBType[str]):
     def _serialize(self, value: str) -> str:
         return value
 
-    def _deserialize(self, value: any) -> str:
+    def _deserialize(self, value: Any) -> str:
         return str(value)
 
     def __repr__(self) -> str:

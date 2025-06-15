@@ -5,7 +5,7 @@ Pydantic models and Python dataclasses.
 """
 
 import sys
-from typing import Optional
+from typing import Any, Optional
 
 if sys.version_info >= (3, 9):
     from typing import Annotated
@@ -34,16 +34,25 @@ from db_types.types.temporal import TIMESTAMP as _TIMESTAMP
 
 # For Pydantic models - check if Pydantic is available
 try:
-    from db_types.pydantic_integration import DBTypeValidator
+    from db_types.pydantic_integration import DBTypeValidator as _DBTypeValidator
 
-    PYDANTIC_AVAILABLE = True
+    _PYDANTIC_AVAILABLE = True
+
+    def _get_validator(db_type: Any) -> Any:
+        if _DBTypeValidator is not None:
+            return _DBTypeValidator(db_type)
+        return None
+
 except ImportError:
-    PYDANTIC_AVAILABLE = False
-    DBTypeValidator = None
+    _PYDANTIC_AVAILABLE = False
+    _DBTypeValidator = None  # type: ignore
+
+    def _get_validator(db_type: Any) -> Any:  # type: ignore
+        return None
 
 
 # String Types
-def Varchar(length: int) -> type:  # noqa: N802
+def Varchar(length: int) -> Any:  # noqa: N802
     """Variable-length string with maximum length.
 
     Example:
@@ -52,13 +61,13 @@ def Varchar(length: int) -> type:  # noqa: N802
             email: Varchar(100)
     """
     db_type = _VARCHAR(length)
-    if PYDANTIC_AVAILABLE:
+    if _PYDANTIC_AVAILABLE:
         # Include both DBTypeValidator for Pydantic and the raw db_type for dataclasses
-        return Annotated[str, DBTypeValidator(db_type), db_type]
+        return Annotated[str, _get_validator(db_type), db_type]
     return Annotated[str, db_type]
 
 
-def Char(length: int) -> type:  # noqa: N802
+def Char(length: int) -> Any:  # noqa: N802
     """Fixed-length string (padded with spaces).
 
     Example:
@@ -67,12 +76,12 @@ def Char(length: int) -> type:  # noqa: N802
             country: Char(2)
     """
     db_type = _CHAR(length)
-    if PYDANTIC_AVAILABLE:
-        return Annotated[str, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[str, _get_validator(db_type), db_type]
     return Annotated[str, db_type]
 
 
-def Text(*, max_length: Optional[int] = None) -> type:  # noqa: N802
+def Text(*, max_length: Optional[int] = None) -> Any:  # noqa: N802
     """Variable-length text field.
 
     Example:
@@ -81,13 +90,13 @@ def Text(*, max_length: Optional[int] = None) -> type:  # noqa: N802
             summary: Text(max_length=500)
     """
     db_type = _TEXT(max_length=max_length)
-    if PYDANTIC_AVAILABLE:
-        return Annotated[str, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[str, _get_validator(db_type), db_type]
     return Annotated[str, db_type]
 
 
 # Numeric Types
-def Integer() -> type:  # noqa: N802
+def Integer() -> Any:  # noqa: N802
     """32-bit integer (-2,147,483,648 to 2,147,483,647).
 
     Example:
@@ -96,12 +105,12 @@ def Integer() -> type:  # noqa: N802
             id: Integer()
     """
     db_type = _INTEGER()
-    if PYDANTIC_AVAILABLE:
-        return Annotated[int, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
     return Annotated[int, db_type]
 
 
-def BigInt() -> type:  # noqa: N802
+def BigInt() -> Any:  # noqa: N802
     """64-bit integer.
 
     Example:
@@ -110,12 +119,12 @@ def BigInt() -> type:  # noqa: N802
             reference_id: BigInt()
     """
     db_type = _BIGINT()
-    if PYDANTIC_AVAILABLE:
-        return Annotated[int, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
     return Annotated[int, db_type]
 
 
-def SmallInt() -> type:  # noqa: N802
+def SmallInt() -> Any:  # noqa: N802
     """16-bit integer (-32,768 to 32,767).
 
     Example:
@@ -124,12 +133,12 @@ def SmallInt() -> type:  # noqa: N802
             priority: SmallInt()
     """
     db_type = _SMALLINT()
-    if PYDANTIC_AVAILABLE:
-        return Annotated[int, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
     return Annotated[int, db_type]
 
 
-def DecimalType(precision: int, scale: int) -> type:  # noqa: N802
+def DecimalType(precision: int, scale: int) -> Any:  # noqa: N802
     """Fixed-point decimal number.
 
     Args:
@@ -142,12 +151,12 @@ def DecimalType(precision: int, scale: int) -> type:  # noqa: N802
             tax_rate: DecimalType(5, 4)  # Up to 9.9999
     """
     db_type = _DECIMAL(precision, scale)
-    if PYDANTIC_AVAILABLE:
-        return Annotated[Decimal, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[Decimal, _get_validator(db_type), db_type]
     return Annotated[Decimal, db_type]
 
 
-def Money() -> type:  # noqa: N802
+def Money() -> Any:  # noqa: N802
     """Money type - alias for DECIMAL(19, 4).
 
     Example:
@@ -158,7 +167,7 @@ def Money() -> type:  # noqa: N802
     return DecimalType(19, 4)
 
 
-def Float(*, precision: Optional[int] = None) -> type:  # noqa: N802
+def Float(*, precision: Optional[int] = None) -> Any:  # noqa: N802
     """Floating-point number.
 
     Example:
@@ -167,12 +176,12 @@ def Float(*, precision: Optional[int] = None) -> type:  # noqa: N802
             pressure: Float(precision=24)
     """
     db_type = _FLOAT(precision=precision)
-    if PYDANTIC_AVAILABLE:
-        return Annotated[float, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[float, _get_validator(db_type), db_type]
     return Annotated[float, db_type]
 
 
-def Double() -> type:  # noqa: N802
+def Double() -> Any:  # noqa: N802
     """Double precision floating-point.
 
     Example:
@@ -181,13 +190,13 @@ def Double() -> type:  # noqa: N802
             calculation: Double()
     """
     db_type = _DOUBLE()
-    if PYDANTIC_AVAILABLE:
-        return Annotated[float, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[float, _get_validator(db_type), db_type]
     return Annotated[float, db_type]
 
 
 # Temporal Types
-def Date() -> type:  # noqa: N802
+def Date() -> Any:  # noqa: N802
     """Date type (year, month, day).
 
     Example:
@@ -196,12 +205,12 @@ def Date() -> type:  # noqa: N802
             hire_date: Date()
     """
     db_type = _DATE()
-    if PYDANTIC_AVAILABLE:
-        return Annotated[date, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[date, _get_validator(db_type), db_type]
     return Annotated[date, db_type]
 
 
-def Time(*, precision: int = 6) -> type:  # noqa: N802
+def Time(*, precision: int = 6) -> Any:  # noqa: N802
     """Time type with optional fractional seconds.
 
     Example:
@@ -210,12 +219,12 @@ def Time(*, precision: int = 6) -> type:  # noqa: N802
             end_time: Time(precision=0)  # No fractional seconds
     """
     db_type = _TIME(precision=precision)
-    if PYDANTIC_AVAILABLE:
-        return Annotated[time, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[time, _get_validator(db_type), db_type]
     return Annotated[time, db_type]
 
 
-def Timestamp(*, precision: int = 6, with_timezone: bool = True) -> type:  # noqa: N802
+def Timestamp(*, precision: int = 6, with_timezone: bool = True) -> Any:  # noqa: N802
     """Timestamp with optional timezone.
 
     Example:
@@ -225,12 +234,12 @@ def Timestamp(*, precision: int = 6, with_timezone: bool = True) -> type:  # noq
             processed_at: Timestamp(precision=3)  # Milliseconds
     """
     db_type = _TIMESTAMP(precision=precision, with_timezone=with_timezone)
-    if PYDANTIC_AVAILABLE:
-        return Annotated[datetime, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[datetime, _get_validator(db_type), db_type]
     return Annotated[datetime, db_type]
 
 
-def DateTime(*, precision: int = 6) -> type:  # noqa: N802
+def DateTime(*, precision: int = 6) -> Any:  # noqa: N802
     """DateTime type - alias for Timestamp without timezone.
 
     Example:
@@ -242,7 +251,7 @@ def DateTime(*, precision: int = 6) -> type:  # noqa: N802
 
 
 # Boolean Type
-def Boolean() -> type:  # noqa: N802
+def Boolean() -> Any:  # noqa: N802
     """Boolean type that accepts various representations.
 
     Example:
@@ -251,13 +260,13 @@ def Boolean() -> type:  # noqa: N802
             is_verified: Boolean()
     """
     db_type = _BOOLEAN()
-    if PYDANTIC_AVAILABLE:
-        return Annotated[bool, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[bool, _get_validator(db_type), db_type]
     return Annotated[bool, db_type]
 
 
 # Binary Types
-def Binary(length: int) -> type:  # noqa: N802
+def Binary(length: int) -> Any:  # noqa: N802
     """Fixed-length binary data.
 
     Example:
@@ -266,12 +275,12 @@ def Binary(length: int) -> type:  # noqa: N802
             signature: Binary(64)
     """
     db_type = _BINARY(length)
-    if PYDANTIC_AVAILABLE:
-        return Annotated[bytes, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[bytes, _get_validator(db_type), db_type]
     return Annotated[bytes, db_type]
 
 
-def VarBinary(max_length: int) -> type:  # noqa: N802
+def VarBinary(max_length: int) -> Any:  # noqa: N802
     """Variable-length binary data.
 
     Example:
@@ -280,12 +289,12 @@ def VarBinary(max_length: int) -> type:  # noqa: N802
             preview: VarBinary(10240)
     """
     db_type = _VARBINARY(max_length)
-    if PYDANTIC_AVAILABLE:
-        return Annotated[bytes, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[bytes, _get_validator(db_type), db_type]
     return Annotated[bytes, db_type]
 
 
-def Blob(*, max_length: Optional[int] = None) -> type:  # noqa: N802
+def Blob(*, max_length: Optional[int] = None) -> Any:  # noqa: N802
     """Binary Large Object.
 
     Example:
@@ -294,8 +303,8 @@ def Blob(*, max_length: Optional[int] = None) -> type:  # noqa: N802
             thumbnail: Blob(max_length=65536)  # 64KB max
     """
     db_type = _BLOB(max_length=max_length)
-    if PYDANTIC_AVAILABLE:
-        return Annotated[bytes, DBTypeValidator(db_type), db_type]
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[bytes, _get_validator(db_type), db_type]
     return Annotated[bytes, db_type]
 
 

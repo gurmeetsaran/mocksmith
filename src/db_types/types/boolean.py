@@ -1,6 +1,6 @@
 """Boolean database type."""
 
-from typing import Type, Union
+from typing import Any, Type, Union
 
 from db_types.types.base import DBType
 
@@ -16,7 +16,7 @@ class BOOLEAN(DBType[bool]):
     def python_type(self) -> Type[bool]:
         return bool
 
-    def validate(self, value: any) -> None:
+    def validate(self, value: Any) -> None:
         if value is None:
             return
 
@@ -37,7 +37,7 @@ class BOOLEAN(DBType[bool]):
         else:  # str
             return value.lower() in ("true", "1", "t", "yes", "y")
 
-    def _deserialize(self, value: any) -> bool:
+    def _deserialize(self, value: Any) -> bool:
         if isinstance(value, bool):
             return value
         elif isinstance(value, (int, float)):

@@ -3,6 +3,7 @@
 from decimal import Decimal
 
 import pytest
+
 from db_types.types.numeric import BIGINT, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, REAL, SMALLINT
 
 
