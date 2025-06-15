@@ -31,7 +31,7 @@ class BINARY(DBType[bytes]):
 
         # Convert to bytes for length check
         if isinstance(value, str):
-            byte_value = value.encode('utf-8')
+            byte_value = value.encode("utf-8")
         elif isinstance(value, bytearray):
             byte_value = bytes(value)
         else:
@@ -42,27 +42,27 @@ class BINARY(DBType[bytes]):
 
     def _serialize(self, value: Union[bytes, bytearray, str]) -> bytes:
         if isinstance(value, str):
-            byte_value = value.encode('utf-8')
+            byte_value = value.encode("utf-8")
         elif isinstance(value, bytearray):
             byte_value = bytes(value)
         else:
             byte_value = value
 
         # Pad with zeros to match BINARY behavior
-        return byte_value.ljust(self.length, b'\x00')
+        return byte_value.ljust(self.length, b"\x00")
 
     def _deserialize(self, value: any) -> bytes:
         if isinstance(value, bytes):
-            return value.rstrip(b'\x00')  # Remove padding
+            return value.rstrip(b"\x00")  # Remove padding
         elif isinstance(value, bytearray):
-            return bytes(value).rstrip(b'\x00')
+            return bytes(value).rstrip(b"\x00")
         elif isinstance(value, str):
             # Assume hex string or base64
             try:
                 return bytes.fromhex(value)
             except ValueError:
                 # Try as UTF-8 encoded string
-                return value.encode('utf-8')
+                return value.encode("utf-8")
         else:
             return bytes(value)
 
@@ -96,7 +96,7 @@ class VARBINARY(DBType[bytes]):
 
         # Convert to bytes for length check
         if isinstance(value, str):
-            byte_value = value.encode('utf-8')
+            byte_value = value.encode("utf-8")
         elif isinstance(value, bytearray):
             byte_value = bytes(value)
         else:
@@ -107,7 +107,7 @@ class VARBINARY(DBType[bytes]):
 
     def _serialize(self, value: Union[bytes, bytearray, str]) -> bytes:
         if isinstance(value, str):
-            return value.encode('utf-8')
+            return value.encode("utf-8")
         elif isinstance(value, bytearray):
             return bytes(value)
         else:
@@ -124,7 +124,7 @@ class VARBINARY(DBType[bytes]):
                 return bytes.fromhex(value)
             except ValueError:
                 # Try as UTF-8 encoded string
-                return value.encode('utf-8')
+                return value.encode("utf-8")
         else:
             return bytes(value)
 
@@ -157,7 +157,7 @@ class BLOB(DBType[bytes]):
         if self.max_length:
             # Convert to bytes for length check
             if isinstance(value, str):
-                byte_value = value.encode('utf-8')
+                byte_value = value.encode("utf-8")
             elif isinstance(value, bytearray):
                 byte_value = bytes(value)
             else:
@@ -168,7 +168,7 @@ class BLOB(DBType[bytes]):
 
     def _serialize(self, value: Union[bytes, bytearray, str]) -> bytes:
         if isinstance(value, str):
-            return value.encode('utf-8')
+            return value.encode("utf-8")
         elif isinstance(value, bytearray):
             return bytes(value)
         else:
@@ -185,7 +185,7 @@ class BLOB(DBType[bytes]):
                 return bytes.fromhex(value)
             except ValueError:
                 # Try as UTF-8 encoded string
-                return value.encode('utf-8')
+                return value.encode("utf-8")
         else:
             return bytes(value)
 

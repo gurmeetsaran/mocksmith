@@ -26,7 +26,7 @@ class BOOLEAN(DBType[bool]):
             raise ValueError(f"Expected boolean-like value, got {type(value).__name__}")
 
         if isinstance(value, str):
-            if value.lower() not in ('true', 'false', '1', '0', 't', 'f', 'yes', 'no', 'y', 'n'):
+            if value.lower() not in ("true", "false", "1", "0", "t", "f", "yes", "no", "y", "n"):
                 raise ValueError(f"Invalid boolean string: {value}")
 
     def _serialize(self, value: Union[bool, int, str]) -> bool:
@@ -35,7 +35,7 @@ class BOOLEAN(DBType[bool]):
         elif isinstance(value, int):
             return bool(value)
         else:  # str
-            return value.lower() in ('true', '1', 't', 'yes', 'y')
+            return value.lower() in ("true", "1", "t", "yes", "y")
 
     def _deserialize(self, value: any) -> bool:
         if isinstance(value, bool):
@@ -43,6 +43,6 @@ class BOOLEAN(DBType[bool]):
         elif isinstance(value, (int, float)):
             return bool(value)
         elif isinstance(value, str):
-            return value.lower() in ('true', '1', 't', 'yes', 'y')
+            return value.lower() in ("true", "1", "t", "yes", "y")
         else:
             return bool(value)

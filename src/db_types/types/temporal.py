@@ -28,7 +28,7 @@ class DATE(DBType[date]):
             try:
                 date.fromisoformat(value)
             except ValueError as e:
-                raise ValueError(f"Invalid date string: {e}")
+                raise ValueError(f"Invalid date string: {e}") from e
 
     def _serialize(self, value: Union[date, datetime, str]) -> str:
         if isinstance(value, datetime):
@@ -78,7 +78,7 @@ class TIME(DBType[time]):
             try:
                 time.fromisoformat(value)
             except ValueError as e:
-                raise ValueError(f"Invalid time string: {e}")
+                raise ValueError(f"Invalid time string: {e}") from e
 
     def _serialize(self, value: Union[time, datetime, str]) -> str:
         if isinstance(value, datetime):
@@ -138,7 +138,7 @@ class TIMESTAMP(DBType[datetime]):
             try:
                 datetime.fromisoformat(value)
             except ValueError as e:
-                raise ValueError(f"Invalid datetime string: {e}")
+                raise ValueError(f"Invalid datetime string: {e}") from e
 
         if isinstance(value, datetime) and self.with_timezone and value.tzinfo is None:
             raise ValueError("Timestamp with timezone requires timezone-aware datetime")
