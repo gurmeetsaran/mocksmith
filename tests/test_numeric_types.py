@@ -10,7 +10,7 @@ class TestINTEGER:
     def test_creation(self):
         int_type = INTEGER()
         assert int_type.sql_type == "INTEGER"
-        assert int_type.python_type == int
+        assert int_type.python_type is int
 
     def test_validation_success(self):
         int_type = INTEGER()
@@ -113,7 +113,7 @@ class TestFLOAT:
     def test_creation(self):
         float_type = FLOAT()
         assert float_type.sql_type == "FLOAT"
-        assert float_type.python_type == float
+        assert float_type.python_type is float
 
     def test_with_precision(self):
         float_type = FLOAT(24)
@@ -129,11 +129,11 @@ class TestREAL:
     def test_creation(self):
         real = REAL()
         assert real.sql_type == "REAL"
-        assert real.python_type == float
+        assert real.python_type is float
 
 
 class TestDOUBLE:
     def test_creation(self):
         double = DOUBLE()
         assert double.sql_type == "DOUBLE PRECISION"
-        assert double.python_type == float
+        assert double.python_type is float

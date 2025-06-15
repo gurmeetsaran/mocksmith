@@ -9,7 +9,7 @@ class TestVARCHAR:
         vchar = VARCHAR(50)
         assert vchar.length == 50
         assert vchar.sql_type == "VARCHAR(50)"
-        assert vchar.python_type == str
+        assert vchar.python_type is str
 
     def test_validation_success(self):
         vchar = VARCHAR(10)
