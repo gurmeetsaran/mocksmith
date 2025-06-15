@@ -41,6 +41,7 @@ jobs:
             tests
             docs
             deps
+            deps-dev
 
           # Require scope to be provided
           requireScope: false
