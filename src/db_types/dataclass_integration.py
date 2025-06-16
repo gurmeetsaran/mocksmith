@@ -1,13 +1,7 @@
 """Dataclass integration for database types."""
 
-import sys
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Type, TypeVar, Union, get_args, get_origin
-
-if sys.version_info >= (3, 9):
-    from typing import Annotated
-else:
-    from typing_extensions import Annotated
+from typing import Annotated, Any, Optional, TypeVar, Union, get_args, get_origin
 
 from db_types.types.base import DBType
 
@@ -22,7 +16,7 @@ class DBTypeDescriptor:
         self.field_name = field_name
         self.private_name = f"_{field_name}"
 
-    def __get__(self, obj: Any, objtype: Optional[Type[Any]] = None) -> Any:
+    def __get__(self, obj: Any, objtype: Optional[type[Any]] = None) -> Any:
         if obj is None:
             return self
         return getattr(obj, self.private_name, None)
@@ -36,7 +30,7 @@ class DBTypeDescriptor:
         delattr(obj, self.private_name)
 
 
-def validate_dataclass(cls: Type[T]) -> Type[T]:
+def validate_dataclass(cls: type[T]) -> type[T]:
     """Decorator to add database type validation to a dataclass.
 
     Usage:
@@ -112,7 +106,7 @@ def validate_dataclass(cls: Type[T]) -> Type[T]:
                 cls.__init__ = make_new_init(original_init)
 
     # Add helper methods
-    def get_db_types(self) -> Dict[str, DBType]:
+    def get_db_types(self) -> dict[str, DBType]:
         """Get all database type fields."""
         result = {}
         for field_name in self.__dataclass_fields__:
@@ -121,7 +115,7 @@ def validate_dataclass(cls: Type[T]) -> Type[T]:
                 result[field_name] = descriptor.db_type
         return result
 
-    def to_sql_dict(self) -> Dict[str, Any]:
+    def to_sql_dict(self) -> dict[str, Any]:
         """Convert to dictionary with SQL-compatible values."""
         result = {}
         for field_name in self.__dataclass_fields__:
@@ -160,11 +154,11 @@ class DBDataclass:
         if hasattr(self, "validate_all"):
             self.validate_all()
 
-    def get_db_types(self) -> Dict[str, DBType]:
+    def get_db_types(self) -> dict[str, DBType]:
         """Get all database type fields."""
         return {}
 
-    def to_sql_dict(self) -> Dict[str, Any]:
+    def to_sql_dict(self) -> dict[str, Any]:
         """Convert to dictionary with SQL-compatible values."""
         return {}
 

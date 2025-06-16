@@ -1,7 +1,7 @@
 """Numeric database types."""
 
 from decimal import Decimal
-from typing import Any, Optional, Type, Union
+from typing import Any, Optional, Union
 
 from db_types.types.base import DBType
 
@@ -17,7 +17,7 @@ class INTEGER(DBType[int]):
         return "INTEGER"
 
     @property
-    def python_type(self) -> Type[int]:
+    def python_type(self) -> type[int]:
         return int
 
     def validate(self, value: Any) -> None:
@@ -52,7 +52,7 @@ class BIGINT(DBType[int]):
         return "BIGINT"
 
     @property
-    def python_type(self) -> Type[int]:
+    def python_type(self) -> type[int]:
         return int
 
     def validate(self, value: Any) -> None:
@@ -87,7 +87,7 @@ class SMALLINT(DBType[int]):
         return "SMALLINT"
 
     @property
-    def python_type(self) -> Type[int]:
+    def python_type(self) -> type[int]:
         return int
 
     def validate(self, value: Any) -> None:
@@ -131,7 +131,7 @@ class DECIMAL(DBType[Decimal]):
         return f"DECIMAL({self.precision},{self.scale})"
 
     @property
-    def python_type(self) -> Type[Decimal]:
+    def python_type(self) -> type[Decimal]:
         return Decimal
 
     def validate(self, value: Any) -> None:
@@ -207,7 +207,7 @@ class FLOAT(DBType[float]):
         return "FLOAT"
 
     @property
-    def python_type(self) -> Type[float]:
+    def python_type(self) -> type[float]:
         return float
 
     def validate(self, value: Any) -> None:
@@ -232,7 +232,7 @@ class REAL(DBType[float]):
         return "REAL"
 
     @property
-    def python_type(self) -> Type[float]:
+    def python_type(self) -> type[float]:
         return float
 
     def validate(self, value: Any) -> None:
@@ -257,7 +257,7 @@ class DOUBLE(DBType[float]):
         return "DOUBLE PRECISION"
 
     @property
-    def python_type(self) -> Type[float]:
+    def python_type(self) -> type[float]:
         return float
 
     def validate(self, value: Any) -> None:

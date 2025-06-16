@@ -1,4 +1,4 @@
-.PHONY: test test-cov test-pydantic test-all lint format check-all
+.PHONY: test test-cov test-pydantic test-all lint format check-all check-consistency
 
 # Run tests without coverage
 test:
@@ -35,3 +35,7 @@ check-all:
 	poetry run ruff check src tests
 	poetry run pyright
 	poetry run pytest -v --cov=db_types --cov-report=term-missing --cov-fail-under=59
+
+# Check consistency between pre-commit, Makefile, and GitHub Actions
+check-consistency:
+	@python scripts/check_consistency.py

@@ -1,6 +1,6 @@
 """String database types."""
 
-from typing import Any, Optional, Type
+from typing import Any, Optional
 
 from db_types.types.base import DBType
 
@@ -19,7 +19,7 @@ class VARCHAR(DBType[str]):
         return f"VARCHAR({self.length})"
 
     @property
-    def python_type(self) -> Type[str]:
+    def python_type(self) -> type[str]:
         return str
 
     def validate(self, value: Any) -> None:
@@ -56,7 +56,7 @@ class CHAR(DBType[str]):
         return f"CHAR({self.length})"
 
     @property
-    def python_type(self) -> Type[str]:
+    def python_type(self) -> type[str]:
         return str
 
     def validate(self, value: Any) -> None:
@@ -93,7 +93,7 @@ class TEXT(DBType[str]):
         return "TEXT"
 
     @property
-    def python_type(self) -> Type[str]:
+    def python_type(self) -> type[str]:
         return str
 
     def validate(self, value: Any) -> None:

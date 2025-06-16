@@ -1,7 +1,7 @@
 """Base database type class."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic, Optional, Type, TypeVar
+from typing import Any, Generic, Optional, TypeVar
 
 T = TypeVar("T")
 
@@ -10,7 +10,7 @@ class DBType(ABC, Generic[T]):
     """Base class for all database types."""
 
     def __init__(self):
-        self._python_type: Optional[Type[T]] = None
+        self._python_type: Optional[type[T]] = None
 
     @property
     @abstractmethod
@@ -20,7 +20,7 @@ class DBType(ABC, Generic[T]):
 
     @property
     @abstractmethod
-    def python_type(self) -> Type[T]:
+    def python_type(self) -> type[T]:
         """Return the corresponding Python type."""
         pass
 

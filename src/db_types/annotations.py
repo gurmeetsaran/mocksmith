@@ -4,21 +4,21 @@ This module provides clean, easy-to-use type annotations for both
 Pydantic models and Python dataclasses.
 """
 
-import sys
-from typing import Any, Optional
-
-if sys.version_info >= (3, 9):
-    from typing import Annotated
-else:
-    from typing_extensions import Annotated
-
 from datetime import date, datetime, time
 from decimal import Decimal
+from typing import Annotated, Any, Optional
 
 from db_types.types.binary import BINARY as _BINARY
 from db_types.types.binary import BLOB as _BLOB
 from db_types.types.binary import VARBINARY as _VARBINARY
 from db_types.types.boolean import BOOLEAN as _BOOLEAN
+from db_types.types.constraints import ConstrainedBigInt as _ConstrainedBigInt
+from db_types.types.constraints import ConstrainedInteger as _ConstrainedInteger
+from db_types.types.constraints import ConstrainedSmallInt as _ConstrainedSmallInt
+from db_types.types.constraints import NegativeInteger as _NegativeInteger
+from db_types.types.constraints import NonNegativeInteger as _NonNegativeInteger
+from db_types.types.constraints import NonPositiveInteger as _NonPositiveInteger
+from db_types.types.constraints import PositiveInteger as _PositiveInteger
 from db_types.types.numeric import BIGINT as _BIGINT
 from db_types.types.numeric import DECIMAL as _DECIMAL
 from db_types.types.numeric import DOUBLE as _DOUBLE
@@ -52,7 +52,7 @@ except ImportError:
 
 
 # String Types
-def Varchar(length: int) -> Any:  # noqa: N802
+def Varchar(length: int) -> Any:
     """Variable-length string with maximum length.
 
     Example:
@@ -67,7 +67,7 @@ def Varchar(length: int) -> Any:  # noqa: N802
     return Annotated[str, db_type]
 
 
-def Char(length: int) -> Any:  # noqa: N802
+def Char(length: int) -> Any:
     """Fixed-length string (padded with spaces).
 
     Example:
@@ -81,7 +81,7 @@ def Char(length: int) -> Any:  # noqa: N802
     return Annotated[str, db_type]
 
 
-def Text(*, max_length: Optional[int] = None) -> Any:  # noqa: N802
+def Text(*, max_length: Optional[int] = None) -> Any:
     """Variable-length text field.
 
     Example:
@@ -96,49 +96,9 @@ def Text(*, max_length: Optional[int] = None) -> Any:  # noqa: N802
 
 
 # Numeric Types
-def Integer() -> Any:  # noqa: N802
-    """32-bit integer (-2,147,483,648 to 2,147,483,647).
-
-    Example:
-        class Product(BaseModel):
-            quantity: Integer()
-            id: Integer()
-    """
-    db_type = _INTEGER()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
 
 
-def BigInt() -> Any:  # noqa: N802
-    """64-bit integer.
-
-    Example:
-        class Transaction(BaseModel):
-            id: BigInt()
-            reference_id: BigInt()
-    """
-    db_type = _BIGINT()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
-
-
-def SmallInt() -> Any:  # noqa: N802
-    """16-bit integer (-32,768 to 32,767).
-
-    Example:
-        class Settings(BaseModel):
-            retry_count: SmallInt()
-            priority: SmallInt()
-    """
-    db_type = _SMALLINT()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
-
-
-def DecimalType(precision: int, scale: int) -> Any:  # noqa: N802
+def DecimalType(precision: int, scale: int) -> Any:
     """Fixed-point decimal number.
 
     Args:
@@ -156,7 +116,7 @@ def DecimalType(precision: int, scale: int) -> Any:  # noqa: N802
     return Annotated[Decimal, db_type]
 
 
-def Money() -> Any:  # noqa: N802
+def Money() -> Any:
     """Money type - alias for DECIMAL(19, 4).
 
     Example:
@@ -167,7 +127,7 @@ def Money() -> Any:  # noqa: N802
     return DecimalType(19, 4)
 
 
-def Float(*, precision: Optional[int] = None) -> Any:  # noqa: N802
+def Float(*, precision: Optional[int] = None) -> Any:
     """Floating-point number.
 
     Example:
@@ -181,7 +141,7 @@ def Float(*, precision: Optional[int] = None) -> Any:  # noqa: N802
     return Annotated[float, db_type]
 
 
-def Double() -> Any:  # noqa: N802
+def Double() -> Any:
     """Double precision floating-point.
 
     Example:
@@ -195,8 +155,190 @@ def Double() -> Any:  # noqa: N802
     return Annotated[float, db_type]
 
 
+# Constrained Numeric Types
+def Integer(
+    *,
+    min_value: Optional[int] = None,
+    max_value: Optional[int] = None,
+    multiple_of: Optional[int] = None,
+    positive: bool = False,
+    negative: bool = False,
+) -> Any:
+    """Integer with optional constraints.
+
+    When called without arguments, returns standard INTEGER.
+    With arguments, returns ConstrainedInteger.
+
+    Args:
+        min_value: Minimum allowed value
+        max_value: Maximum allowed value
+        multiple_of: Value must be divisible by this
+        positive: Shortcut for min_value=1
+        negative: Shortcut for max_value=-1
+
+    Example:
+        class Product(BaseModel):
+            id: Integer(positive=True)  # Same as PositiveInteger()
+            quantity: Integer(min_value=0)  # Same as NonNegativeInteger()
+            discount: Integer(min_value=0, max_value=100)
+            bulk_size: Integer(multiple_of=12)
+    """
+    # If no constraints, return standard INTEGER
+    if (
+        all(x is None for x in [min_value, max_value, multiple_of])
+        and not positive
+        and not negative
+    ):
+        db_type = _INTEGER()
+    else:
+        db_type = _ConstrainedInteger(
+            min_value=min_value,
+            max_value=max_value,
+            multiple_of=multiple_of,
+            positive=positive,
+            negative=negative,
+        )
+
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
+    return Annotated[int, db_type]
+
+
+def BigInt(
+    *,
+    min_value: Optional[int] = None,
+    max_value: Optional[int] = None,
+    multiple_of: Optional[int] = None,
+    positive: bool = False,
+    negative: bool = False,
+) -> Any:
+    """64-bit integer with optional constraints.
+
+    When called without arguments, returns standard BIGINT.
+    With arguments, returns ConstrainedBigInt.
+
+    Example:
+        class Transaction(BaseModel):
+            id: BigInt(positive=True)
+            amount_cents: BigInt(min_value=-1000000, max_value=1000000)
+    """
+    # If no constraints, return standard BIGINT
+    if (
+        all(x is None for x in [min_value, max_value, multiple_of])
+        and not positive
+        and not negative
+    ):
+        db_type = _BIGINT()
+    else:
+        db_type = _ConstrainedBigInt(
+            min_value=min_value,
+            max_value=max_value,
+            multiple_of=multiple_of,
+            positive=positive,
+            negative=negative,
+        )
+
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
+    return Annotated[int, db_type]
+
+
+def SmallInt(
+    *,
+    min_value: Optional[int] = None,
+    max_value: Optional[int] = None,
+    multiple_of: Optional[int] = None,
+    positive: bool = False,
+    negative: bool = False,
+) -> Any:
+    """16-bit integer with optional constraints.
+
+    When called without arguments, returns standard SMALLINT.
+    With arguments, returns ConstrainedSmallInt.
+
+    Example:
+        class Settings(BaseModel):
+            retry_count: SmallInt(min_value=0, max_value=10)
+            priority: SmallInt(positive=True)
+    """
+    # If no constraints, return standard SMALLINT
+    if (
+        all(x is None for x in [min_value, max_value, multiple_of])
+        and not positive
+        and not negative
+    ):
+        db_type = _SMALLINT()
+    else:
+        db_type = _ConstrainedSmallInt(
+            min_value=min_value,
+            max_value=max_value,
+            multiple_of=multiple_of,
+            positive=positive,
+            negative=negative,
+        )
+
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
+    return Annotated[int, db_type]
+
+
+def PositiveInteger() -> Any:
+    """Integer that only accepts positive values (> 0).
+
+    Example:
+        class User(BaseModel):
+            id: PositiveInteger()
+            age: PositiveInteger()
+    """
+    db_type = _PositiveInteger()
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
+    return Annotated[int, db_type]
+
+
+def NegativeInteger() -> Any:
+    """Integer that only accepts negative values (< 0).
+
+    Example:
+        class Account(BaseModel):
+            overdraft_limit: NegativeInteger()
+    """
+    db_type = _NegativeInteger()
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
+    return Annotated[int, db_type]
+
+
+def NonNegativeInteger() -> Any:
+    """Integer that accepts zero and positive values (>= 0).
+
+    Example:
+        class Product(BaseModel):
+            quantity: NonNegativeInteger()
+            views: NonNegativeInteger()
+    """
+    db_type = _NonNegativeInteger()
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
+    return Annotated[int, db_type]
+
+
+def NonPositiveInteger() -> Any:
+    """Integer that accepts zero and negative values (<= 0).
+
+    Example:
+        class GameScore(BaseModel):
+            penalty_points: NonPositiveInteger()
+            debt: NonPositiveInteger()
+    """
+    db_type = _NonPositiveInteger()
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
+    return Annotated[int, db_type]
+
+
 # Temporal Types
-def Date() -> Any:  # noqa: N802
+def Date() -> Any:
     """Date type (year, month, day).
 
     Example:
@@ -210,7 +352,7 @@ def Date() -> Any:  # noqa: N802
     return Annotated[date, db_type]
 
 
-def Time(*, precision: int = 6) -> Any:  # noqa: N802
+def Time(*, precision: int = 6) -> Any:
     """Time type with optional fractional seconds.
 
     Example:
@@ -224,7 +366,7 @@ def Time(*, precision: int = 6) -> Any:  # noqa: N802
     return Annotated[time, db_type]
 
 
-def Timestamp(*, precision: int = 6, with_timezone: bool = True) -> Any:  # noqa: N802
+def Timestamp(*, precision: int = 6, with_timezone: bool = True) -> Any:
     """Timestamp with optional timezone.
 
     Example:
@@ -239,7 +381,7 @@ def Timestamp(*, precision: int = 6, with_timezone: bool = True) -> Any:  # noqa
     return Annotated[datetime, db_type]
 
 
-def DateTime(*, precision: int = 6) -> Any:  # noqa: N802
+def DateTime(*, precision: int = 6) -> Any:
     """DateTime type - alias for Timestamp without timezone.
 
     Example:
@@ -251,7 +393,7 @@ def DateTime(*, precision: int = 6) -> Any:  # noqa: N802
 
 
 # Boolean Type
-def Boolean() -> Any:  # noqa: N802
+def Boolean() -> Any:
     """Boolean type that accepts various representations.
 
     Example:
@@ -266,7 +408,7 @@ def Boolean() -> Any:  # noqa: N802
 
 
 # Binary Types
-def Binary(length: int) -> Any:  # noqa: N802
+def Binary(length: int) -> Any:
     """Fixed-length binary data.
 
     Example:
@@ -280,7 +422,7 @@ def Binary(length: int) -> Any:  # noqa: N802
     return Annotated[bytes, db_type]
 
 
-def VarBinary(max_length: int) -> Any:  # noqa: N802
+def VarBinary(max_length: int) -> Any:
     """Variable-length binary data.
 
     Example:
@@ -294,7 +436,7 @@ def VarBinary(max_length: int) -> Any:  # noqa: N802
     return Annotated[bytes, db_type]
 
 
-def Blob(*, max_length: Optional[int] = None) -> Any:  # noqa: N802
+def Blob(*, max_length: Optional[int] = None) -> Any:
     """Binary Large Object.
 
     Example:
@@ -368,6 +510,10 @@ __all__ = [
     "Int",
     "Integer",
     "Money",
+    "NegativeInteger",
+    "NonNegativeInteger",
+    "NonPositiveInteger",
+    "PositiveInteger",
     "SmallInt",
     "String",
     "Text",
