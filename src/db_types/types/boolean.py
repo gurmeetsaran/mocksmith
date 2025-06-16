@@ -1,6 +1,6 @@
 """Boolean database type."""
 
-from typing import Any, Type, Union
+from typing import Any, Union
 
 from db_types.types.base import DBType
 
@@ -13,7 +13,7 @@ class BOOLEAN(DBType[bool]):
         return "BOOLEAN"
 
     @property
-    def python_type(self) -> Type[bool]:
+    def python_type(self) -> type[bool]:
         return bool
 
     def validate(self, value: Any) -> None:

@@ -2,7 +2,7 @@
 
 # pyright: reportOptionalMemberAccess=false
 
-from typing import Any, Callable, Dict, Type
+from typing import Any, Callable
 
 try:
     from pydantic import BaseModel
@@ -24,7 +24,7 @@ if PYDANTIC_AVAILABLE and core_schema is not None:
 
         @classmethod
         def __get_pydantic_core_schema__(
-            cls, source: Type[Any], handler: Callable[[Any], core_schema.CoreSchema]
+            cls, source: type[Any], handler: Callable[[Any], core_schema.CoreSchema]
         ) -> core_schema.CoreSchema:
             """Generate Pydantic core schema for DBType validation."""
             if hasattr(source, "__args__") and len(source.__args__) > 0:
@@ -57,7 +57,7 @@ if PYDANTIC_AVAILABLE and core_schema is not None:
             self.db_type = db_type
 
         def __get_pydantic_core_schema__(
-            self, source: Type[Any], handler: Callable[[Any], core_schema.CoreSchema]
+            self, source: type[Any], handler: Callable[[Any], core_schema.CoreSchema]
         ) -> core_schema.CoreSchema:
             """Generate Pydantic core schema."""
 
@@ -85,7 +85,7 @@ if PYDANTIC_AVAILABLE and core_schema is not None:
             validate_assignment = True
 
         @classmethod
-        def get_db_types(cls) -> Dict[str, DBType]:
+        def get_db_types(cls) -> dict[str, DBType]:
             """Get all database type fields in the model.
 
             Returns:
@@ -101,7 +101,7 @@ if PYDANTIC_AVAILABLE and core_schema is not None:
                             break
             return db_types
 
-        def to_sql_dict(self) -> Dict[str, Any]:
+        def to_sql_dict(self) -> dict[str, Any]:
             """Convert model to dictionary with SQL-compatible values.
 
             Returns:

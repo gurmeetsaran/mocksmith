@@ -73,173 +73,62 @@ pip install "python-db-types[pydantic]"
 ### Clean Interface (Works with both Pydantic and Dataclasses!) ✨
 
 ```python
-from pydantic import BaseModel, Field
-from typing import Optional
-from decimal import Decimal
-from datetime import date
-from db_types import Varchar, Integer, Date, Boolean, Money, Text, Timestamp
+from pydantic import BaseModel
+from db_types import Varchar, Integer, Boolean, Money
 
 class User(BaseModel):
-    # Required fields
     id: Integer()
-    username: Varchar(30)
+    username: Varchar(50)
     email: Varchar(255)
-
-    # Optional fields (use Optional[...])
-    bio: Optional[Text(max_length=1000)] = None
-    phone: Optional[Varchar(20)] = None
-
-    # Fields with defaults
     is_active: Boolean() = True
-    balance: Money() = Decimal("0.00")
-    joined_date: Date() = Field(default_factory=date.today)
-    last_login: Optional[Timestamp()] = None
+    balance: Money() = "0.00"
 
 # Automatic validation and type conversion
 user = User(
     id=1,
     username="john_doe",
     email="john@example.com",
-    bio="Python developer",
-    is_active="yes",  # Converts to True
-    balance="1234.56",  # Converts to Decimal
-    joined_date="2023-01-15",  # Converts to date
-    last_login="2023-12-15T10:30:00Z"  # Converts to datetime
+    is_active="yes",      # Converts to True
+    balance="1234.56"     # Converts to Decimal('1234.56')
 )
-
-print(user.balance)  # Decimal('1234.56')
-print(type(user.balance))  # <class 'decimal.Decimal'>
-print(user.is_active)  # True
-
-# Validation example
-try:
-    invalid_user = User(
-        id=1,
-        username="x" * 31,  # Too long! Exceeds Varchar(30)
-        email="test@example.com",
-        bio="Test",
-        is_active=True,
-        balance="99.99",
-        joined_date="2023-01-01",
-        last_login="2023-01-01T00:00:00Z"
-    )
-except Exception as e:
-    print(f"Validation error: {e}")
 ```
 
-### With Dataclasses (Same Clean Syntax!)
+The same syntax works with dataclasses! See full examples:
+- [`examples/pydantic_example.py`](examples/pydantic_example.py) - Complete Pydantic example
+- [`examples/dataclass_example.py`](examples/dataclass_example.py) - Complete dataclass example
+
+### Common Use Cases
+
+**E-commerce Product Model:**
 
 ```python
-from dataclasses import dataclass
-from datetime import date
-from decimal import Decimal
-from typing import Optional
+from pydantic import BaseModel
+from db_types import Varchar, Text, Money, Boolean, Timestamp
 
-from db_types import Varchar, Integer, Date, Boolean, Money, Text
-from db_types.dataclass_integration import validate_dataclass
-
-@validate_dataclass
-@dataclass
-class User:
-    # Required fields
-    id: Integer()
-    username: Varchar(50)
-    email: Varchar(100)
-
-    # Optional fields
-    bio: Optional[Text()] = None
-    age: Optional[Integer()] = None
-
-    # Fields with defaults
-    active: Boolean() = True
-    balance: Money() = Decimal("0.00")
-    joined_date: Date() = date.today()
-
-# Create a user - validation happens automatically
-user = User(
-    id=1,
-    username="john_doe",
-    email="john@example.com",
-    bio="Python developer",
-    age=30,
-    active="yes",  # Automatic conversion to True
-    balance="1250.50",  # Automatic conversion to Decimal
-    joined_date="2023-01-15"  # Automatic conversion to date
-)
-
-print(user.active)  # True
-print(type(user.balance))  # <class 'decimal.Decimal'>
-
-# This will raise ValueError
-try:
-    invalid_user = User(
-        id=1,
-        username="x" * 51,  # Too long! VARCHAR(50) limit exceeded
-        email="test@example.com"
-    )
-except ValueError as e:
-    print(f"Validation error: {e}")
-    # Output: Validation error: String length 51 exceeds maximum 50
-
-# Convert to SQL-compatible dictionary
-sql_data = user.to_sql_dict()
-print(sql_data)
-# Output: {'id': 1, 'username': 'john_doe', 'email': 'john@example.com',
-#          'bio': 'Python developer', 'age': 30, 'active': True,
-#          'balance': '1250.50', 'joined_date': '2023-01-15'}
-```
-
-### Pydantic Model Examples
-
-```python
-from pydantic import BaseModel, Field
-from typing import Optional
-from db_types import Varchar, Money, Boolean, Timestamp, Text, Integer
-
-# E-commerce Product Model
 class Product(BaseModel):
     sku: Varchar(20)
     name: Varchar(100)
     description: Text()
     price: Money()
-    cost: Optional[Money()] = None
     in_stock: Boolean() = True
-    created_at: Timestamp() = Field(default_factory=datetime.now)
-
-    @property
-    def profit_margin(self) -> Optional[Decimal]:
-        if self.cost and self.price:
-            return (self.price - self.cost) / self.price * 100
-        return None
-
-# Create product with validation
-product = Product(
-    sku="LAPTOP-001",
-    name="Business Laptop",
-    description="High-performance laptop",
-    price="1299.99",  # Automatically converts to Decimal
-    cost="850.00"
-)
-
-print(f"Profit margin: {product.profit_margin:.2f}%")  # 34.62%
-
-# User Account Model with defaults
-class UserAccount(BaseModel):
-    user_id: Integer()
-    email: Varchar(255)
-    username: Varchar(30)
-    is_active: Boolean() = True
-    is_verified: Boolean() = False
-    balance: Money() = Decimal("0.00")
-    created_at: Timestamp() = Field(default_factory=datetime.now)
-
-    class Config:
-        # JSON serialization settings
-        json_encoders = {
-            Decimal: str,
-            datetime: lambda v: v.isoformat()
-        }
+    created_at: Timestamp()
 ```
+
+**User Account with Constraints:**
+
+```python
+from db_types import Integer, PositiveInteger, NonNegativeInteger
+
+class UserAccount(BaseModel):
+    user_id: PositiveInteger()
+    age: Integer(min_value=13, max_value=120)
+    balance_cents: NonNegativeInteger()
+```
+
+See more examples:
+- [`examples/`](examples/) - All example files
+- [`examples/constraints_example.py`](examples/constraints_example.py) - Constraint examples
+- [`examples/clean_constraints_example.py`](examples/clean_constraints_example.py) - Enhanced API examples
 
 ## Clean Annotation Interface
 
@@ -296,6 +185,15 @@ class Product:
 - `Money()` → Alias for Decimal(19, 4)
 - `Float()` → Floating point
 - `Double()` → Double precision
+
+**Constrained Numeric Types:**
+- `PositiveInteger()` → Integer > 0
+- `NegativeInteger()` → Integer < 0
+- `NonNegativeInteger()` → Integer ≥ 0
+- `NonPositiveInteger()` → Integer ≤ 0
+- `ConstrainedInteger(min_value=x, max_value=y, multiple_of=z)` → Custom constraints
+- `ConstrainedBigInt(...)` → Constrained 64-bit integer
+- `ConstrainedSmallInt(...)` → Constrained 16-bit integer
 
 **Temporal Types:**
 - `Date()` → Date only
@@ -415,7 +313,18 @@ class StrictModel(BaseModel):
 
 ## Working Examples
 
-### Example 1: E-commerce Order System
+For complete working examples, see the [`examples/`](examples/) directory:
+
+- **Basic Usage:**
+  - [`dataclass_example.py`](examples/dataclass_example.py) - Dataclass integration
+  - [`pydantic_example.py`](examples/pydantic_example.py) - Pydantic integration
+
+- **Constrained Types:**
+  - [`constraints_example.py`](examples/constraints_example.py) - Dataclass constraints
+  - [`pydantic_constraints_example.py`](examples/pydantic_constraints_example.py) - Pydantic constraints
+  - [`clean_constraints_example.py`](examples/clean_constraints_example.py) - Enhanced API demo
+
+### Example: E-commerce Order System
 
 ```python
 from dataclasses import dataclass
@@ -467,162 +376,10 @@ order = Order(
 
 # Convert to SQL-ready format
 print(order.to_sql_dict())
-# Output: {
-#     'order_id': 1001,
-#     'customer_id': 1,
-#     'order_date': '2023-12-15T14:30:00',
-#     'total_amount': '299.99',
-#     'status': 'pending',
-#     'notes': 'Rush delivery requested'
-# }
 ```
 
-### Example 2: Financial Transaction System
-
-```python
-from dataclasses import dataclass
-from typing import Annotated
-from datetime import datetime
-from decimal import Decimal
-
-from db_types import *
-from db_types.dataclass_integration import validate_dataclass
-
-@validate_dataclass
-@dataclass
-class Account:
-    account_number: Annotated[str, CHAR(10)]  # Fixed-length account number
-    balance: Annotated[Decimal, DECIMAL(15, 2)]  # Up to 15 digits, 2 decimal places
-    currency: Annotated[str, CHAR(3)]  # ISO currency code
-    is_active: Annotated[bool, BOOLEAN()]
-
-@validate_dataclass
-@dataclass
-class Transaction:
-    transaction_id: Annotated[int, BIGINT()]
-    from_account: Annotated[str, CHAR(10)]
-    to_account: Annotated[str, CHAR(10)]
-    amount: Annotated[Decimal, DECIMAL(15, 2)]
-    timestamp: Annotated[datetime, TIMESTAMP(precision=3)]  # Millisecond precision
-    description: Annotated[str, VARCHAR(200)]
-
-# Example usage
-account = Account(
-    account_number="ACC1234567",  # Will be padded to 10 chars
-    balance=Decimal("10000.50"),
-    currency="USD",
-    is_active=True
-)
-
-transaction = Transaction(
-    transaction_id=789456123,
-    from_account="ACC1234567",
-    to_account="ACC9876543",
-    amount=Decimal("500.00"),
-    timestamp=datetime(2023, 12, 15, 10, 30, 45, 123000),
-    description="Monthly rent payment"
-)
-
-# Validate specific constraints
-try:
-    invalid_transaction = Transaction(
-        transaction_id=1,
-        from_account="SHORT",  # Will be padded to 10 chars
-        to_account="ACC9876543",
-        amount=Decimal("1234567890123.99"),  # Exceeds DECIMAL(15,2)
-        timestamp=datetime.now(),
-        description="Test"
-    )
-except ValueError as e:
-    print(f"Validation failed: {e}")
-```
-
-### Example 3: User Authentication System
-
-```python
-from dataclasses import dataclass
-from typing import Annotated, Optional
-from datetime import datetime
-import hashlib
-
-from db_types import *
-from db_types.dataclass_integration import validate_dataclass
-
-@validate_dataclass
-@dataclass
-class UserAuth:
-    user_id: Annotated[int, INTEGER()]
-    username: Annotated[str, VARCHAR(30)]
-    email: Annotated[str, VARCHAR(255)]
-    password_hash: Annotated[str, CHAR(64)]  # SHA-256 hash
-    is_verified: Annotated[bool, BOOLEAN()]
-    last_login: Annotated[Optional[datetime], TIMESTAMP()]
-    failed_attempts: Annotated[int, SMALLINT()]
-    metadata: Annotated[Optional[bytes], BLOB()]
-
-def hash_password(password: str) -> str:
-    """Create SHA-256 hash of password"""
-    return hashlib.sha256(password.encode()).hexdigest()
-
-# Create a new user
-user = UserAuth(
-    user_id=1,
-    username="john_doe",
-    email="john@example.com",
-    password_hash=hash_password("secure_password123"),
-    is_verified=True,
-    last_login=datetime.now(),
-    failed_attempts=0,
-    metadata=b'{"preferences": "dark_mode"}'
-)
-
-# Test various boolean representations
-user2 = UserAuth(
-    user_id=2,
-    username="jane_doe",
-    email="jane@example.com",
-    password_hash=hash_password("another_password"),
-    is_verified="yes",  # Automatically converted to True
-    last_login=None,
-    failed_attempts=0,
-    metadata=None
-)
-
-print(user2.is_verified)  # Output: True
-```
-
-### Example 4: Using with SQL Testing Library
-
-```python
-from dataclasses import dataclass
-from typing import Annotated
-from datetime import date
-from decimal import Decimal
-
-from db_types import *
-from db_types.dataclass_integration import validate_dataclass
-
-# Define your table schema
-@validate_dataclass
-@dataclass
-class Employee:
-    id: Annotated[int, INTEGER()]
-    name: Annotated[str, VARCHAR(100)]
-    department: Annotated[str, VARCHAR(50)]
-    salary: Annotated[Decimal, DECIMAL(10, 2)]
-    hire_date: Annotated[date, DATE()]
-    is_active: Annotated[bool, BOOLEAN()]
-
-# This can be used with sql-testing-library to create mock tables
-employees = [
-    Employee(1, "Alice Johnson", "Engineering", Decimal("95000.00"), date(2020, 1, 15), True),
-    Employee(2, "Bob Smith", "Sales", Decimal("75000.00"), date(2021, 3, 20), True),
-    Employee(3, "Charlie Brown", "HR", Decimal("65000.00"), date(2019, 11, 1), False),
-]
-
-# Convert to SQL-compatible format for insertion
-sql_data = [emp.to_sql_dict() for emp in employees]
-```
+For more complete examples including financial systems, authentication, and SQL testing integration,
+see the [`examples/`](examples/) directory.
 
 ## Advanced Features
 
@@ -662,6 +419,56 @@ bool_type.deserialize("false")  # False
 bool_type.deserialize(0)        # False
 ```
 
+### Constrained Numeric Types
+
+The library provides specialized numeric types with built-in constraints for common validation scenarios:
+
+```python
+from db_types import Integer, PositiveInteger, NonNegativeInteger
+
+# Enhanced Integer functions - no constraints = standard type
+id: Integer()                    # Standard 32-bit integer
+quantity: Integer(min_value=0)   # With constraints (same as NonNegativeInteger)
+discount: Integer(min_value=0, max_value=100)  # Percentage 0-100
+price: Integer(positive=True)    # Same as PositiveInteger()
+
+# Specialized constraint types
+id: PositiveInteger()            # > 0
+quantity: NonNegativeInteger()   # >= 0
+```
+
+For complete examples with both dataclasses and Pydantic, see:
+- [`examples/constraints_example.py`](examples/constraints_example.py) - Dataclass examples
+- [`examples/pydantic_constraints_example.py`](examples/pydantic_constraints_example.py) - Pydantic examples
+
+**Available Constraint Options:**
+
+```python
+# Enhanced Integer functions - no constraints = standard type
+Integer()                   # Standard 32-bit integer
+Integer(min_value=0)        # With constraints
+Integer(positive=True)      # Shortcut for > 0
+BigInt()                    # Standard 64-bit integer
+BigInt(min_value=0, max_value=1000000)  # With constraints
+SmallInt()                  # Standard 16-bit integer
+SmallInt(multiple_of=10)    # With constraints
+
+# Specialized constraint types
+PositiveInteger()           # > 0
+NegativeInteger()           # < 0
+NonNegativeInteger()        # >= 0
+NonPositiveInteger()        # <= 0
+
+# Full constraint options
+Integer(
+    min_value=10,          # Minimum allowed value
+    max_value=100,         # Maximum allowed value
+    multiple_of=5,         # Must be divisible by this
+    positive=True,         # Shortcut for min_value=1
+    negative=True,         # Shortcut for max_value=-1
+)
+```
+
 ## Integration with SQL Testing Library
 
 This library is designed to work seamlessly with `sql-testing-library` for creating mock database tables with proper type validation:
@@ -677,29 +484,54 @@ create_table("employees", sql_data)  # Data is already validated!
 
 ## Development
 
+1. Clone the repository:
 ```bash
-# Clone the repository
 git clone https://github.com/yourusername/python-db-types.git
 cd python-db-types
-
-# Install in development mode
-pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Run specific test file
-pytest tests/test_string_types.py -v
-
-# Type checking
-mypy src
-
-# Linting
-ruff check src tests
-
-# Run the example
-python examples/basic_usage.py
 ```
+
+2. Install Poetry (if not already installed):
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+3. Install dependencies:
+```bash
+poetry install
+```
+
+4. Set up pre-commit hooks:
+```bash
+poetry run pre-commit install
+```
+
+5. Run tests:
+```bash
+make test
+```
+
+### Development Commands
+
+- `make lint` - Run linting (ruff + pyright)
+- `make format` - Format code (black + isort + ruff fix)
+- `make test` - Run tests
+- `make test-cov` - Run tests with coverage
+- `make check-all` - Run all checks (lint + format check + tests)
+- `make check-consistency` - Verify pre-commit, Makefile, and CI are in sync
+
+### Ensuring Consistency
+
+To ensure your development environment matches CI/CD:
+
+```bash
+# Check that pre-commit hooks match Makefile and GitHub Actions
+make check-consistency
+```
+
+This will verify that all tools (black, isort, ruff, pyright) are configured consistently across:
+- Pre-commit hooks (`.pre-commit-config.yaml`)
+- Makefile commands
+- GitHub Actions workflows
 
 ## License
 

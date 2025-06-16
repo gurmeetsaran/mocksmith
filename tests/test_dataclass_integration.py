@@ -1,24 +1,17 @@
 """Tests for dataclass integration."""
 
-import sys
 from dataclasses import dataclass
-from typing import Optional
+from datetime import date
+from typing import Annotated, Optional
 
 import pytest
-
-if sys.version_info >= (3, 9):
-    from typing import Annotated
-else:
-    from typing_extensions import Annotated
-
-from datetime import date
 
 from db_types import BOOLEAN, DATE, INTEGER, VARCHAR
 from db_types.dataclass_integration import DBDataclass, validate_dataclass
 
-# Skip validation tests on Python 3.8 due to descriptor initialization issues
+# All Python versions now support validation (3.9+)
 skip_validation_on_py38 = pytest.mark.skipif(
-    sys.version_info < (3, 9), reason="Dataclass validation doesn't work properly on Python 3.8"
+    False, reason="All supported Python versions (3.9+) support dataclass validation"
 )
 
 

@@ -1,7 +1,7 @@
 {
   "include": ["src", "tests", "examples"],
   "exclude": ["**/__pycache__", "**/.pytest_cache", "venv", ".venv"],
-  "pythonVersion": "3.8",
+  "pythonVersion": "3.9",
   "pythonPlatform": "All",
   "typeCheckingMode": "basic",
   "reportMissingImports": true,

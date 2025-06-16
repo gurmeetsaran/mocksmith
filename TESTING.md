@@ -2,9 +2,7 @@
 
 ## Test Coverage
 
-The project currently maintains a test coverage of ~59-66%. The coverage varies by Python version:
-- Python 3.9+: ~66% coverage (all tests run)
-- Python 3.8: ~59% coverage (some dataclass tests skipped)
+The project currently maintains a test coverage of ~66%. All tests run on Python 3.9 and above.
 
 The main areas with lower coverage are:
 
@@ -24,7 +22,6 @@ To properly test these annotations, you would need to:
 
 3. **Integration-Heavy Code**: Much of the code is designed to integrate with external libraries (Pydantic, dataclasses) making isolated unit testing more complex.
 
-4. **Python Version Limitations**: The dataclass integration validation doesn't work properly on Python 3.8 due to descriptor initialization order issues. Tests that rely on validation are skipped on Python 3.8.
 
 ## Running Tests
 

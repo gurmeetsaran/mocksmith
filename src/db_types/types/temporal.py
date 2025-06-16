@@ -1,7 +1,7 @@
 """Temporal database types."""
 
 from datetime import date, datetime, time
-from typing import Any, Type, Union
+from typing import Any, Union
 
 from db_types.types.base import DBType
 
@@ -14,7 +14,7 @@ class DATE(DBType[date]):
         return "DATE"
 
     @property
-    def python_type(self) -> Type[date]:
+    def python_type(self) -> type[date]:
         return date
 
     def validate(self, value: Any) -> None:
@@ -64,7 +64,7 @@ class TIME(DBType[time]):
         return "TIME"
 
     @property
-    def python_type(self) -> Type[time]:
+    def python_type(self) -> type[time]:
         return time
 
     def validate(self, value: Any) -> None:
@@ -124,7 +124,7 @@ class TIMESTAMP(DBType[datetime]):
         return f"TIMESTAMP{tz_suffix}"
 
     @property
-    def python_type(self) -> Type[datetime]:
+    def python_type(self) -> type[datetime]:
         return datetime
 
     def validate(self, value: Any) -> None:

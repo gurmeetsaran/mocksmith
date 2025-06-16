@@ -1,6 +1,6 @@
 """Binary database types."""
 
-from typing import Any, Optional, Type, Union
+from typing import Any, Optional, Union
 
 from db_types.types.base import DBType
 
@@ -19,7 +19,7 @@ class BINARY(DBType[bytes]):
         return f"BINARY({self.length})"
 
     @property
-    def python_type(self) -> Type[bytes]:
+    def python_type(self) -> type[bytes]:
         return bytes
 
     def validate(self, value: Any) -> None:
@@ -84,7 +84,7 @@ class VARBINARY(DBType[bytes]):
         return f"VARBINARY({self.max_length})"
 
     @property
-    def python_type(self) -> Type[bytes]:
+    def python_type(self) -> type[bytes]:
         return bytes
 
     def validate(self, value: Any) -> None:
@@ -144,7 +144,7 @@ class BLOB(DBType[bytes]):
         return "BLOB"
 
     @property
-    def python_type(self) -> Type[bytes]:
+    def python_type(self) -> type[bytes]:
         return bytes
 
     def validate(self, value: Any) -> None:

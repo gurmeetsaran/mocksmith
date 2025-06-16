@@ -1,14 +1,8 @@
 """Tests for Pydantic integration."""
 
-import sys
-from typing import Optional
+from typing import Annotated, Optional
 
 import pytest
-
-if sys.version_info >= (3, 9):
-    from typing import Annotated
-else:
-    from typing_extensions import Annotated
 
 from db_types import BOOLEAN, DATE, INTEGER, VARCHAR
 from db_types.pydantic_integration import PYDANTIC_AVAILABLE, DBModel, DBTypeValidator
