@@ -6,12 +6,23 @@ from db_types.types.constraints import (
     ConstrainedBigInt,
     ConstrainedInteger,
     ConstrainedSmallInt,
+    ConstrainedTinyInt,
     NegativeInteger,
     NonNegativeInteger,
     NonPositiveInteger,
     PositiveInteger,
 )
-from db_types.types.numeric import BIGINT, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, REAL, SMALLINT
+from db_types.types.numeric import (
+    BIGINT,
+    DECIMAL,
+    DOUBLE,
+    FLOAT,
+    INTEGER,
+    NUMERIC,
+    REAL,
+    SMALLINT,
+    TINYINT,
+)
 from db_types.types.string import CHAR, TEXT, VARCHAR
 from db_types.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
 
@@ -61,6 +72,11 @@ class TestNumericSQLTypes:
         """Test SMALLINT SQL type generation."""
         smallint = SMALLINT()
         assert smallint.sql_type == "SMALLINT"
+
+    def test_tinyint_sql_type(self):
+        """Test TINYINT SQL type generation."""
+        tinyint = TINYINT()
+        assert tinyint.sql_type == "TINYINT"
 
     def test_decimal_sql_type(self):
         """Test DECIMAL SQL type generation."""
@@ -262,6 +278,20 @@ class TestConstrainedSQLTypes:
         # Negative shortcut
         negative = ConstrainedSmallInt(negative=True)
         assert negative.sql_type == "SMALLINT CHECK (<= -1)"
+
+    def test_constrained_tinyint_sql_types(self):
+        """Test ConstrainedTinyInt SQL types."""
+        # Basic (no constraints)
+        basic = ConstrainedTinyInt()
+        assert basic.sql_type == "TINYINT"
+
+        # With constraints
+        constrained = ConstrainedTinyInt(min_value=-10, max_value=10, multiple_of=5)
+        assert constrained.sql_type == "TINYINT CHECK (>= -10 AND <= 10 AND % 5 = 0)"
+
+        # Positive shortcut
+        positive = ConstrainedTinyInt(positive=True)
+        assert positive.sql_type == "TINYINT CHECK (>= 1)"
 
 
 class TestComplexSQLTypes:

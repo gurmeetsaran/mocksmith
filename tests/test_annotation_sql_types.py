@@ -22,6 +22,7 @@ from db_types import (
     Text,
     Time,
     Timestamp,
+    TinyInt,
     VarBinary,
     Varchar,
 )
@@ -108,6 +109,18 @@ class TestAnnotationNumericSQLTypes:
         annotation_mult = SmallInt(multiple_of=5)
         db_type_mult = get_db_type_from_annotation(annotation_mult)
         assert db_type_mult.sql_type == "SMALLINT CHECK (% 5 = 0)"
+
+    def test_tinyint_annotation_sql_types(self):
+        """Test TinyInt annotation SQL types."""
+        # Standard
+        annotation = TinyInt()
+        db_type = get_db_type_from_annotation(annotation)
+        assert db_type.sql_type == "TINYINT"
+
+        # With constraints
+        annotation_range = TinyInt(min_value=0, max_value=100)
+        db_type_range = get_db_type_from_annotation(annotation_range)
+        assert db_type_range.sql_type == "TINYINT CHECK (>= 0 AND <= 100)"
 
     def test_money_annotation_sql_type(self):
         """Test Money annotation SQL type."""
