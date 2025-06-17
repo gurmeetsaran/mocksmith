@@ -111,6 +111,41 @@ class SMALLINT(DBType[int]):
         return int(value)
 
 
+class TINYINT(DBType[int]):
+    """8-bit integer type."""
+
+    MIN_VALUE = -128
+    MAX_VALUE = 127
+
+    @property
+    def sql_type(self) -> str:
+        return "TINYINT"
+
+    @property
+    def python_type(self) -> type[int]:
+        return int
+
+    def validate(self, value: Any) -> None:
+        if value is None:
+            return
+
+        if not isinstance(value, (int, float)):
+            raise ValueError(f"Expected numeric value, got {type(value).__name__}")
+
+        if isinstance(value, float) and not value.is_integer():
+            raise ValueError(f"Expected integer value, got float {value}")
+
+        int_value = int(value)
+        if int_value < self.MIN_VALUE or int_value > self.MAX_VALUE:
+            raise ValueError(f"Value {int_value} out of range for TINYINT")
+
+    def _serialize(self, value: Union[int, float]) -> int:
+        return int(value)
+
+    def _deserialize(self, value: Any) -> int:
+        return int(value)
+
+
 class DECIMAL(DBType[Decimal]):
     """Fixed-point decimal type."""
 

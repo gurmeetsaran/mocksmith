@@ -11,6 +11,7 @@ from db_types import (
     NonPositiveInteger,
     PositiveInteger,
     SmallInt,
+    TinyInt,
 )
 from db_types.dataclass_integration import validate_dataclass
 
@@ -105,6 +106,25 @@ class RateLimitRule:
     penalty_multiplier: SmallInt(min_value=1, max_value=10)
 
 
+# Example 6: Configuration with TINYINT
+@validate_dataclass
+@dataclass
+class SystemConfig:
+    config_id: Integer(positive=True)
+
+    # Small bounded values perfect for TINYINT
+    log_level: TinyInt(min_value=0, max_value=5)  # 0=DEBUG, 5=CRITICAL
+    max_retries: TinyInt(min_value=0, max_value=10)
+    thread_pool_size: TinyInt(min_value=1, max_value=100)
+
+    # Percentage values
+    cpu_threshold_percent: TinyInt(min_value=0, max_value=100)
+    memory_threshold_percent: TinyInt(min_value=0, max_value=100)
+
+    # Priority levels
+    priority: TinyInt(min_value=-5, max_value=5)  # -5=lowest, 5=highest
+
+
 def main():
     """Demonstrate the clean API for constrained types."""
 
@@ -160,6 +180,19 @@ def main():
     )
     print(f"Character: {character}")
 
+    # Example 6: System configuration
+    print("\n=== System Configuration ===")
+    config = SystemConfig(
+        config_id=1,
+        log_level=2,  # INFO level
+        max_retries=3,
+        thread_pool_size=8,
+        cpu_threshold_percent=80,
+        memory_threshold_percent=90,
+        priority=0,  # Normal priority
+    )
+    print(f"Config: {config}")
+
     # Demonstrate validation errors
     print("\n=== Validation Errors ===")
 
@@ -202,6 +235,20 @@ def main():
         )
     except ValueError as e:
         print(f"Quantity error: {e}")
+
+    # Try invalid log level
+    try:
+        SystemConfig(
+            config_id=1,
+            log_level=10,  # Invalid: max is 5
+            max_retries=3,
+            thread_pool_size=8,
+            cpu_threshold_percent=80,
+            memory_threshold_percent=90,
+            priority=0,
+        )
+    except ValueError as e:
+        print(f"Log level error: {e}")
 
 
 if __name__ == "__main__":

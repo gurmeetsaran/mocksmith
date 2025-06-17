@@ -15,6 +15,7 @@ from db_types.types.boolean import BOOLEAN as _BOOLEAN
 from db_types.types.constraints import ConstrainedBigInt as _ConstrainedBigInt
 from db_types.types.constraints import ConstrainedInteger as _ConstrainedInteger
 from db_types.types.constraints import ConstrainedSmallInt as _ConstrainedSmallInt
+from db_types.types.constraints import ConstrainedTinyInt as _ConstrainedTinyInt
 from db_types.types.constraints import NegativeInteger as _NegativeInteger
 from db_types.types.constraints import NonNegativeInteger as _NonNegativeInteger
 from db_types.types.constraints import NonPositiveInteger as _NonPositiveInteger
@@ -25,6 +26,7 @@ from db_types.types.numeric import DOUBLE as _DOUBLE
 from db_types.types.numeric import FLOAT as _FLOAT
 from db_types.types.numeric import INTEGER as _INTEGER
 from db_types.types.numeric import SMALLINT as _SMALLINT
+from db_types.types.numeric import TINYINT as _TINYINT
 from db_types.types.string import CHAR as _CHAR
 from db_types.types.string import TEXT as _TEXT
 from db_types.types.string import VARCHAR as _VARCHAR
@@ -337,6 +339,45 @@ def NonPositiveInteger() -> Any:
     return Annotated[int, db_type]
 
 
+def TinyInt(
+    *,
+    min_value: Optional[int] = None,
+    max_value: Optional[int] = None,
+    multiple_of: Optional[int] = None,
+    positive: bool = False,
+    negative: bool = False,
+) -> Any:
+    """8-bit integer with optional constraints.
+
+    When called without arguments, returns standard TINYINT.
+    With arguments, returns ConstrainedTinyInt.
+
+    Example:
+        class Config(BaseModel):
+            flag_bits: TinyInt(min_value=0, max_value=127)  # Only positive values
+            level: TinyInt(min_value=-10, max_value=10)
+    """
+    # If no constraints, return standard TINYINT
+    if (
+        all(x is None for x in [min_value, max_value, multiple_of])
+        and not positive
+        and not negative
+    ):
+        db_type = _TINYINT()
+    else:
+        db_type = _ConstrainedTinyInt(
+            min_value=min_value,
+            max_value=max_value,
+            multiple_of=multiple_of,
+            positive=positive,
+            negative=negative,
+        )
+
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[int, _get_validator(db_type), db_type]
+    return Annotated[int, db_type]
+
+
 # Temporal Types
 def Date() -> Any:
     """Date type (year, month, day).
@@ -463,6 +504,7 @@ TEXT = Text
 INTEGER = Integer
 BIGINT = BigInt
 SMALLINT = SmallInt
+TINYINT = TinyInt
 DECIMAL = DecimalType
 FLOAT = Float
 DOUBLE = Double
@@ -494,6 +536,7 @@ __all__ = [
     "TEXT",
     "TIME",
     "TIMESTAMP",
+    "TINYINT",
     "VARBINARY",
     "VARCHAR",
     "BigInt",
@@ -519,6 +562,7 @@ __all__ = [
     "Text",
     "Time",
     "Timestamp",
+    "TinyInt",
     "VarBinary",
     "Varchar",
 ]

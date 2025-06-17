@@ -20,14 +20,30 @@ from db_types.annotations import (
     Text,
     Time,
     Timestamp,
+    TinyInt,
     VarBinary,
     Varchar,
 )
 from db_types.types.base import DBType
 from db_types.types.binary import BINARY, BLOB, VARBINARY
 from db_types.types.boolean import BOOLEAN
-from db_types.types.constraints import ConstrainedBigInt, ConstrainedInteger, ConstrainedSmallInt
-from db_types.types.numeric import BIGINT, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, REAL, SMALLINT
+from db_types.types.constraints import (
+    ConstrainedBigInt,
+    ConstrainedInteger,
+    ConstrainedSmallInt,
+    ConstrainedTinyInt,
+)
+from db_types.types.numeric import (
+    BIGINT,
+    DECIMAL,
+    DOUBLE,
+    FLOAT,
+    INTEGER,
+    NUMERIC,
+    REAL,
+    SMALLINT,
+    TINYINT,
+)
 from db_types.types.string import CHAR, TEXT, VARCHAR
 from db_types.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
 
@@ -49,6 +65,7 @@ __all__ = [
     "TEXT",
     "TIME",
     "TIMESTAMP",
+    "TINYINT",
     "VARBINARY",
     "VARCHAR",
     "BigInt",
@@ -59,6 +76,7 @@ __all__ = [
     "ConstrainedBigInt",
     "ConstrainedInteger",
     "ConstrainedSmallInt",
+    "ConstrainedTinyInt",
     "DBType",
     "Date",
     "DateTime",
@@ -74,6 +92,7 @@ __all__ = [
     "Text",
     "Time",
     "Timestamp",
+    "TinyInt",
     "VarBinary",
     "Varchar",
 ]

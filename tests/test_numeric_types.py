@@ -4,7 +4,17 @@ from decimal import Decimal
 
 import pytest
 
-from db_types.types.numeric import BIGINT, DECIMAL, DOUBLE, FLOAT, INTEGER, NUMERIC, REAL, SMALLINT
+from db_types.types.numeric import (
+    BIGINT,
+    DECIMAL,
+    DOUBLE,
+    FLOAT,
+    INTEGER,
+    NUMERIC,
+    REAL,
+    SMALLINT,
+    TINYINT,
+)
 
 
 class TestINTEGER:
@@ -138,3 +148,63 @@ class TestDOUBLE:
         double = DOUBLE()
         assert double.sql_type == "DOUBLE PRECISION"
         assert double.python_type is float
+
+
+class TestTINYINT:
+    """Test TINYINT type validation and conversion."""
+
+    def test_range(self):
+        """Test TINYINT accepts values within range."""
+        tinyint = TINYINT()
+
+        # Valid values
+        tinyint.validate(0)
+        tinyint.validate(127)  # Max
+        tinyint.validate(-128)  # Min
+        tinyint.validate(50)
+        tinyint.validate(-50)
+
+        # Edge cases
+        with pytest.raises(ValueError, match="out of range for TINYINT"):
+            tinyint.validate(128)  # Too large
+
+        with pytest.raises(ValueError, match="out of range for TINYINT"):
+            tinyint.validate(-129)  # Too small
+
+    def test_sql_type(self):
+        """Test TINYINT SQL type generation."""
+        tinyint = TINYINT()
+        assert tinyint.sql_type == "TINYINT"
+
+    def test_python_type(self):
+        """Test TINYINT Python type."""
+        tinyint = TINYINT()
+        assert tinyint.python_type is int
+
+    def test_float_conversion(self):
+        """Test TINYINT handles float values correctly."""
+        tinyint = TINYINT()
+
+        # Valid integer floats
+        tinyint.validate(10.0)
+        tinyint.validate(-10.0)
+
+        # Invalid non-integer floats
+        with pytest.raises(ValueError, match="Expected integer value"):
+            tinyint.validate(10.5)
+
+    def test_serialization(self):
+        """Test TINYINT serialization."""
+        tinyint = TINYINT()
+
+        assert tinyint.serialize(100) == 100
+        assert tinyint.serialize(100.0) == 100
+        assert tinyint.serialize(-50) == -50
+
+    def test_deserialization(self):
+        """Test TINYINT deserialization."""
+        tinyint = TINYINT()
+
+        assert tinyint.deserialize(100) == 100
+        assert tinyint.deserialize("100") == 100
+        assert tinyint.deserialize(-50) == -50

@@ -6,6 +6,7 @@ from db_types.types.constraints import (
     ConstrainedBigInt,
     ConstrainedInteger,
     ConstrainedSmallInt,
+    ConstrainedTinyInt,
     NegativeInteger,
     NonNegativeInteger,
     NonPositiveInteger,
@@ -308,3 +309,67 @@ class TestConstrainedSmallInt:
         # Min value too small
         with pytest.raises(ValueError, match="below SMALLINT minimum"):
             ConstrainedSmallInt(min_value=-40000)
+
+
+class TestConstrainedTinyInt:
+    """Test ConstrainedTinyInt type."""
+
+    def test_tinyint_range(self):
+        """Test that TINYINT range is respected."""
+        tiny = ConstrainedTinyInt()
+
+        # Valid TINYINT values
+        tiny.validate(127)  # Max TINYINT
+        tiny.validate(-128)  # Min TINYINT
+
+    def test_constraints_within_tinyint_range(self):
+        """Test constraints work within TINYINT range."""
+        tiny = ConstrainedTinyInt(min_value=-10, max_value=10, multiple_of=5)
+
+        # Valid values
+        tiny.validate(0)
+        tiny.validate(5)
+        tiny.validate(-5)
+        tiny.validate(10)
+        tiny.validate(-10)
+
+        # Invalid values
+        with pytest.raises(ValueError, match="not a multiple of"):
+            tiny.validate(3)
+
+        with pytest.raises(ValueError, match="exceeds maximum"):
+            tiny.validate(15)
+
+    def test_bounds_exceed_tinyint(self):
+        """Test error when bounds exceed TINYINT range."""
+        # Max value too large
+        with pytest.raises(ValueError, match="exceeds TINYINT maximum"):
+            ConstrainedTinyInt(max_value=200)
+
+        # Min value too small
+        with pytest.raises(ValueError, match="below TINYINT minimum"):
+            ConstrainedTinyInt(min_value=-200)
+
+    def test_positive_tinyint(self):
+        """Test positive TINYINT values."""
+        tiny = ConstrainedTinyInt(positive=True)
+        assert tiny.min_value == 1
+        assert tiny.max_value == 127
+
+        tiny.validate(1)
+        tiny.validate(100)
+
+        with pytest.raises(ValueError, match="below minimum"):
+            tiny.validate(0)
+
+    def test_negative_tinyint(self):
+        """Test negative TINYINT values."""
+        tiny = ConstrainedTinyInt(negative=True)
+        assert tiny.min_value == -128
+        assert tiny.max_value == -1
+
+        tiny.validate(-1)
+        tiny.validate(-100)
+
+        with pytest.raises(ValueError, match="exceeds maximum"):
+            tiny.validate(0)
