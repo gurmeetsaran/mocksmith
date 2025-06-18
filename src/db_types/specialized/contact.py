@@ -12,9 +12,7 @@ class Email(VARCHAR):
     def __init__(self, length: int = 255):
         super().__init__(length)
         # Basic email regex pattern
-        self.email_pattern = re.compile(
-            r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        )
+        self.email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
     def validate(self, value: Any) -> None:
         """Validate email format in addition to base validation."""
@@ -37,7 +35,7 @@ class Email(VARCHAR):
             username = fake.user_name()[:10]
             domain = fake.domain_name()
             email = f"{username}@{domain}"
-        return email[:self.length]
+        return email[: self.length]
 
     def __repr__(self) -> str:
         return f"Email(length={self.length})"
@@ -52,7 +50,7 @@ class PhoneNumber(VARCHAR):
     def _generate_mock(self, fake: Any) -> str:
         """Generate a phone number."""
         phone = fake.phone_number()
-        return phone[:self.length]
+        return phone[: self.length]
 
     def __repr__(self) -> str:
         return f"PhoneNumber(length={self.length})"
@@ -65,12 +63,13 @@ class URL(VARCHAR):
         super().__init__(length)
         # Basic URL pattern
         self.url_pattern = re.compile(
-            r'^https?://'  # http:// or https://
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-            r'localhost|'  # localhost...
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-            r'(?::\d+)?'  # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE
+            r"^https?://"  # http:// or https://
+            r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # domain...
+            r"localhost|"  # localhost...
+            r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
+            r"(?::\d+)?"  # optional port
+            r"(?:/?|[/?]\S+)$",
+            re.IGNORECASE,
         )
 
     def validate(self, value: Any) -> None:
@@ -88,7 +87,7 @@ class URL(VARCHAR):
     def _generate_mock(self, fake: Any) -> str:
         """Generate a valid URL."""
         url = fake.url()
-        return url[:self.length]
+        return url[: self.length]
 
     def __repr__(self) -> str:
         return f"URL(length={self.length})"

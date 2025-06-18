@@ -68,7 +68,7 @@ class BINARY(DBType[bytes]):
 
     def __repr__(self) -> str:
         return f"BINARY({self.length})"
-    
+
     def _generate_mock(self, fake: Any) -> bytes:
         """Generate mock binary data of exact length."""
         return fake.binary(length=self.length)
@@ -134,7 +134,7 @@ class VARBINARY(DBType[bytes]):
 
     def __repr__(self) -> str:
         return f"VARBINARY({self.max_length})"
-    
+
     def _generate_mock(self, fake: Any) -> bytes:
         """Generate mock binary data up to max_length."""
         # Generate a random length between 1 and max_length
@@ -203,7 +203,7 @@ class BLOB(DBType[bytes]):
         if self.max_length:
             return f"BLOB(max_length={self.max_length})"
         return "BLOB()"
-    
+
     def _generate_mock(self, fake: Any) -> bytes:
         """Generate mock binary data for BLOB."""
         if self.max_length:

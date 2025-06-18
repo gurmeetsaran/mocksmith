@@ -30,10 +30,10 @@ class State(VARCHAR):
         # Try to get state name, fallback to generic word if not available
         try:
             state = fake.state()
-            return state[:self.length]
+            return state[: self.length]
         except AttributeError:
             # Fallback for locales without states
-            return fake.city()[:self.length]
+            return fake.city()[: self.length]
 
     def __repr__(self) -> str:
         return f"State(length={self.length})"
@@ -48,7 +48,7 @@ class City(VARCHAR):
     def _generate_mock(self, fake: Any) -> str:
         """Generate a city name."""
         city = fake.city()
-        return city[:self.length]
+        return city[: self.length]
 
     def __repr__(self) -> str:
         return f"City(length={self.length})"
@@ -63,7 +63,7 @@ class ZipCode(VARCHAR):
     def _generate_mock(self, fake: Any) -> str:
         """Generate a postal code."""
         postcode = fake.postcode()
-        return postcode[:self.length]
+        return postcode[: self.length]
 
     def __repr__(self) -> str:
         return f"ZipCode(length={self.length})"

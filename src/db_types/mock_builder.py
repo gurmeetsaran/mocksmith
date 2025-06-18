@@ -1,25 +1,25 @@
 """Type-safe builder pattern for mock data generation."""
 
 from dataclasses import fields, is_dataclass
-from typing import Any, Dict, Generic, List, Type, TypeVar
+from typing import Any, Generic, TypeVar
 
 T = TypeVar("T")
 
 
 class MockBuilder(Generic[T]):
     """Type-safe builder for generating mock data with field overrides.
-    
+
     This builder provides IDE support and type checking for field overrides.
     """
 
-    def __init__(self, target_class: Type[T]):
+    def __init__(self, target_class: type[T]):
         """Initialize the builder for a specific class.
-        
+
         Args:
             target_class: The class to build mocks for
         """
         self._target_class = target_class
-        self._overrides: Dict[str, Any] = {}
+        self._overrides: dict[str, Any] = {}
 
         # Dynamically create setter methods for each field
         self._setup_fields()
@@ -41,11 +41,12 @@ class MockBuilder(Generic[T]):
 
     def _create_setter(self, field_name: str, field_type: type) -> None:
         """Create a setter method for a field.
-        
+
         Args:
             field_name: Name of the field
             field_type: Type of the field
         """
+
         def setter(self, value: Any) -> "MockBuilder[T]":
             """Set the value for this field."""
             self._overrides[field_name] = value
@@ -61,10 +62,10 @@ class MockBuilder(Generic[T]):
 
     def with_values(self, **kwargs: Any) -> "MockBuilder[T]":
         """Set multiple field values at once.
-        
+
         Args:
             **kwargs: Field names and values to set
-            
+
         Returns:
             Self for method chaining
         """
@@ -77,19 +78,20 @@ class MockBuilder(Generic[T]):
 
     def build(self) -> T:
         """Build the mock instance with all overrides applied.
-        
+
         Returns:
             Mock instance of the target class
         """
         from db_types.mock_factory import mock_factory
+
         return mock_factory(self._target_class, **self._overrides)
 
-    def build_many(self, count: int) -> List[T]:
+    def build_many(self, count: int) -> list[T]:
         """Build multiple mock instances with the same overrides.
-        
+
         Args:
             count: Number of instances to build
-            
+
         Returns:
             List of mock instances
         """
