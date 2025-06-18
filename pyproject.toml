@@ -49,9 +49,13 @@ pyright = "^1.1.363"
 
 [tool.poetry.extras]
 pydantic = ["pydantic"]
+mock = ["faker"]
 
 [tool.poetry.group.pydantic.dependencies]
 pydantic = "^2.0.0"
+
+[tool.poetry.group.mock.dependencies]
+faker = "^33.2.0"
 
 [tool.ruff]
 line-length = 100
