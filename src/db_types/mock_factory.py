@@ -1,23 +1,23 @@
 """Mock factory for automatic mock generation of dataclasses and Pydantic models."""
 
 from dataclasses import MISSING, fields, is_dataclass
-from typing import Any, Dict, Type, TypeVar, Union, get_args, get_origin
+from typing import Any, TypeVar, Union, get_args, get_origin
 
 from db_types.types.base import DBType
 
 T = TypeVar("T")
 
 
-def mock_factory(cls: Type[T], **overrides: Any) -> T:
+def mock_factory(cls: type[T], **overrides: Any) -> T:
     """Generate a mock instance of a class with all fields populated.
-    
+
     Args:
         cls: The class to generate a mock for
         **overrides: Field values to override in the mock
-        
+
     Returns:
         Mock instance with all fields populated
-        
+
     Raises:
         TypeError: If the class type is not supported
     """
@@ -28,12 +28,10 @@ def mock_factory(cls: Type[T], **overrides: Any) -> T:
     elif hasattr(cls, "__fields__"):  # Pydantic v1
         return _mock_pydantic_model_v1(cls, overrides)
     else:
-        raise TypeError(
-            f"mock_factory only supports dataclasses and Pydantic models, got {cls}"
-        )
+        raise TypeError(f"mock_factory only supports dataclasses and Pydantic models, got {cls}")
 
 
-def _mock_dataclass(cls: Type[T], overrides: Dict[str, Any]) -> T:
+def _mock_dataclass(cls: type[T], overrides: dict[str, Any]) -> T:
     """Generate mock for a dataclass."""
     mock_data = {}
 
@@ -56,7 +54,7 @@ def _mock_dataclass(cls: Type[T], overrides: Dict[str, Any]) -> T:
     return cls(**mock_data)
 
 
-def _mock_pydantic_model(cls: Type[T], overrides: Dict[str, Any]) -> T:
+def _mock_pydantic_model(cls: type[T], overrides: dict[str, Any]) -> T:
     """Generate mock for a Pydantic v2 model."""
     mock_data = {}
 
@@ -68,24 +66,24 @@ def _mock_pydantic_model(cls: Type[T], overrides: Dict[str, Any]) -> T:
 
         # Check for DBTypeValidator in metadata first
         mock_value = None
-        if hasattr(field_info, 'metadata'):
+        if hasattr(field_info, "metadata"):
             for metadata_item in field_info.metadata:
-                if hasattr(metadata_item, 'db_type') and isinstance(metadata_item.db_type, DBType):
+                if hasattr(metadata_item, "db_type") and isinstance(metadata_item.db_type, DBType):
                     mock_value = metadata_item.db_type.mock()
                     break
-        
+
         # If no DBType found in metadata, use standard generation
         if mock_value is None:
             # Get the field type from annotation
             field_type = field_info.annotation
             mock_value = _generate_field_mock(field_type, field_name)
-        
+
         mock_data[field_name] = mock_value
 
     return cls(**mock_data)
 
 
-def _mock_pydantic_model_v1(cls: Type[T], overrides: Dict[str, Any]) -> T:
+def _mock_pydantic_model_v1(cls: type[T], overrides: dict[str, Any]) -> T:
     """Generate mock for a Pydantic v1 model."""
     mock_data = {}
 
@@ -104,11 +102,11 @@ def _mock_pydantic_model_v1(cls: Type[T], overrides: Dict[str, Any]) -> T:
 
 def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0) -> Any:
     """Generate mock value for a field based on its type.
-    
+
     Args:
         field_type: The type annotation of the field
         field_name: The name of the field (used for smart generation)
-        
+
     Returns:
         Mock value appropriate for the field type
     """
@@ -120,9 +118,12 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
         args = get_args(field_type)
         if type(None) in args:
             # It's an Optional type
-            inner_type = next(arg for arg in args if arg != type(None))
+            inner_type = next(arg for arg in args if arg is not type(None))
             # For optional fields, sometimes return None
-            from faker import Faker
+            from faker import (  # pyright: ignore[reportMissingImports]  # pyright: ignore[reportMissingImports]
+                Faker,
+            )
+
             fake = Faker()
             if fake.boolean(chance_of_getting_true=80):  # 80% chance of having a value
                 return _generate_field_mock(inner_type, field_name, _depth + 1)
@@ -135,7 +136,7 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
         if args:
             actual_type = args[0]
             metadata = getattr(field_type, "__metadata__", ())
-            
+
             # Look for DBType in metadata
             for item in metadata:
                 if isinstance(item, DBType):
@@ -143,7 +144,7 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
                 # Handle DBTypeValidator wrapper
                 elif hasattr(item, "db_type") and isinstance(item.db_type, DBType):
                     return item.db_type.mock()
-            
+
             # If no DBType found, continue with the actual type
             field_type = actual_type
 
@@ -160,29 +161,33 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
     if isinstance(field_type, DBType):
         return field_type.mock()
 
-
     # Handle List types
-    if origin == list:
+    if origin is list:
         inner_type = get_args(field_type)[0] if get_args(field_type) else str
-        from faker import Faker
+        from faker import Faker  # pyright: ignore[reportMissingImports]
+
         fake = Faker()
         count = fake.random_int(min=1, max=5)
         return [_generate_field_mock(inner_type, field_name, _depth + 1) for _ in range(count)]
 
     # Handle Dict types
-    if origin == dict:
-        from faker import Faker
+    if origin is dict:
+        from faker import Faker  # pyright: ignore[reportMissingImports]
+
         fake = Faker()
         key_type, value_type = get_args(field_type) if get_args(field_type) else (str, str)
         count = fake.random_int(min=1, max=3)
         return {
-            _generate_field_mock(key_type, f"{field_name}_key", _depth + 1): _generate_field_mock(value_type, f"{field_name}_value", _depth + 1)
+            _generate_field_mock(key_type, f"{field_name}_key", _depth + 1): _generate_field_mock(
+                value_type, f"{field_name}_value", _depth + 1
+            )
             for _ in range(count)
         }
 
     # Smart generation based on field name (only if we don't have a DBType)
     if field_name and not _depth:  # Only do smart generation at top level
-        from faker import Faker
+        from faker import Faker  # pyright: ignore[reportMissingImports]
+
         fake = Faker()
 
         name_lower = field_name.lower()
@@ -222,7 +227,8 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
                 return fake.uuid4()
 
     # Default generation for standard Python types
-    from faker import Faker
+    from faker import Faker  # pyright: ignore[reportMissingImports]
+
     fake = Faker()
 
     if field_type is str:
@@ -241,6 +247,7 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
         return fake.time_object()
     elif field_type.__name__ == "Decimal":
         from decimal import Decimal
+
         return Decimal(str(fake.pyfloat(left_digits=5, right_digits=2)))
     elif field_type is bytes:
         return fake.binary(length=32)

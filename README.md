@@ -18,6 +18,7 @@ Specialized database types with validation for Python dataclasses and Pydantic m
 - **Pydantic Integration**: First-class Pydantic support with automatic validation
 - **Clean API**: Simple, intuitive interface for both Pydantic AND dataclasses - just `name: Varchar(50)`
 - **Comprehensive Types**: STRING (VARCHAR, CHAR, TEXT), NUMERIC (INTEGER, DECIMAL, FLOAT), TEMPORAL (DATE, TIME, TIMESTAMP), and more
+- **Mock Data Generation**: Built-in mock/fake data generation for testing with `@mockable` decorator
 
 ## Why python-db-types?
 
@@ -68,6 +69,51 @@ For Pydantic support:
 pip install "python-db-types[pydantic]"
 ```
 
+For mock data generation:
+```bash
+pip install "python-db-types[mock]"
+```
+
+## Import Structure
+
+The library organizes types into two categories:
+
+### Core Database Types
+Core database types are available directly from the main package:
+
+```python
+from db_types import (
+    # String types
+    VARCHAR, CHAR, TEXT, Varchar, Char, Text,
+    # Numeric types
+    INTEGER, DECIMAL, FLOAT, Integer, DecimalType, Float,
+    # Temporal types
+    DATE, TIME, TIMESTAMP, Date, Time, Timestamp,
+    # Other types
+    BOOLEAN, BINARY, Boolean, Binary
+)
+```
+
+### Specialized Types
+Specialized types for common use cases are available from the `specialized` submodule:
+
+```python
+from db_types.specialized import (
+    # Geographic types
+    CountryCode,  # ISO 3166-1 alpha-2 country codes
+    City,         # City names
+    State,        # State/province names
+    ZipCode,      # Postal codes
+
+    # Contact types
+    Email,        # Email addresses with validation
+    PhoneNumber,  # Phone numbers
+    URL,          # URLs with validation
+)
+```
+
+This separation keeps the main namespace clean and makes it clear which types are fundamental database types versus application-specific types.
+
 ## Quick Start
 
 ### Clean Interface (Works with both Pydantic and Dataclasses!) ✨
@@ -96,6 +142,8 @@ user = User(
 The same syntax works with dataclasses! See full examples:
 - [`examples/pydantic_example.py`](examples/pydantic_example.py) - Comprehensive Pydantic examples with all features
 - [`examples/dataclass_example.py`](examples/dataclass_example.py) - Comprehensive dataclass examples with all features
+- [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Mock data generation with Pydantic models
+- [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Mock data generation with dataclasses
 
 ### Common Use Cases
 
@@ -129,6 +177,50 @@ See complete working examples:
 - [`examples/`](examples/) - All example files with detailed documentation
 - [`examples/pydantic_example.py`](examples/pydantic_example.py) - All features including constraints
 - [`examples/dataclass_example.py`](examples/dataclass_example.py) - All features including constraints
+
+## Mock Data Generation
+
+Generate realistic test data automatically with the `@mockable` decorator:
+
+```python
+from dataclasses import dataclass
+from db_types import Varchar, Integer, Date, mockable
+from db_types.specialized import Email, CountryCode
+
+@mockable
+@dataclass
+class User:
+    id: Integer()
+    username: Varchar(50)
+    email: Email
+    country: CountryCode
+    birth_date: Date()
+
+# Generate mock instances
+user = User.mock()
+print(user.username)  # "Christina Wells"
+print(user.email)     # "michael23@example.com"
+print(user.country)   # "US"
+
+# With overrides
+user = User.mock(username="test_user", country="GB")
+
+# Using builder pattern
+user = (User.mock_builder()
+        .with_username("john_doe")
+        .with_country("CA")
+        .build())
+```
+
+The same `@mockable` decorator works with Pydantic models! Mock generation:
+- Respects all field constraints (length, format, etc.)
+- Generates appropriate data based on field names (e.g., 'email' generates valid emails)
+- Supports specialized types with realistic data
+- Works with both dataclasses and Pydantic models
+
+See mock examples:
+- [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Complete mock examples with dataclasses
+- [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Complete mock examples with Pydantic
 
 ## Clean Annotation Interface
 
@@ -333,6 +425,19 @@ For complete working examples, see the [`examples/`](examples/) directory:
   - Field validators and computed properties
   - Constrained types with complex business logic
   - JSON serialization with custom encoders
+
+- [`dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Mock data generation examples:
+  - Using `@mockable` decorator with dataclasses
+  - Generating mock instances with `.mock()`
+  - Override specific fields
+  - Type-safe builder pattern
+  - Specialized types (Email, CountryCode, etc.)
+
+- [`pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Mock data generation with Pydantic:
+  - Using `@mockable` decorator with Pydantic models
+  - Same mock API as dataclasses
+  - Automatic validation of generated data
+  - Specialized types with DBTypeValidator
   - Model configuration and validation on assignment
   - TINYINT and REAL type usage
   - Boolean type conversions

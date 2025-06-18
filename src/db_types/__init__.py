@@ -52,40 +52,18 @@ from db_types.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
 
 # Import mock utilities
 try:
-    from db_types.decorators import mockable  # noqa: F401
-    from db_types.mock_builder import MockBuilder  # noqa: F401
-    from db_types.mock_factory import mock_factory  # noqa: F401
+    from db_types.decorators import mockable
+    from db_types.mock_builder import MockBuilder
+    from db_types.mock_factory import mock_factory
 
-    _mock_exports = ["mockable", "MockBuilder", "mock_factory"]
+    MOCK_AVAILABLE = True
 except ImportError:
-    # Mock utilities require faker
-    _mock_exports = []
+    MOCK_AVAILABLE = False
+    mockable = None  # type: ignore
+    MockBuilder = None  # type: ignore
+    mock_factory = None  # type: ignore
 
-# Import specialized types
-try:
-    from db_types.specialized import (  # noqa: F401
-        URL,
-        City,
-        CountryCode,
-        Email,
-        PhoneNumber,
-        State,
-        ZipCode,
-    )
-
-    _specialized_types = [
-        "City",
-        "CountryCode",
-        "Email",
-        "PhoneNumber",
-        "State",
-        "URL",
-        "ZipCode",
-    ]
-except ImportError:
-    # Specialized types may not be available in all environments
-    _specialized_types = []
-
+# Core exports
 __all__ = [
     "BIGINT",
     "BINARY",
@@ -137,8 +115,10 @@ __all__ = [
     "TinyInt",
     "VarBinary",
     "Varchar",
-    *_specialized_types,
-    *_mock_exports,
 ]
+
+# Add mock utilities if available
+if MOCK_AVAILABLE:
+    __all__.extend(["MockBuilder", "mock_factory", "mockable"])
 
 __version__ = "0.1.0"

@@ -90,7 +90,7 @@ class DBType(ABC, Generic[T]):
             ImportError: If faker is not installed
         """
         try:
-            from faker import Faker
+            from faker import Faker  # pyright: ignore[reportMissingImports]
 
             fake = Faker()
             return self._generate_mock(fake)
@@ -121,7 +121,9 @@ class DBType(ABC, Generic[T]):
         elif py_type is bool:
             return fake.boolean()
         elif py_type.__name__ == "Decimal":
-            return py_type(str(fake.pyfloat(left_digits=5, right_digits=2, positive=True)))
+            from decimal import Decimal
+
+            return Decimal(str(fake.pyfloat(left_digits=5, right_digits=2, positive=True)))  # type: ignore[return-value]
         elif py_type.__name__ == "date":
             return fake.date_object()
         elif py_type.__name__ == "time":
@@ -133,7 +135,10 @@ class DBType(ABC, Generic[T]):
         else:
             # Fallback - try to instantiate with a random value
             try:
-                return py_type(fake.random_int())
+                if callable(py_type):
+                    return py_type(fake.random_int())  # pyright: ignore[reportCallIssue]
+                else:
+                    raise NotImplementedError(f"No default mock implementation for {py_type}")
             except Exception as e:
                 raise NotImplementedError(f"No default mock implementation for {py_type}") from e
 
