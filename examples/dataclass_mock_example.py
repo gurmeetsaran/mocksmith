@@ -8,7 +8,7 @@ from db_types import (
     # Basic types with clean syntax
     Varchar, Integer, DecimalType, Boolean, Date,
     # Specialized types - work directly with dataclasses
-    Country, Email, City, ZipCode, PhoneNumber,
+    CountryCode, Email, City, ZipCode, PhoneNumber,
     # For mocking
     mockable,
 )
@@ -43,7 +43,7 @@ class Customer:
     # Specialized types - these work out of the box with dataclasses!
     email: Email
     phone: PhoneNumber
-    country: Country
+    country: CountryCode
     city: City
     postal_code: ZipCode
     
@@ -55,7 +55,7 @@ class Customer:
         """Initialize the specialized type instances."""
         self.email = Email()
         self.phone = PhoneNumber()
-        self.country = Country()
+        self.country = CountryCode()
         self.city = City()
         self.postal_code = ZipCode()
 

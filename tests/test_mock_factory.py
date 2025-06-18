@@ -7,7 +7,15 @@ from typing import Annotated, Optional
 
 import pytest
 
-from db_types import VARCHAR, Email, City, Country, mockable, mock_factory
+from db_types import VARCHAR, Email, City, CountryCode, mockable, mock_factory
+
+# Import Pydantic if available
+try:
+    from pydantic import BaseModel, ValidationError
+    from db_types.pydantic_integration import DBTypeValidator
+    PYDANTIC_AVAILABLE = True
+except ImportError:
+    PYDANTIC_AVAILABLE = False
 
 
 class TestMockFactory:
@@ -284,3 +292,175 @@ class TestSmartFieldDetection:
         assert len(mock.id) == 36  # UUID4 format
         assert len(mock.user_id) == 36
         assert "-" in mock.transaction_id
+
+
+@pytest.mark.skipif(not PYDANTIC_AVAILABLE, reason="Pydantic not installed")
+class TestPydanticMocking:
+    """Test mocking functionality with Pydantic models."""
+    
+    def test_mock_pydantic_basic(self):
+        """Test mocking a basic Pydantic model."""
+        class SimpleModel(BaseModel):
+            name: str
+            age: int
+            active: bool
+        
+        mock = mock_factory(SimpleModel)
+        
+        assert isinstance(mock.name, str)
+        assert isinstance(mock.age, int)
+        assert isinstance(mock.active, bool)
+    
+    def test_mock_pydantic_with_db_types(self):
+        """Test mocking a Pydantic model with db_types using annotations."""
+        from db_types import Varchar, Integer, Boolean
+        
+        class UserModel(BaseModel):
+            username: Varchar(30)
+            age: Integer()
+            active: Boolean()
+        
+        mock = mock_factory(UserModel)
+        
+        assert isinstance(mock.username, str)
+        assert len(mock.username) <= 30
+        assert isinstance(mock.age, int)
+        assert isinstance(mock.active, bool)
+    
+    def test_mock_pydantic_with_specialized_types(self):
+        """Test mocking Pydantic model with specialized types."""
+        _email = Email()
+        _country = CountryCode()
+        _city = City()
+        
+        class Customer(BaseModel):
+            name: str
+            email: Annotated[str, DBTypeValidator(_email)]
+            country: Annotated[str, DBTypeValidator(_country)]
+            city: Annotated[str, DBTypeValidator(_city)]
+        
+        mock = mock_factory(Customer)
+        
+        assert isinstance(mock.name, str)
+        assert "@" in mock.email
+        assert len(mock.country) == 2  # Country code should be 2 chars
+        assert isinstance(mock.city, str)
+    
+    def test_mockable_decorator_with_pydantic(self):
+        """Test @mockable decorator with Pydantic models."""
+        from db_types import Varchar, Integer
+        
+        @mockable
+        class Product(BaseModel):
+            name: Varchar(100)
+            price: Integer()
+            stock: Integer()
+        
+        # Test that methods were added
+        assert hasattr(Product, "mock")
+        assert hasattr(Product, "mock_builder")
+        
+        # Test basic mocking
+        product = Product.mock()
+        assert isinstance(product.name, str)
+        assert isinstance(product.price, int)
+        assert isinstance(product.stock, int)
+        
+        # Test with overrides
+        custom = Product.mock(name="Custom Product", price=999)
+        assert custom.name == "Custom Product"
+        assert custom.price == 999
+        
+        # Test builder pattern
+        built = (Product.mock_builder()
+                .with_name("Built Product")
+                .with_stock(50)
+                .build())
+        assert built.name == "Built Product"
+        assert built.stock == 50
+    
+    def test_pydantic_optional_fields(self):
+        """Test mocking Pydantic models with optional fields."""
+        from db_types import Varchar
+        
+        class OptionalModel(BaseModel):
+            required: Varchar(50)
+            optional: Optional[Varchar(100)] = None
+            maybe_int: Optional[int] = None
+        
+        # Generate multiple to test optional behavior
+        mocks = [mock_factory(OptionalModel) for _ in range(20)]
+        
+        # All should have required field
+        assert all(isinstance(m.required, str) for m in mocks)
+        
+        # Check that optional fields sometimes have values, sometimes None
+        has_optional = sum(1 for m in mocks if m.optional is not None)
+        has_maybe_int = sum(1 for m in mocks if m.maybe_int is not None)
+        
+        # Should have some variation
+        assert 0 < has_optional < 20
+        assert 0 < has_maybe_int < 20
+    
+    def test_pydantic_validation_on_mock(self):
+        """Test that mocked data passes Pydantic validation."""
+        from db_types import Varchar, Integer, Email as EmailType
+        
+        @mockable
+        class ValidatedModel(BaseModel):
+            username: Varchar(20)
+            age: Integer()
+            email: Annotated[str, DBTypeValidator(EmailType())]
+        
+        # Generate 10 mocks and ensure they all pass validation
+        for _ in range(10):
+            mock = ValidatedModel.mock()
+            
+            # Should not raise ValidationError
+            assert len(mock.username) <= 20
+            assert "@" in mock.email
+            assert isinstance(mock.age, int)
+
+
+class TestDefaultMockImplementation:
+    """Test the default mock implementation in base DBType."""
+    
+    def test_numeric_types_default_mock(self):
+        """Test that numeric types use default mock implementation."""
+        from db_types import INTEGER, FLOAT, DECIMAL
+        
+        # These should all work with default implementation
+        int_mock = INTEGER().mock()
+        assert isinstance(int_mock, int)
+        
+        float_mock = FLOAT().mock()
+        assert isinstance(float_mock, float)
+        
+        decimal_mock = DECIMAL(10, 2).mock()
+        assert isinstance(decimal_mock, Decimal)
+    
+    def test_temporal_types_default_mock(self):
+        """Test that temporal types use default mock implementation."""
+        from db_types import DATE, TIME, TIMESTAMP
+        from datetime import time
+        
+        date_mock = DATE().mock()
+        assert isinstance(date_mock, date)
+        
+        time_mock = TIME().mock()
+        assert isinstance(time_mock, time)
+        
+        timestamp_mock = TIMESTAMP().mock()
+        assert isinstance(timestamp_mock, datetime)
+    
+    def test_binary_types_default_mock(self):
+        """Test that binary types use default mock implementation."""
+        from db_types import BINARY, VARBINARY
+        
+        binary_mock = BINARY(32).mock()
+        assert isinstance(binary_mock, bytes)
+        assert len(binary_mock) == 32
+        
+        varbinary_mock = VARBINARY(64).mock()
+        assert isinstance(varbinary_mock, bytes)
+        assert len(varbinary_mock) <= 64

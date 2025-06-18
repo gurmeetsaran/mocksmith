@@ -13,7 +13,7 @@ from db_types import (
     VARCHAR, INTEGER, DECIMAL, DATE,
     # Specialized types
     Email as EMAIL_TYPE,
-    Country as COUNTRY_TYPE,
+    CountryCode as COUNTRYCODE_TYPE,
     City as CITY_TYPE,
     ZipCode as ZIPCODE_TYPE,
     PhoneNumber as PHONENUMBER_TYPE,
@@ -51,7 +51,7 @@ class Customer(BaseModel):
     # Specialized types - need explicit Annotated with DBTypeValidator for Pydantic
     email: Annotated[str, DBTypeValidator(EMAIL_TYPE())]
     phone: Annotated[str, DBTypeValidator(PHONENUMBER_TYPE())]
-    country: Annotated[str, DBTypeValidator(COUNTRY_TYPE())]
+    country: Annotated[str, DBTypeValidator(COUNTRYCODE_TYPE())]
     city: Annotated[str, DBTypeValidator(CITY_TYPE())]
     postal_code: Annotated[str, DBTypeValidator(ZIPCODE_TYPE())]
     
@@ -62,7 +62,7 @@ class Customer(BaseModel):
 
 def demo_basic_usage():
     """Demonstrate basic Pydantic usage."""
-    print("=== Basic Pydantic Usage ===\n")
+    print("=== Basic Pydantic Usage (Validation) ===\n")
     
     # Create a valid user
     user = User(
@@ -164,7 +164,7 @@ def demo_specialized_types():
 
 def demo_mock_generation():
     """Demonstrate mock generation for Pydantic models."""
-    print("\n\n=== Mock Generation for Pydantic ===\n")
+    print("\n\n=== Pydantic Mocking with @mockable ===\n")
     
     print("With @mockable decorator, Pydantic models work just like dataclasses!\n")
     
@@ -200,9 +200,48 @@ def demo_mock_generation():
     print("\n\nMocking individual fields:")
     print(f"  Name: {VARCHAR(50).mock()}")
     print(f"  Email: {EMAIL_TYPE().mock()}")
-    print(f"  Country: {COUNTRY_TYPE().mock()}")
+    print(f"  Country: {COUNTRYCODE_TYPE().mock()}")
     print(f"  City: {CITY_TYPE().mock()}")
     print(f"  Phone: {PHONENUMBER_TYPE().mock()}")
+    
+    # Mock Customer with specialized types
+    print("\n\nMocking Customer with specialized types:")
+    try:
+        # Basic mock generation
+        mock_customer = Customer.mock()
+        print(f"  ✅ Successfully mocked Customer:")
+        print(f"     Name: {mock_customer.name}")
+        print(f"     Email: {mock_customer.email}")
+        print(f"     Country: {mock_customer.country}")
+        print(f"     City: {mock_customer.city}")
+        print(f"     Phone: {mock_customer.phone}")
+        
+        # Mock with overrides
+        print("\n  With overrides:")
+        custom_customer = Customer.mock(
+            name="Global Corp Inc.",
+            country="US",
+            city="New York"
+        )
+        print(f"     Name: {custom_customer.name}")
+        print(f"     Country: {custom_customer.country}")
+        print(f"     City: {custom_customer.city}")
+        
+        # Using builder pattern
+        print("\n  Using builder pattern:")
+        builder_customer = (Customer.mock_builder()
+                          .with_name("Tech Solutions Ltd.")
+                          .with_country("GB")
+                          .with_city("London")
+                          .with_email("contact@techsolutions.co.uk")
+                          .build())
+        print(f"     Name: {builder_customer.name}")
+        print(f"     Email: {builder_customer.email}")
+        print(f"     Country: {builder_customer.country}")
+        print(f"     City: {builder_customer.city}")
+        
+    except Exception as e:
+        print(f"  ❌ Mock generation failed: {e}")
 
 
 def show_pydantic_notes():

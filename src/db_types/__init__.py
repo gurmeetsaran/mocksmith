@@ -66,7 +66,7 @@ try:
     from db_types.specialized import (  # noqa: F401
         URL,
         City,
-        Country,
+        CountryCode,
         Email,
         PhoneNumber,
         State,
@@ -75,7 +75,7 @@ try:
 
     _specialized_types = [
         "City",
-        "Country",
+        "CountryCode",
         "Email",
         "PhoneNumber",
         "State",

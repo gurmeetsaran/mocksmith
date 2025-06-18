@@ -66,9 +66,21 @@ def _mock_pydantic_model(cls: Type[T], overrides: Dict[str, Any]) -> T:
             mock_data[field_name] = overrides[field_name]
             continue
 
-        # Get the field type from annotation
-        field_type = field_info.annotation
-        mock_data[field_name] = _generate_field_mock(field_type, field_name)
+        # Check for DBTypeValidator in metadata first
+        mock_value = None
+        if hasattr(field_info, 'metadata'):
+            for metadata_item in field_info.metadata:
+                if hasattr(metadata_item, 'db_type') and isinstance(metadata_item.db_type, DBType):
+                    mock_value = metadata_item.db_type.mock()
+                    break
+        
+        # If no DBType found in metadata, use standard generation
+        if mock_value is None:
+            # Get the field type from annotation
+            field_type = field_info.annotation
+            mock_value = _generate_field_mock(field_type, field_name)
+        
+        mock_data[field_name] = mock_value
 
     return cls(**mock_data)
 
@@ -168,8 +180,8 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
             for _ in range(count)
         }
 
-    # Smart generation based on field name
-    if field_name:
+    # Smart generation based on field name (only if we don't have a DBType)
+    if field_name and not _depth:  # Only do smart generation at top level
         from faker import Faker
         fake = Faker()
 

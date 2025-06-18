@@ -5,7 +5,7 @@ from typing import Any
 from db_types.types.string import CHAR, VARCHAR
 
 
-class Country(CHAR):
+class CountryCode(CHAR):
     """ISO 3166-1 alpha-2 country code (2 characters)."""
 
     def __init__(self):
@@ -16,7 +16,7 @@ class Country(CHAR):
         return fake.country_code()
 
     def __repr__(self) -> str:
-        return "Country()"
+        return "CountryCode()"
 
 
 class State(VARCHAR):

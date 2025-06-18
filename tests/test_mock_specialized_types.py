@@ -4,32 +4,32 @@ import re
 
 import pytest
 
-from db_types import City, Country, Email, PhoneNumber, State, URL, ZipCode
+from db_types import City, CountryCode, Email, PhoneNumber, State, URL, ZipCode
 
 
-class TestCountryMock:
-    """Test mock generation for Country type."""
+class TestCountryCodeMock:
+    """Test mock generation for CountryCode type."""
     
-    def test_country_mock_format(self):
-        """Country should generate 2-letter ISO codes."""
-        country = Country()
+    def test_country_code_mock_format(self):
+        """CountryCode should generate 2-letter ISO codes."""
+        country = CountryCode()
         mock_value = country.mock()
         
         assert isinstance(mock_value, str)
         assert len(mock_value) == 2
         assert mock_value.isupper()
     
-    def test_country_mock_validates(self):
+    def test_country_code_mock_validates(self):
         """Generated country codes should pass validation."""
-        country = Country()
+        country = CountryCode()
         mock_value = country.mock()
         
         # Should not raise
         country.validate(mock_value)
     
-    def test_country_generates_variety(self):
+    def test_country_code_generates_variety(self):
         """Should generate different country codes."""
-        country = Country()
+        country = CountryCode()
         values = [country.mock() for _ in range(20)]
         
         unique_values = set(values)
