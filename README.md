@@ -94,8 +94,8 @@ user = User(
 ```
 
 The same syntax works with dataclasses! See full examples:
-- [`examples/pydantic_example.py`](examples/pydantic_example.py) - Complete Pydantic example
-- [`examples/dataclass_example.py`](examples/dataclass_example.py) - Complete dataclass example
+- [`examples/pydantic_example.py`](examples/pydantic_example.py) - Comprehensive Pydantic examples with all features
+- [`examples/dataclass_example.py`](examples/dataclass_example.py) - Comprehensive dataclass examples with all features
 
 ### Common Use Cases
 
@@ -125,10 +125,10 @@ class UserAccount(BaseModel):
     balance_cents: NonNegativeInteger()
 ```
 
-See more examples:
-- [`examples/`](examples/) - All example files
-- [`examples/constraints_example.py`](examples/constraints_example.py) - Constraint examples
-- [`examples/clean_constraints_example.py`](examples/clean_constraints_example.py) - Enhanced API examples
+See complete working examples:
+- [`examples/`](examples/) - All example files with detailed documentation
+- [`examples/pydantic_example.py`](examples/pydantic_example.py) - All features including constraints
+- [`examples/dataclass_example.py`](examples/dataclass_example.py) - All features including constraints
 
 ## Clean Annotation Interface
 
@@ -181,9 +181,12 @@ class Product:
 - `Integer()` → 32-bit integer
 - `BigInt()` → 64-bit integer
 - `SmallInt()` → 16-bit integer
+- `TinyInt()` → 8-bit integer
 - `DecimalType(precision, scale)` → Fixed-point decimal
+- `Numeric(precision, scale)` → Alias for DecimalType
 - `Money()` → Alias for Decimal(19, 4)
-- `Float()` → Floating point
+- `Float()` → Floating point (generates FLOAT SQL type)
+- `Real()` → Floating point (generates REAL SQL type, typically single precision in SQL)
 - `Double()` → Double precision
 
 **Constrained Numeric Types:**
@@ -194,6 +197,7 @@ class Product:
 - `ConstrainedInteger(min_value=x, max_value=y, multiple_of=z)` → Custom constraints
 - `ConstrainedBigInt(...)` → Constrained 64-bit integer
 - `ConstrainedSmallInt(...)` → Constrained 16-bit integer
+- `ConstrainedTinyInt(...)` → Constrained 8-bit integer
 
 **Temporal Types:**
 - `Date()` → Date only
@@ -315,14 +319,23 @@ class StrictModel(BaseModel):
 
 For complete working examples, see the [`examples/`](examples/) directory:
 
-- **Basic Usage:**
-  - [`dataclass_example.py`](examples/dataclass_example.py) - Dataclass integration
-  - [`pydantic_example.py`](examples/pydantic_example.py) - Pydantic integration
+- [`dataclass_example.py`](examples/dataclass_example.py) - Comprehensive dataclass examples including:
+  - All data types (String, Numeric, Date/Time, Binary, Boolean)
+  - Constrained numeric types (PositiveInteger, NonNegativeInteger, etc.)
+  - Custom constraints (min_value, max_value, multiple_of)
+  - TINYINT usage for small bounded values
+  - REAL vs FLOAT distinction
+  - SQL serialization
+  - Validation and error handling
 
-- **Constrained Types:**
-  - [`constraints_example.py`](examples/constraints_example.py) - Dataclass constraints
-  - [`pydantic_constraints_example.py`](examples/pydantic_constraints_example.py) - Pydantic constraints
-  - [`clean_constraints_example.py`](examples/clean_constraints_example.py) - Enhanced API demo
+- [`pydantic_example.py`](examples/pydantic_example.py) - Comprehensive Pydantic examples including:
+  - All data types with automatic validation
+  - Field validators and computed properties
+  - Constrained types with complex business logic
+  - JSON serialization with custom encoders
+  - Model configuration and validation on assignment
+  - TINYINT and REAL type usage
+  - Boolean type conversions
 
 ### Example: E-commerce Order System
 
@@ -381,6 +394,29 @@ print(order.to_sql_dict())
 For more complete examples including financial systems, authentication, and SQL testing integration,
 see the [`examples/`](examples/) directory.
 
+### Default Value Validation in Dataclasses
+
+When using `@validate_dataclass`, default values are validated when an instance is created, not when the class is defined:
+
+```python
+@validate_dataclass
+@dataclass
+class Config:
+    # This class definition succeeds even with invalid default
+    hour: SmallInt(min_value=0, max_value=23) = 24
+
+# But creating an instance fails with validation error
+try:
+    config = Config()  # Raises ValueError: Value 24 exceeds maximum 23
+except ValueError as e:
+    print(f"Validation error: {e}")
+
+# You can override with valid values
+config = Config(hour=12)  # Works fine
+```
+
+This behavior is consistent with Python's normal evaluation of default values and ensures that validation runs for all values, including defaults.
+
 ## Advanced Features
 
 ### Custom Validation
@@ -438,8 +474,8 @@ quantity: NonNegativeInteger()   # >= 0
 ```
 
 For complete examples with both dataclasses and Pydantic, see:
-- [`examples/constraints_example.py`](examples/constraints_example.py) - Dataclass examples
-- [`examples/pydantic_constraints_example.py`](examples/pydantic_constraints_example.py) - Pydantic examples
+- [`examples/dataclass_example.py`](examples/dataclass_example.py) - All constraint examples with dataclasses
+- [`examples/pydantic_example.py`](examples/pydantic_example.py) - All constraint examples with Pydantic
 
 **Available Constraint Options:**
 
@@ -467,19 +503,6 @@ Integer(
     positive=True,         # Shortcut for min_value=1
     negative=True,         # Shortcut for max_value=-1
 )
-```
-
-## Integration with SQL Testing Library
-
-This library is designed to work seamlessly with `sql-testing-library` for creating mock database tables with proper type validation:
-
-```python
-# Your models with python-db-types ensure data integrity
-# when used in SQL testing scenarios
-from sql_testing_library import create_table
-
-# The validation ensures your test data matches production constraints
-create_table("employees", sql_data)  # Data is already validated!
 ```
 
 ## Development

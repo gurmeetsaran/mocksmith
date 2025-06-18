@@ -1,49 +1,62 @@
-"""Comprehensive dataclass example demonstrating python-db-types features."""
+"""Comprehensive dataclass example demonstrating all python-db-types features.
+
+This example shows:
+- Basic usage with all data types
+- Constrained numeric types
+- Clean API for constraints
+- Validation and error handling
+- SQL serialization
+- Optional vs required fields
+"""
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from typing import Optional
 
 from db_types import (
+    BigInt,
+    Binary,
     Blob,
     Boolean,
     Char,
     Date,
+    DateTime,
     DecimalType,
+    Double,
+    Float,
     Integer,
     Money,
+    NonNegativeInteger,
+    NonPositiveInteger,
+    PositiveInteger,
+    Real,
     SmallInt,
     Text,
     Time,
     Timestamp,
+    TinyInt,
+    VarBinary,
     Varchar,
 )
 from db_types.dataclass_integration import validate_dataclass
+
+# ============================================================================
+# EXAMPLE 1: Comprehensive Employee Model
+# ============================================================================
 
 
 @validate_dataclass
 @dataclass
 class Employee:
-    def __post_init__(self):
-        if self.hire_date is None:
-            self.hire_date = datetime.now(timezone.utc).date()
+    """Demonstrates all basic data types and features."""
 
-    """Demonstrates all key features of python-db-types with dataclasses.
-
-    Note: Dataclasses can now use the same clean syntax as Pydantic!
-    """
-
-    # === REQUIRED FIELDS ===
-    # These fields must be provided when creating an instance
-
+    # === REQUIRED FIELDS (no defaults) ===
     employee_id: Integer()
     email: Varchar(255)
     username: Varchar(30)
 
-    # === OPTIONAL FIELDS ===
-    # Use Optional[Type] for optional fields
-
+    # === OPTIONAL FIELDS (using Optional[Type]) ===
     first_name: Optional[Varchar(50)] = None
     last_name: Optional[Varchar(50)] = None
     middle_name: Optional[Varchar(50)] = None
@@ -51,185 +64,533 @@ class Employee:
     phone: Optional[Varchar(20)] = None
 
     # === FIELDS WITH DEFAULTS ===
-    # These have default values, so they're optional when creating instances
-
     department: Varchar(50) = "Engineering"
-    employee_code: Char(10) = "EMP0000000"
+    employee_code: Char(10) = "EMP0000000"  # Fixed-length, padded
     is_active: Boolean() = True
     is_manager: Boolean() = False
 
-    # === NUMERIC FIELDS WITH VALIDATION ===
-
-    salary: Money() = Decimal("0.00")
-    bonus_percentage: DecimalType(5, 2) = Decimal("0.00")
-    years_experience: SmallInt() = 0
-    vacation_days: Integer() = 20
+    # === NUMERIC FIELDS ===
+    salary: Money() = Decimal("0.00")  # Alias for DECIMAL(19,4)
+    bonus_percentage: DecimalType(5, 2) = Decimal("0.00")  # Max 999.99%
+    years_experience: SmallInt() = 0  # 16-bit: -32768 to 32767
+    vacation_days: Integer() = 20  # 32-bit integer
+    employee_number: BigInt() = 0  # 64-bit integer
 
     # === DATE/TIME FIELDS ===
-
-    hire_date: Date() = None  # Will be set in __post_init__
+    hire_date: Date() = None
     birth_date: Optional[Date()] = None
-    last_login: Optional[Timestamp()] = None
-    work_start_time: Optional[Time(precision=0)] = None
+    last_login: Optional[Timestamp()] = None  # With timezone
+    last_review: Optional[DateTime()] = None  # Without timezone
+    work_start_time: Time(precision=0) = time(9, 0, 0)  # No fractional seconds
 
     # === BINARY DATA ===
+    avatar: Optional[Blob(max_length=1048576)] = None  # 1MB max
+    employee_badge: Optional[Binary(16)] = None  # Fixed 16 bytes
+    fingerprint: Optional[VarBinary(512)] = None  # Variable up to 512 bytes
 
-    avatar: Optional[Blob(max_length=1048576)] = None
+    # === FLOATING POINT FIELDS ===
+    performance_score: Float() = 0.0  # FLOAT type
+    efficiency_rating: Real() = 0.0  # REAL type (single precision in SQL)
+    accuracy_percentage: Double() = 0.0  # DOUBLE type
 
-    # === MORE FIELDS WITH DEFAULTS ===
+    def __post_init__(self):
+        """Set default hire_date if not provided."""
+        if self.hire_date is None:
+            self.hire_date = datetime.now(timezone.utc).date()
 
-    notes: Text() = ""
-    employee_rank: Integer() = 1
+
+# ============================================================================
+# EXAMPLE 2: Product Inventory with Constrained Types
+# ============================================================================
 
 
-def demonstrate_dataclass_features():
-    """Show all key features and validations."""
+@validate_dataclass
+@dataclass
+class ProductInventory:
+    """Demonstrates constrained numeric types."""
 
-    print("=" * 70)
-    print("PYTHON-DB-TYPES WITH DATACLASSES".center(70))
-    print("=" * 70)
+    # IDs must be positive
+    product_id: PositiveInteger()
+    warehouse_id: Integer(positive=True)  # Alternative syntax
 
-    # 1. Creating a valid employee with required fields only
-    print("\n1. Creating employee with required fields only:")
-    employee1 = Employee(employee_id=1, email="john.doe@company.com", username="jdoe")
-    print(f"   Created: {employee1.username} ({employee1.email})")
-    print(f"   Department: {employee1.department} (default)")
-    print(f"   Active: {employee1.is_active} (default)")
-    print(f"   Salary: ${employee1.salary} (default)")
+    # Quantities with constraints
+    quantity_on_hand: NonNegativeInteger()  # >= 0
+    reorder_level: Integer(min_value=0, max_value=10000)
+    min_order_quantity: Integer(min_value=1, max_value=1000)
 
-    # 2. Creating employee with all fields
-    print("\n2. Creating employee with optional fields:")
-    employee2 = Employee(
+    # Percentage constraints
+    discount_percentage: Integer(min_value=0, max_value=100, multiple_of=5)
+
+    # Financial constraints
+    unit_cost_cents: NonNegativeInteger()  # Price in cents
+    max_discount_amount: Integer(min_value=0, max_value=100000)  # $0 to $1000
+
+    # Fields with defaults must come after required fields
+    tax_rate_percentage: DecimalType(4, 2) = Decimal("0.00")  # 0.00 to 99.99
+
+
+# ============================================================================
+# EXAMPLE 3: Game Character with Varied Constraints
+# ============================================================================
+
+
+@validate_dataclass
+@dataclass
+class GameCharacter:
+    """Demonstrates complex constraint scenarios."""
+
+    # Basic info with constraints
+    character_id: PositiveInteger()
+    player_id: BigInt(positive=True)
+
+    # Level and experience
+    level: Integer(min_value=1, max_value=100)
+    experience_points: NonNegativeInteger()
+    skill_points: NonNegativeInteger()
+
+    # Stats that can go negative (debuffs)
+    health: Integer(min_value=-100, max_value=9999)
+    mana: NonNegativeInteger()
+    stamina: Integer(min_value=0, max_value=100)
+
+    # Modifiers
+    strength_modifier: Integer(min_value=-10, max_value=10)
+    defense_modifier: Integer(min_value=-10, max_value=10)
+    speed_modifier: SmallInt(min_value=-5, max_value=5)
+
+    # Currency (can have debt)
+    gold: NonNegativeInteger()
+    debt: NonPositiveInteger()  # <= 0
+    bank_balance: Integer()  # Can be positive or negative
+
+    # Reputation system
+    reputation: Integer(min_value=-1000, max_value=1000, multiple_of=10)
+    honor_points: NonNegativeInteger()
+    infamy_points: NonNegativeInteger()
+
+
+# ============================================================================
+# EXAMPLE 4: System Configuration with TinyInt
+# ============================================================================
+
+
+@validate_dataclass
+@dataclass
+class SystemConfig:
+    """Demonstrates TINYINT usage for small bounded values."""
+
+    config_id: PositiveInteger()
+    server_id: SmallInt(positive=True)
+
+    # Log levels (0-5)
+    log_level: TinyInt(min_value=0, max_value=5)  # 0=DEBUG, 5=CRITICAL
+
+    # System limits
+    max_retries: TinyInt(min_value=0, max_value=10)
+    thread_pool_size: TinyInt(min_value=1, max_value=100)
+    connection_pool_size: TinyInt(min_value=1, max_value=50)
+
+    # Percentage values (perfect for TINYINT)
+    cpu_threshold_percent: TinyInt(min_value=0, max_value=100)
+    memory_threshold_percent: TinyInt(min_value=0, max_value=100)
+    disk_threshold_percent: TinyInt(min_value=0, max_value=100)
+
+    # Priority and quality settings
+    priority: TinyInt(min_value=-5, max_value=5)  # -5=lowest, 5=highest
+    quality_level: TinyInt(min_value=1, max_value=10)
+    compression_level: TinyInt(min_value=0, max_value=9)
+
+
+# ============================================================================
+# EXAMPLE 5: Scientific Measurement Data
+# ============================================================================
+
+
+@validate_dataclass
+@dataclass
+class ScientificMeasurement:
+    """Demonstrates floating-point types and precision."""
+
+    measurement_id: BigInt(positive=True)
+    experiment_id: Integer(positive=True)
+
+    # Different float types
+    temperature_celsius: Float()  # General floating point
+    pressure_pascals: Real()  # Single precision (REAL SQL type)
+    energy_joules: Double()  # Double precision
+
+    # High precision decimals for exact values
+    weight_grams: DecimalType(10, 6)  # Up to 9999.999999g
+    volume_liters: DecimalType(8, 4)  # Up to 9999.9999L
+    concentration_molar: DecimalType(6, 4)  # Up to 99.9999M
+
+    # Measurement metadata
+    measurement_time: Timestamp(precision=6)  # Microsecond precision
+    duration_seconds: DecimalType(10, 6)
+    uncertainty_percentage: Float() = 0.0
+
+    # Validation flags
+    is_calibrated: Boolean() = False
+    is_validated: Boolean() = False
+    passed_qc: Optional[Boolean()] = None
+
+
+# ============================================================================
+# DEMONSTRATION FUNCTIONS
+# ============================================================================
+
+
+def demonstrate_basic_usage():
+    """Show basic dataclass usage with python-db-types."""
+    print("=" * 80)
+    print("BASIC USAGE - Employee Model".center(80))
+    print("=" * 80)
+
+    # Create with minimal fields
+    emp1 = Employee(employee_id=1, email="john.doe@company.com", username="jdoe")
+    print(f"\n1. Minimal employee: {emp1.username} ({emp1.email})")
+    print(f"   Department: {emp1.department} (default)")
+    print(f"   Hire date: {emp1.hire_date} (auto-set)")
+
+    # Create with full data
+    emp2 = Employee(
         employee_id=2,
         email="jane.smith@company.com",
         username="jsmith",
         first_name="Jane",
         last_name="Smith",
-        bio="Senior Python developer with 10 years experience",
-        phone="+1-555-0123",
         salary=Decimal("95000.00"),
         bonus_percentage=Decimal("15.50"),
-        years_experience=10,
-        hire_date=date(2014, 3, 15),
-        birth_date=date(1990, 5, 20),
         is_manager=True,
+        hire_date=date(2020, 1, 15),
+        work_start_time=time(8, 30, 0),
     )
-    print(f"   Created: {employee2.first_name} {employee2.last_name}")
-    print(f"   Salary: ${employee2.salary}")
-    print(f"   Bonus: {employee2.bonus_percentage}%")
-    print(f"   Manager: {employee2.is_manager}")
+    print(f"\n2. Full employee: {emp2.first_name} {emp2.last_name}")
+    print(f"   Salary: ${emp2.salary}")
+    print(f"   Bonus: {emp2.bonus_percentage}%")
 
-    # 3. Type conversions
-    print("\n3. Automatic type conversions:")
-    employee3 = Employee(
+    # Type conversions
+    emp3 = Employee(
         employee_id=3,
-        email="bob@company.com",
-        username="bob",
-        is_active="yes",  # String -> Boolean
-        is_manager="false",  # String -> Boolean
-        salary="75000.00",  # String -> Decimal
-        hire_date="2020-01-15",  # String -> Date
+        email="auto@company.com",
+        username="auto",
+        is_active="yes",  # String → Boolean
+        salary="75000.00",  # String → Decimal
+        hire_date="2023-06-15",  # String → Date
     )
-    print(f"   is_active: 'yes' → {employee3.is_active} (bool)")
-    print(f"   is_manager: 'false' → {employee3.is_manager} (bool)")
-    print(f"   salary: '75000.00' → ${employee3.salary} (Decimal)")
-    print(f"   hire_date: '2020-01-15' → {employee3.hire_date} (date)")
+    print("\n3. Type conversions:")
+    print(f"   'yes' → {emp3.is_active} (Boolean)")
+    print(f"   '75000.00' → ${emp3.salary} (Decimal)")
+    print(f"   '2023-06-15' → {emp3.hire_date} (Date)")
 
-    # 4. Validation errors
-    print("\n4. Validation examples:")
 
-    # 4a. String too long
-    print("   Testing VARCHAR length validation...")
-    try:
-        Employee(
-            employee_id=4,
-            email="test@company.com",
-            username="this_username_is_way_too_long_for_the_field",  # > 30 chars
-        )
-    except ValueError as e:
-        print(f"   ✗ Username validation: {e}")
+def demonstrate_constraints():
+    """Show constraint validation."""
+    print("\n" + "=" * 80)
+    print("CONSTRAINT VALIDATION".center(80))
+    print("=" * 80)
 
-    # 4b. Number out of range
-    print("   Testing SMALLINT range validation...")
-    try:
-        Employee(
-            employee_id=5,
-            email="test2@company.com",
-            username="test2",
-            years_experience=40000,  # Too big for SMALLINT (-32768 to 32767)
-        )
-    except ValueError as e:
-        print(f"   ✗ Years validation: {e}")
-
-    # 4c. Decimal precision
-    print("   Testing DECIMAL precision validation...")
-    try:
-        Employee(
-            employee_id=6,
-            email="test3@company.com",
-            username="test3",
-            bonus_percentage=Decimal("1000.00"),  # Too big for DECIMAL(5,2)
-        )
-    except ValueError as e:
-        print(f"   ✗ Bonus validation: {e}")
-
-    # 4d. NULL in required field
-    print("   Testing required field constraint...")
-    try:
-        Employee(employee_id=None, email="test4@company.com", username="test4")  # Required field
-    except ValueError as e:
-        print(f"   ✗ NULL validation: {e}")
-
-    # 5. SQL serialization
-    print("\n5. Converting to SQL-compatible format:")
-    sql_data = employee2.to_sql_dict()
-    print("   SQL data (selected fields):")
-    for key in ["employee_id", "email", "salary", "hire_date", "is_manager"]:
-        if key in sql_data:
-            print(f"     {key}: {sql_data[key]!r}")
-
-    # 6. Show database types
-    print("\n6. Database type information:")
-    db_types = employee2.get_db_types()
-    print(f"   Total DB fields: {len(db_types)}")
-    for field_name, db_type in list(db_types.items())[:5]:
-        print(f"   {field_name}: {db_type}")
-
-    # 7. CHAR vs VARCHAR behavior
-    print("\n7. CHAR vs VARCHAR behavior:")
-    employee4 = Employee(
-        employee_id=7,
-        email="char@test.com",
-        username="chartest",
-        employee_code="EMP123",  # Will be padded to 10 chars
+    # Valid inventory
+    print("\n1. Valid product inventory:")
+    inv = ProductInventory(
+        product_id=123,
+        warehouse_id=1,
+        quantity_on_hand=50,
+        reorder_level=10,
+        min_order_quantity=5,
+        discount_percentage=15,  # Valid: multiple of 5
+        unit_cost_cents=2999,  # $29.99
+        max_discount_amount=500,  # $5.00
     )
-    sql_dict = employee4.to_sql_dict()
-    print(f"   Input code: 'EMP123' (length {len('EMP123')})")
-    print(f"   Stored as: '{sql_dict['employee_code']}' (length {len(sql_dict['employee_code'])})")
+    print(f"   Product {inv.product_id}: {inv.quantity_on_hand} units on hand")
+    print(f"   Reorder at: {inv.reorder_level} units")
+    print(f"   Discount: {inv.discount_percentage}%")
 
-    # 8. Boolean conversions
-    print("\n8. Boolean type accepts various formats:")
-    bool_values = ["yes", "no", "1", "0", "true", "false"]
-    for val in bool_values:
-        emp = Employee(employee_id=99, email="bool@company.com", username="bool", is_active=val)
-        print(f"   '{val}' → {emp.is_active}")
+    # Constraint violations
+    print("\n2. Constraint violations:")
 
-    # 9. Working with NULL values
-    print("\n9. NULL handling for optional fields:")
-    minimal = Employee(employee_id=100, email="minimal@company.com", username="minimal")
-    print(f"   first_name: {minimal.first_name} (None = NULL)")
-    print(f"   bio: {minimal.bio} (None = NULL)")
-    print(f"   birth_date: {minimal.birth_date} (None = NULL)")
+    try:
+        ProductInventory(
+            product_id=0,  # Invalid: must be positive
+            warehouse_id=1,
+            quantity_on_hand=0,
+            reorder_level=0,
+            min_order_quantity=1,
+            discount_percentage=0,
+            unit_cost_cents=0,
+            max_discount_amount=0,
+        )
+    except ValueError as e:
+        print(f"   ✗ Product ID: {e}")
 
-    print("\n" + "=" * 70)
-    print("Key Points:")
+    try:
+        ProductInventory(
+            product_id=1,
+            warehouse_id=1,
+            quantity_on_hand=-5,  # Invalid: must be non-negative
+            reorder_level=0,
+            min_order_quantity=1,
+            discount_percentage=0,
+            unit_cost_cents=0,
+            max_discount_amount=0,
+        )
+    except ValueError as e:
+        print(f"   ✗ Quantity: {e}")
+
+    try:
+        ProductInventory(
+            product_id=1,
+            warehouse_id=1,
+            quantity_on_hand=0,
+            reorder_level=0,
+            min_order_quantity=1,
+            discount_percentage=17,  # Invalid: not multiple of 5
+            unit_cost_cents=0,
+            max_discount_amount=0,
+        )
+    except ValueError as e:
+        print(f"   ✗ Discount: {e}")
+
+
+def demonstrate_game_character():
+    """Show complex constraint scenarios."""
+    print("\n" + "=" * 80)
+    print("COMPLEX CONSTRAINTS - Game Character".center(80))
+    print("=" * 80)
+
+    # Create character
+    char = GameCharacter(
+        character_id=42,
+        player_id=1001,
+        level=15,
+        experience_points=25000,
+        skill_points=10,
+        health=85,
+        mana=50,
+        stamina=75,
+        strength_modifier=3,
+        defense_modifier=-1,
+        speed_modifier=2,
+        gold=1250,
+        debt=-100,  # Owes 100 gold
+        bank_balance=5000,
+        reputation=200,  # Multiple of 10
+        honor_points=150,
+        infamy_points=20,
+    )
+
+    print(f"\nCharacter {char.character_id} (Level {char.level}):")
+    print(f"  Health: {char.health} | Mana: {char.mana} | Stamina: {char.stamina}")
     print(
-        "- Dataclasses now support clean syntax: Varchar(50) instead of Annotated[str, VARCHAR(50)]"
+        f"  Modifiers - STR: {char.strength_modifier:+d}, "
+        + f"DEF: {char.defense_modifier:+d}, SPD: {char.speed_modifier:+d}"
     )
-    print("- Optional fields: Optional[Type] = None (same as Pydantic!)")
-    print("- All validations happen at Python level before DB insertion")
-    print("=" * 70)
+    print(f"  Finances - Gold: {char.gold}, Debt: {char.debt}, Bank: {char.bank_balance}")
+    print(
+        f"  Reputation: {char.reputation} "
+        + f"(Honor: {char.honor_points}, Infamy: {char.infamy_points})"
+    )
+
+
+def demonstrate_tinyint():
+    """Show TINYINT usage for small values."""
+    print("\n" + "=" * 80)
+    print("TINYINT USAGE - System Configuration".center(80))
+    print("=" * 80)
+
+    config = SystemConfig(
+        config_id=1,
+        server_id=10,
+        log_level=2,  # INFO
+        max_retries=3,
+        thread_pool_size=8,
+        connection_pool_size=20,
+        cpu_threshold_percent=80,
+        memory_threshold_percent=90,
+        disk_threshold_percent=85,
+        priority=0,  # Normal
+        quality_level=7,
+        compression_level=6,
+    )
+
+    print(f"\nSystem Configuration #{config.config_id}:")
+    print(f"  Server: {config.server_id}")
+    print(f"  Log Level: {config.log_level} (0=DEBUG, 5=CRITICAL)")
+    print(
+        f"  Pools - Threads: {config.thread_pool_size}, "
+        + f"Connections: {config.connection_pool_size}"
+    )
+    print(
+        f"  Thresholds - CPU: {config.cpu_threshold_percent}%, "
+        + f"Memory: {config.memory_threshold_percent}%, "
+        + f"Disk: {config.disk_threshold_percent}%"
+    )
+    print(
+        f"  Settings - Priority: {config.priority:+d}, "
+        + f"Quality: {config.quality_level}/10, "
+        + f"Compression: {config.compression_level}/9"
+    )
+
+    # Show TINYINT range
+    print("\n  TINYINT ranges:")
+    print("    8-bit signed: -128 to 127")
+    print("    Perfect for: percentages, small counts, flags, levels")
+
+
+def demonstrate_sql_serialization():
+    """Show SQL serialization features."""
+    print("\n" + "=" * 80)
+    print("SQL SERIALIZATION".center(80))
+    print("=" * 80)
+
+    # Create a measurement
+    measurement = ScientificMeasurement(
+        measurement_id=1001,
+        experiment_id=42,
+        temperature_celsius=23.456,
+        pressure_pascals=101325.0,
+        energy_joules=1234.5678,
+        weight_grams=Decimal("15.123456"),
+        volume_liters=Decimal("2.5000"),
+        concentration_molar=Decimal("0.1234"),
+        measurement_time=datetime.now(timezone.utc),
+        duration_seconds=Decimal("3600.000000"),
+        uncertainty_percentage=0.05,
+        is_calibrated=True,
+        is_validated=True,
+        passed_qc=True,
+    )
+
+    # Get SQL representation
+    sql_data = measurement.to_sql_dict()
+    print("\nSQL representation (selected fields):")
+    for field in [
+        "measurement_id",
+        "temperature_celsius",
+        "weight_grams",
+        "measurement_time",
+        "is_calibrated",
+    ]:
+        print(f"  {field}: {sql_data[field]!r}")
+
+    # Get database types
+    db_types = measurement.get_db_types()
+    print("\nDatabase type information:")
+    print(f"  temperature_celsius: {db_types['temperature_celsius'].sql_type}")
+    print(f"  pressure_pascals: {db_types['pressure_pascals'].sql_type}")
+    print(f"  weight_grams: {db_types['weight_grams'].sql_type}")
+    print(f"  measurement_time: {db_types['measurement_time'].sql_type}")
+
+
+def demonstrate_validation_errors():
+    """Show various validation error scenarios."""
+    print("\n" + "=" * 80)
+    print("VALIDATION ERROR EXAMPLES".center(80))
+    print("=" * 80)
+
+    print("\n1. String length validation:")
+    try:
+        Employee(
+            employee_id=1,
+            email="test@company.com",
+            username="this_username_is_way_too_long_for_varchar_30",
+        )
+    except ValueError as e:
+        print(f"   ✗ {e}")
+
+    print("\n2. Numeric range validation:")
+    try:
+        Employee(
+            employee_id=1,
+            email="test@company.com",
+            username="test",
+            years_experience=40000,  # Too big for SMALLINT
+        )
+    except ValueError as e:
+        print(f"   ✗ {e}")
+
+    print("\n3. Decimal precision validation:")
+    try:
+        Employee(
+            employee_id=1,
+            email="test@company.com",
+            username="test",
+            bonus_percentage=Decimal("1234.567"),  # Too many digits
+        )
+    except ValueError as e:
+        print(f"   ✗ {e}")
+
+    print("\n4. TINYINT range validation:")
+    try:
+        SystemConfig(
+            config_id=1,
+            server_id=1,
+            log_level=10,  # Max is 5
+            max_retries=3,
+            thread_pool_size=8,
+            connection_pool_size=20,
+            cpu_threshold_percent=80,
+            memory_threshold_percent=90,
+            disk_threshold_percent=85,
+            priority=0,
+            quality_level=7,
+            compression_level=6,
+        )
+    except ValueError as e:
+        print(f"   ✗ {e}")
+
+    print("\n5. Constraint validation:")
+    try:
+        GameCharacter(
+            character_id=1,
+            player_id=1,
+            level=150,  # Max is 100
+            experience_points=0,
+            skill_points=0,
+            health=100,
+            mana=0,
+            stamina=0,
+            strength_modifier=0,
+            defense_modifier=0,
+            speed_modifier=0,
+            gold=0,
+            debt=0,
+            bank_balance=0,
+            reputation=0,
+            honor_points=0,
+            infamy_points=0,
+        )
+    except ValueError as e:
+        print(f"   ✗ {e}")
+
+
+def main():
+    """Run all demonstrations."""
+    demonstrate_basic_usage()
+    demonstrate_constraints()
+    demonstrate_game_character()
+    demonstrate_tinyint()
+    demonstrate_sql_serialization()
+    demonstrate_validation_errors()
+
+    print("\n" + "=" * 80)
+    print("KEY FEATURES".center(80))
+    print("=" * 80)
+    print(
+        """
+✓ Clean syntax: Varchar(50) instead of Annotated[str, VARCHAR(50)]
+✓ Works exactly like Pydantic: Optional[Type] = None for optional fields
+✓ Automatic type conversion: strings → dates, decimals, booleans
+✓ Comprehensive validation: length, range, precision, custom constraints
+✓ SQL serialization: to_sql_dict() for database operations
+✓ All standard SQL types: INTEGER, VARCHAR, DECIMAL, TIMESTAMP, etc.
+✓ Constraint types: PositiveInteger(), NonNegativeInteger(), etc.
+✓ Flexible constraints: min_value, max_value, multiple_of
+✓ TINYINT support: Perfect for small bounded values (8-bit)
+✓ REAL vs FLOAT: Proper SQL type generation
+"""
+    )
 
 
 if __name__ == "__main__":
-    demonstrate_dataclass_features()
+    main()

@@ -25,6 +25,7 @@ from db_types.types.numeric import DECIMAL as _DECIMAL
 from db_types.types.numeric import DOUBLE as _DOUBLE
 from db_types.types.numeric import FLOAT as _FLOAT
 from db_types.types.numeric import INTEGER as _INTEGER
+from db_types.types.numeric import REAL as _REAL
 from db_types.types.numeric import SMALLINT as _SMALLINT
 from db_types.types.numeric import TINYINT as _TINYINT
 from db_types.types.string import CHAR as _CHAR
@@ -152,6 +153,23 @@ def Double() -> Any:
             calculation: Double()
     """
     db_type = _DOUBLE()
+    if _PYDANTIC_AVAILABLE:
+        return Annotated[float, _get_validator(db_type), db_type]
+    return Annotated[float, db_type]
+
+
+def Real() -> Any:
+    """Single precision floating-point (REAL SQL type).
+
+    Note: In Python, this behaves identically to Float() since Python
+    only has one float type. The distinction is purely for SQL generation.
+
+    Example:
+        class Measurement(BaseModel):
+            temperature: Real()
+            pressure: Real()
+    """
+    db_type = _REAL()
     if _PYDANTIC_AVAILABLE:
         return Annotated[float, _get_validator(db_type), db_type]
     return Annotated[float, db_type]
@@ -495,6 +513,7 @@ def Blob(*, max_length: Optional[int] = None) -> Any:
 String = Varchar  # Alias for VARCHAR
 Int = Integer  # Alias for INTEGER
 Bool = Boolean  # Alias for BOOLEAN
+Numeric = DecimalType  # Alias for DECIMAL
 
 
 # For users who prefer uppercase
@@ -506,9 +525,10 @@ BIGINT = BigInt
 SMALLINT = SmallInt
 TINYINT = TinyInt
 DECIMAL = DecimalType
+NUMERIC = DecimalType
 FLOAT = Float
 DOUBLE = Double
-REAL = Float
+REAL = Real
 DATE = Date
 TIME = Time
 TIMESTAMP = Timestamp
@@ -531,6 +551,7 @@ __all__ = [
     "DOUBLE",
     "FLOAT",
     "INTEGER",
+    "NUMERIC",
     "REAL",
     "SMALLINT",
     "TEXT",
@@ -556,7 +577,9 @@ __all__ = [
     "NegativeInteger",
     "NonNegativeInteger",
     "NonPositiveInteger",
+    "Numeric",
     "PositiveInteger",
+    "Real",
     "SmallInt",
     "String",
     "Text",

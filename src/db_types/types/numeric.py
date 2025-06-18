@@ -1,6 +1,7 @@
 """Numeric database types."""
 
 from decimal import Decimal
+from math import isfinite
 from typing import Any, Optional, Union
 
 from db_types.types.base import DBType
@@ -260,7 +261,19 @@ class FLOAT(DBType[float]):
 
 
 class REAL(DBType[float]):
-    """Single precision floating-point number."""
+    """Single precision floating-point number.
+
+    Note: In Python, this behaves identically to FLOAT since Python
+    only has one float type. The distinction is purely for SQL generation
+    where REAL typically indicates single precision (32-bit) vs FLOAT/DOUBLE
+    for double precision (64-bit) in many databases.
+    """
+
+    # Single precision float limits (32-bit IEEE 754)
+    # Note: Using slightly smaller bounds to avoid edge cases
+    MAX_VALUE = 3.4028235e38
+    MIN_VALUE = -3.4028235e38
+    MIN_POSITIVE = 1.175494e-38
 
     @property
     def sql_type(self) -> str:
@@ -276,6 +289,26 @@ class REAL(DBType[float]):
 
         if not isinstance(value, (int, float)):
             raise ValueError(f"Expected numeric value, got {type(value).__name__}")
+
+        # Check if value fits within single precision range
+        float_value = float(value)
+
+        # Handle special float values
+        if not isfinite(float_value):
+            # Allow inf, -inf, and nan as they can be represented in single precision
+            return
+
+        if float_value != 0:  # Skip zero check
+            abs_value = abs(float_value)
+            if abs_value > self.MAX_VALUE:
+                raise ValueError(
+                    f"Value {value} exceeds REAL precision range " f"(max ±{self.MAX_VALUE:.2e})"
+                )
+            if abs_value < self.MIN_POSITIVE:
+                raise ValueError(
+                    f"Value {value} is too small for REAL precision "
+                    f"(min positive {self.MIN_POSITIVE:.2e})"
+                )
 
     def _serialize(self, value: Union[int, float]) -> float:
         return float(value)

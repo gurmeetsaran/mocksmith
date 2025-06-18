@@ -61,7 +61,7 @@ target-version = "py39"
 select = [
     "E",    # pycodestyle
     "F",    # pyflakes
-    "I",    # isort
+    # "I",    # isort - disabled as we use standalone isort
     "N",    # pep8-naming
     "W",    # pycodestyle warnings
     "UP",   # pyupgrade
