@@ -1,12 +1,10 @@
 # mocksmith
 
-[![CI](https://github.com/gurmeetsaran/mocksmith/actions/workflows/ci.yml/badge.svg)](https://github.com/gurmeetsaran/mocksmith/actions/workflows/ci.yml)
+[![Unit Tests](https://github.com/gurmeetsaran/mocksmith/actions/workflows/ci.yml/badge.svg)](https://github.com/gurmeetsaran/mocksmith/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/gurmeetsaran/mocksmith/branch/main/graph/badge.svg)](https://codecov.io/gh/gurmeetsaran/mocksmith)
 [![PyPI version](https://badge.fury.io/py/mocksmith.svg)](https://badge.fury.io/py/mocksmith)
 [![Python Versions](https://img.shields.io/pypi/pyversions/mocksmith.svg)](https://pypi.org/project/mocksmith/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
 
 Type-safe data validation with automatic mock generation for Python dataclasses and Pydantic models. Build robust data models with database-aware validation and generate realistic test data with a single decorator.
 
