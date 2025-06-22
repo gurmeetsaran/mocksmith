@@ -2,7 +2,7 @@
 
 from typing import get_args
 
-from db_types import (
+from mocksmith import (
     BigInt,
     Binary,
     Blob,

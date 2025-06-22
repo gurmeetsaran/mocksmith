@@ -2,7 +2,7 @@
 
 import pytest
 
-from db_types.types.constraints import (
+from mocksmith.types.constraints import (
     ConstrainedBigInt,
     ConstrainedInteger,
     ConstrainedSmallInt,

@@ -5,11 +5,11 @@ from typing import get_args, get_origin
 
 import pytest
 
-from db_types import BigInt, Integer, PositiveInteger, SmallInt
-from db_types.dataclass_integration import validate_dataclass
-from db_types.types.constraints import ConstrainedInteger
-from db_types.types.constraints import PositiveInteger as _PositiveInteger
-from db_types.types.numeric import INTEGER
+from mocksmith import BigInt, Integer, PositiveInteger, SmallInt
+from mocksmith.dataclass_integration import validate_dataclass
+from mocksmith.types.constraints import ConstrainedInteger
+from mocksmith.types.constraints import PositiveInteger as _PositiveInteger
+from mocksmith.types.numeric import INTEGER
 
 
 def get_db_type_from_annotation(annotation):

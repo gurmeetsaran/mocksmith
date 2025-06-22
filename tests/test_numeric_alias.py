@@ -6,7 +6,7 @@ from typing import get_args
 import pytest
 from pydantic import BaseModel
 
-from db_types import DecimalType, Numeric, Real
+from mocksmith import DecimalType, Numeric, Real
 
 
 class TestNumericAlias:
@@ -50,8 +50,8 @@ class TestNumericAlias:
     def test_uppercase_numeric_alias(self):
         """Test that NUMERIC is an alias for DecimalType."""
         # NUMERIC should be the same function as DecimalType in annotations module
-        from db_types.annotations import NUMERIC as NUMERIC_FUNC
-        from db_types.annotations import DecimalType as DECIMAL_FUNC  # noqa: N814
+        from mocksmith.annotations import NUMERIC as NUMERIC_FUNC
+        from mocksmith.annotations import DecimalType as DECIMAL_FUNC  # noqa: N814
 
         assert NUMERIC_FUNC is DECIMAL_FUNC
 
@@ -79,8 +79,8 @@ class TestNumericAlias:
     def test_uppercase_real_alias(self):
         """Test that REAL is an alias for Real."""
         # REAL should be the same function as Real in annotations module
-        from db_types.annotations import REAL as REAL_FUNC
-        from db_types.annotations import Real as Real_FUNC
+        from mocksmith.annotations import REAL as REAL_FUNC
+        from mocksmith.annotations import Real as Real_FUNC
 
         assert REAL_FUNC is Real_FUNC
 

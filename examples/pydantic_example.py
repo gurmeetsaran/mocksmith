@@ -16,8 +16,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
-from db_types import Numeric  # Alias for DecimalType
-from db_types import (
+from mocksmith import Numeric  # Alias for DecimalType
+from mocksmith import (
     BigInt,
     Binary,
     Blob,

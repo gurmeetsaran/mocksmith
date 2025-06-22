@@ -8,36 +8,36 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Annotated, Any, Optional
 
-from db_types.types.binary import BINARY as _BINARY
-from db_types.types.binary import BLOB as _BLOB
-from db_types.types.binary import VARBINARY as _VARBINARY
-from db_types.types.boolean import BOOLEAN as _BOOLEAN
-from db_types.types.constraints import ConstrainedBigInt as _ConstrainedBigInt
-from db_types.types.constraints import ConstrainedInteger as _ConstrainedInteger
-from db_types.types.constraints import ConstrainedSmallInt as _ConstrainedSmallInt
-from db_types.types.constraints import ConstrainedTinyInt as _ConstrainedTinyInt
-from db_types.types.constraints import NegativeInteger as _NegativeInteger
-from db_types.types.constraints import NonNegativeInteger as _NonNegativeInteger
-from db_types.types.constraints import NonPositiveInteger as _NonPositiveInteger
-from db_types.types.constraints import PositiveInteger as _PositiveInteger
-from db_types.types.numeric import BIGINT as _BIGINT
-from db_types.types.numeric import DECIMAL as _DECIMAL
-from db_types.types.numeric import DOUBLE as _DOUBLE
-from db_types.types.numeric import FLOAT as _FLOAT
-from db_types.types.numeric import INTEGER as _INTEGER
-from db_types.types.numeric import REAL as _REAL
-from db_types.types.numeric import SMALLINT as _SMALLINT
-from db_types.types.numeric import TINYINT as _TINYINT
-from db_types.types.string import CHAR as _CHAR
-from db_types.types.string import TEXT as _TEXT
-from db_types.types.string import VARCHAR as _VARCHAR
-from db_types.types.temporal import DATE as _DATE
-from db_types.types.temporal import TIME as _TIME
-from db_types.types.temporal import TIMESTAMP as _TIMESTAMP
+from mocksmith.types.binary import BINARY as _BINARY
+from mocksmith.types.binary import BLOB as _BLOB
+from mocksmith.types.binary import VARBINARY as _VARBINARY
+from mocksmith.types.boolean import BOOLEAN as _BOOLEAN
+from mocksmith.types.constraints import ConstrainedBigInt as _ConstrainedBigInt
+from mocksmith.types.constraints import ConstrainedInteger as _ConstrainedInteger
+from mocksmith.types.constraints import ConstrainedSmallInt as _ConstrainedSmallInt
+from mocksmith.types.constraints import ConstrainedTinyInt as _ConstrainedTinyInt
+from mocksmith.types.constraints import NegativeInteger as _NegativeInteger
+from mocksmith.types.constraints import NonNegativeInteger as _NonNegativeInteger
+from mocksmith.types.constraints import NonPositiveInteger as _NonPositiveInteger
+from mocksmith.types.constraints import PositiveInteger as _PositiveInteger
+from mocksmith.types.numeric import BIGINT as _BIGINT
+from mocksmith.types.numeric import DECIMAL as _DECIMAL
+from mocksmith.types.numeric import DOUBLE as _DOUBLE
+from mocksmith.types.numeric import FLOAT as _FLOAT
+from mocksmith.types.numeric import INTEGER as _INTEGER
+from mocksmith.types.numeric import REAL as _REAL
+from mocksmith.types.numeric import SMALLINT as _SMALLINT
+from mocksmith.types.numeric import TINYINT as _TINYINT
+from mocksmith.types.string import CHAR as _CHAR
+from mocksmith.types.string import TEXT as _TEXT
+from mocksmith.types.string import VARCHAR as _VARCHAR
+from mocksmith.types.temporal import DATE as _DATE
+from mocksmith.types.temporal import TIME as _TIME
+from mocksmith.types.temporal import TIMESTAMP as _TIMESTAMP
 
 # For Pydantic models - check if Pydantic is available
 try:
-    from db_types.pydantic_integration import DBTypeValidator as _DBTypeValidator
+    from mocksmith.pydantic_integration import DBTypeValidator as _DBTypeValidator
 
     _PYDANTIC_AVAILABLE = True
 

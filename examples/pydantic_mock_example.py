@@ -1,4 +1,4 @@
-"""Example showing Pydantic usage with db_types including specialized types."""
+"""Example showing Pydantic usage with mocksmith including specialized types."""
 
 from datetime import date
 from decimal import Decimal
@@ -6,7 +6,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ValidationError
 
-from db_types import (  # Basic types with clean syntax for Pydantic; Raw types; For mocking
+from mocksmith import (  # Basic types with clean syntax for Pydantic; Raw types; For mocking
     VARCHAR,
     Boolean,
     Date,
@@ -15,12 +15,12 @@ from db_types import (  # Basic types with clean syntax for Pydantic; Raw types;
     Varchar,
     mockable,
 )
-from db_types.pydantic_integration import DBTypeValidator
-from db_types.specialized import City as CityType
-from db_types.specialized import CountryCode as CountryCodeType
-from db_types.specialized import Email as EmailType
-from db_types.specialized import PhoneNumber as PhoneNumberType
-from db_types.specialized import ZipCode as ZipCodeType
+from mocksmith.pydantic_integration import DBTypeValidator
+from mocksmith.specialized import City as CityType
+from mocksmith.specialized import CountryCode as CountryCodeType
+from mocksmith.specialized import Email as EmailType
+from mocksmith.specialized import PhoneNumber as PhoneNumberType
+from mocksmith.specialized import ZipCode as ZipCodeType
 
 
 # Example 1: Basic Pydantic model with clean syntax

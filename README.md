@@ -1,14 +1,14 @@
-# python-db-types
+# mocksmith
 
-[![CI](https://github.com/gurmeetsaran/python-db-types/actions/workflows/ci.yml/badge.svg)](https://github.com/gurmeetsaran/python-db-types/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/gurmeetsaran/python-db-types/branch/main/graph/badge.svg)](https://codecov.io/gh/gurmeetsaran/python-db-types)
-[![PyPI version](https://badge.fury.io/py/python-db-types.svg)](https://badge.fury.io/py/python-db-types)
-[![Python Versions](https://img.shields.io/pypi/pyversions/python-db-types.svg)](https://pypi.org/project/python-db-types/)
+[![CI](https://github.com/gurmeetsaran/mocksmith/actions/workflows/ci.yml/badge.svg)](https://github.com/gurmeetsaran/mocksmith/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/gurmeetsaran/mocksmith/branch/main/graph/badge.svg)](https://codecov.io/gh/gurmeetsaran/mocksmith)
+[![PyPI version](https://badge.fury.io/py/mocksmith.svg)](https://badge.fury.io/py/mocksmith)
+[![Python Versions](https://img.shields.io/pypi/pyversions/mocksmith.svg)](https://pypi.org/project/mocksmith/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
 
-Specialized database types with validation for Python dataclasses and Pydantic models.
+Type-safe data validation with automatic mock generation for Python dataclasses and Pydantic models. Build robust data models with database-aware validation and generate realistic test data with a single decorator.
 
 ## Features
 
@@ -20,7 +20,7 @@ Specialized database types with validation for Python dataclasses and Pydantic m
 - **Comprehensive Types**: STRING (VARCHAR, CHAR, TEXT), NUMERIC (INTEGER, DECIMAL, FLOAT), TEMPORAL (DATE, TIME, TIMESTAMP), and more
 - **Mock Data Generation**: Built-in mock/fake data generation for testing with `@mockable` decorator
 
-## Why python-db-types?
+## Why mocksmith?
 
 ### Before (Traditional Approach)
 ```python
@@ -40,10 +40,10 @@ class Product(BaseModel):
         return v
 ```
 
-### After (With python-db-types)
+### After (With mocksmith)
 ```python
 from pydantic import BaseModel
-from db_types import Varchar, Money, Boolean
+from mocksmith import Varchar, Money, Boolean
 
 class Product(BaseModel):
     name: Varchar(100)         # Enforces VARCHAR(100) constraint
@@ -61,17 +61,17 @@ class Product(BaseModel):
 ## Installation
 
 ```bash
-pip install python-db-types
+pip install mocksmith
 ```
 
 For Pydantic support:
 ```bash
-pip install "python-db-types[pydantic]"
+pip install "mocksmith[pydantic]"
 ```
 
 For mock data generation:
 ```bash
-pip install "python-db-types[mock]"
+pip install "mocksmith[mock]"
 ```
 
 ## Import Structure
@@ -82,7 +82,7 @@ The library organizes types into two categories:
 Core database types are available directly from the main package:
 
 ```python
-from db_types import (
+from mocksmith import (
     # String types
     VARCHAR, CHAR, TEXT, Varchar, Char, Text,
     # Numeric types
@@ -98,7 +98,7 @@ from db_types import (
 Specialized types for common use cases are available from the `specialized` submodule:
 
 ```python
-from db_types.specialized import (
+from mocksmith.specialized import (
     # Geographic types
     CountryCode,  # ISO 3166-1 alpha-2 country codes
     City,         # City names
@@ -120,7 +120,7 @@ This separation keeps the main namespace clean and makes it clear which types ar
 
 ```python
 from pydantic import BaseModel
-from db_types import Varchar, Integer, Boolean, Money
+from mocksmith import Varchar, Integer, Boolean, Money
 
 class User(BaseModel):
     id: Integer()
@@ -151,7 +151,7 @@ The same syntax works with dataclasses! See full examples:
 
 ```python
 from pydantic import BaseModel
-from db_types import Varchar, Text, Money, Boolean, Timestamp
+from mocksmith import Varchar, Text, Money, Boolean, Timestamp
 
 class Product(BaseModel):
     sku: Varchar(20)
@@ -165,7 +165,7 @@ class Product(BaseModel):
 **User Account with Constraints:**
 
 ```python
-from db_types import Integer, PositiveInteger, NonNegativeInteger
+from mocksmith import Integer, PositiveInteger, NonNegativeInteger
 
 class UserAccount(BaseModel):
     user_id: PositiveInteger()
@@ -184,8 +184,8 @@ Generate realistic test data automatically with the `@mockable` decorator:
 
 ```python
 from dataclasses import dataclass
-from db_types import Varchar, Integer, Date, mockable
-from db_types.specialized import Email, CountryCode
+from mocksmith import Varchar, Integer, Date, mockable
+from mocksmith.specialized import Email, CountryCode
 
 @mockable
 @dataclass
@@ -229,7 +229,7 @@ The library provides a clean, Pythonic interface for defining database types tha
 ```python
 # Works with Pydantic
 from pydantic import BaseModel
-from db_types import Varchar, Integer, Money, Date, Boolean, Text
+from mocksmith import Varchar, Integer, Money, Date, Boolean, Text
 
 class Product(BaseModel):
     sku: Varchar(20)
@@ -240,7 +240,7 @@ class Product(BaseModel):
 
 # Also works with dataclasses!
 from dataclasses import dataclass
-from db_types.dataclass_integration import validate_dataclass
+from mocksmith.dataclass_integration import validate_dataclass
 
 @validate_dataclass
 @dataclass
@@ -253,8 +253,8 @@ class Product:
 
 # Instead of the verbose way:
 # from typing import Annotated
-# from db_types.types.string import VARCHAR
-# from db_types.types.numeric import DECIMAL
+# from mocksmith.types.string import VARCHAR
+# from mocksmith.types.numeric import DECIMAL
 # class Product:
 #     sku: Annotated[str, VARCHAR(20)]
 #     name: Annotated[str, VARCHAR(100)]
@@ -312,7 +312,7 @@ Python's `Optional` type indicates fields that can be None:
 ```python
 from typing import Optional
 from pydantic import BaseModel
-from db_types import Varchar, Integer, Text
+from mocksmith import Varchar, Integer, Text
 
 class Example(BaseModel):
     # Required field
@@ -335,7 +335,7 @@ phone: Optional[Varchar(20)] = None    # Optional field with no default
 
 ```python
 from pydantic import BaseModel
-from db_types import Money, Boolean, Date, Timestamp
+from mocksmith import Money, Boolean, Date, Timestamp
 
 class Order(BaseModel):
     # String to Decimal conversion
@@ -363,7 +363,7 @@ order = Order(
 
 ```python
 from pydantic import BaseModel, field_validator
-from db_types import Varchar, Integer, Money
+from mocksmith import Varchar, Integer, Money
 
 class Product(BaseModel):
     name: Varchar(50)
@@ -387,7 +387,7 @@ class Product(BaseModel):
 
 ```python
 from pydantic import BaseModel, ConfigDict
-from db_types import Varchar, Money, Timestamp
+from mocksmith import Varchar, Money, Timestamp
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(
@@ -450,8 +450,8 @@ from typing import Optional
 from datetime import datetime, date
 from decimal import Decimal
 
-from db_types import Varchar, Integer, Date, DecimalType, Text, BigInt, Timestamp
-from db_types.dataclass_integration import validate_dataclass
+from mocksmith import Varchar, Integer, Date, DecimalType, Text, BigInt, Timestamp
+from mocksmith.dataclass_integration import validate_dataclass
 
 @validate_dataclass
 @dataclass
@@ -565,7 +565,7 @@ bool_type.deserialize(0)        # False
 The library provides specialized numeric types with built-in constraints for common validation scenarios:
 
 ```python
-from db_types import Integer, PositiveInteger, NonNegativeInteger
+from mocksmith import Integer, PositiveInteger, NonNegativeInteger
 
 # Enhanced Integer functions - no constraints = standard type
 id: Integer()                    # Standard 32-bit integer
@@ -614,8 +614,8 @@ Integer(
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/python-db-types.git
-cd python-db-types
+git clone https://github.com/gurmeetsaran/mocksmith.git
+cd mocksmith
 ```
 
 2. Install Poetry (if not already installed):

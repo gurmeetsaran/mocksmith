@@ -4,8 +4,8 @@ from typing import Annotated, Optional
 
 import pytest
 
-from db_types import BOOLEAN, DATE, INTEGER, VARCHAR
-from db_types.pydantic_integration import PYDANTIC_AVAILABLE, DBModel, DBTypeValidator
+from mocksmith import BOOLEAN, DATE, INTEGER, VARCHAR
+from mocksmith.pydantic_integration import PYDANTIC_AVAILABLE, DBModel, DBTypeValidator
 
 if not PYDANTIC_AVAILABLE:
     pytest.skip("Pydantic not installed", allow_module_level=True)
@@ -122,7 +122,7 @@ class TestPydanticIntegration:
     def test_complex_validation(self):
         from decimal import Decimal
 
-        from db_types import DECIMAL
+        from mocksmith import DECIMAL
 
         class Invoice(BaseModel):
             number: Annotated[str, DBTypeValidator(VARCHAR(20))]

@@ -1,10 +1,10 @@
-"""Example showing dataclass usage with db_types including mocking and specialized types."""
+"""Example showing dataclass usage with mocksmith including mocking and specialized types."""
 
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
 
-from db_types import (  # Basic types with clean syntax; For mocking
+from mocksmith import (  # Basic types with clean syntax; For mocking
     Boolean,
     Date,
     DecimalType,
@@ -12,8 +12,8 @@ from db_types import (  # Basic types with clean syntax; For mocking
     Varchar,
     mockable,
 )
-from db_types.dataclass_integration import validate_dataclass
-from db_types.specialized import (  # Specialized types - work directly with dataclasses
+from mocksmith.dataclass_integration import validate_dataclass
+from mocksmith.specialized import (  # Specialized types - work directly with dataclasses
     City,
     CountryCode,
     Email,

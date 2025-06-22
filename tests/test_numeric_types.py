@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from db_types.types.numeric import (
+from mocksmith.types.numeric import (
     BIGINT,
     DECIMAL,
     DOUBLE,

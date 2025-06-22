@@ -2,7 +2,7 @@
 
 import pytest
 
-from db_types.types.string import CHAR, TEXT, VARCHAR
+from mocksmith.types.string import CHAR, TEXT, VARCHAR
 
 
 class TestVARCHAR:

@@ -1,8 +1,8 @@
 """Tests for SQL type generation across all database types."""
 
-from db_types.types.binary import BINARY, BLOB, VARBINARY
-from db_types.types.boolean import BOOLEAN
-from db_types.types.constraints import (
+from mocksmith.types.binary import BINARY, BLOB, VARBINARY
+from mocksmith.types.boolean import BOOLEAN
+from mocksmith.types.constraints import (
     ConstrainedBigInt,
     ConstrainedInteger,
     ConstrainedSmallInt,
@@ -12,7 +12,7 @@ from db_types.types.constraints import (
     NonPositiveInteger,
     PositiveInteger,
 )
-from db_types.types.numeric import (
+from mocksmith.types.numeric import (
     BIGINT,
     DECIMAL,
     DOUBLE,
@@ -23,8 +23,8 @@ from db_types.types.numeric import (
     SMALLINT,
     TINYINT,
 )
-from db_types.types.string import CHAR, TEXT, VARCHAR
-from db_types.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
+from mocksmith.types.string import CHAR, TEXT, VARCHAR
+from mocksmith.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
 
 
 class TestStringSQLTypes:

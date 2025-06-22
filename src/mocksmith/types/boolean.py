@@ -2,7 +2,7 @@
 
 from typing import Any, Union
 
-from db_types.types.base import DBType
+from mocksmith.types.base import DBType
 
 
 class BOOLEAN(DBType[bool]):

@@ -6,7 +6,7 @@ test:
 
 # Run tests with coverage (full suite)
 test-cov:
-	poetry run pytest -v --cov=db_types --cov-report=term-missing --cov-fail-under=59
+	poetry run pytest -v --cov=mocksmith --cov-report=term-missing --cov-fail-under=59
 
 # Run only pydantic integration tests
 test-pydantic:
@@ -14,7 +14,7 @@ test-pydantic:
 
 # Run all tests with coverage report
 test-all:
-	poetry run pytest -v --cov=db_types --cov-report=term-missing --cov-report=html --cov-fail-under=59
+	poetry run pytest -v --cov=mocksmith --cov-report=term-missing --cov-report=html --cov-fail-under=59
 	@echo "Coverage report generated in htmlcov/index.html"
 
 # Run linting
@@ -34,7 +34,7 @@ check-all:
 	poetry run isort --check-only src tests
 	poetry run ruff check src tests
 	poetry run pyright
-	poetry run pytest -v --cov=db_types --cov-report=term-missing --cov-fail-under=59
+	poetry run pytest -v --cov=mocksmith --cov-report=term-missing --cov-fail-under=59
 
 # Check consistency between pre-commit, Makefile, and GitHub Actions
 check-consistency:

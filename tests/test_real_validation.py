@@ -3,8 +3,8 @@
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from db_types import Real
-from db_types.types.numeric import REAL
+from mocksmith import Real
+from mocksmith.types.numeric import REAL
 
 
 class TestREALValidation:
