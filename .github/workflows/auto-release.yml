@@ -27,20 +27,30 @@ jobs:
       with:
         python-version: "3.11"
 
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: true
+        virtualenvs-in-project: true
+
     - name: Install dependencies
       run: |
+        poetry install --with dev
         pip install python-semantic-release
 
     - name: Check if release needed
       id: check
       run: |
-        # Check what the next version would be
-        NEXT_VERSION=$(semantic-release version --print-next-version)
-        CURRENT_VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
+        # Use semantic-release to check if a release is needed
+        # It will exit with 0 if changes would be made, 2 if no changes needed
+        set +e
+        semantic-release version --no-commit --no-tag --no-push --no-changelog --no-vcs-release
+        EXIT_CODE=$?
+        set -e
 
-        if [ "$NEXT_VERSION" != "$CURRENT_VERSION" ] && [ -n "$NEXT_VERSION" ]; then
+        if [ $EXIT_CODE -eq 0 ]; then
           echo "should_release=true" >> $GITHUB_OUTPUT
-          echo "new_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
         else
           echo "should_release=false" >> $GITHUB_OUTPUT
         fi
@@ -137,5 +147,3 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         skip-existing: true
-      # TODO: Remove this condition when PyPI is set up
-      if: false
