@@ -106,6 +106,8 @@ from mocksmith.specialized import (
     # Contact types
     Email,        # Email addresses with validation
     PhoneNumber,  # Phone numbers
+
+    # Web types
     URL,          # URLs with validation
 )
 ```
