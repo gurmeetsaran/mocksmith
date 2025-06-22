@@ -109,6 +109,9 @@ from mocksmith.specialized import (
 
     # Web types
     URL,          # URLs with validation
+    IPAddress,    # IPv4 or IPv6 addresses
+    IPv4Address,  # IPv4 addresses only
+    IPv6Address,  # IPv6 addresses only
 )
 ```
 
@@ -223,6 +226,7 @@ See mock examples:
 - [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Complete mock examples with dataclasses
 - [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Complete mock examples with Pydantic
 - [`examples/enum_mock_example.py`](examples/enum_mock_example.py) - Enum support in mock generation
+- [`examples/ip_address_example.py`](examples/ip_address_example.py) - IP address validation and generation
 
 ## Clean Annotation Interface
 
