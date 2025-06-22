@@ -83,27 +83,31 @@ class TestMockFactory:
             optional: Optional[str] = None
             maybe_int: Optional[int] = None
 
-        # Generate multiple to see optional behavior
-        mocks = [mock_factory(OptionalModel) for _ in range(20)]
+        # Test that optional fields CAN be None and CAN have values
+        # Generate many samples to ensure we see both behaviors
+        has_none = False
+        has_value = False
 
-        # All should have required field
-        assert all(isinstance(m.required, str) for m in mocks)
+        # Try up to 100 times to see both behaviors
+        for _ in range(100):
+            mock = mock_factory(OptionalModel)
 
-        # Some should have optional fields, some shouldn't
-        has_optional = sum(1 for m in mocks if m.optional is not None)
-        has_maybe_int = sum(1 for m in mocks if m.maybe_int is not None)
+            # Required field should always be present
+            assert isinstance(mock.required, str)
 
-        # For testing, let's just check that at least one optional field behaves correctly
-        # Since we have 2 optional fields across 20 samples, we should see variation
-        # If both are always None or always not-None, that's the issue
-        all_none = all(m.optional is None and m.maybe_int is None for m in mocks)
-        all_not_none = all(m.optional is not None and m.maybe_int is not None for m in mocks)
+            # Check if we've seen both None and values for optional fields
+            if mock.optional is None or mock.maybe_int is None:
+                has_none = True
+            if mock.optional is not None or mock.maybe_int is not None:
+                has_value = True
 
-        # At least one should have different behavior
-        assert not (all_none or all_not_none), (
-            f"Optional fields not working correctly: "
-            f"has_optional={has_optional}, has_maybe_int={has_maybe_int}"
-        )
+            # If we've seen both behaviors, the test passes
+            if has_none and has_value:
+                break
+
+        # Verify we saw both behaviors
+        assert has_none, "Never generated None for optional fields in 100 attempts"
+        assert has_value, "Never generated values for optional fields in 100 attempts"
 
     def test_mock_with_python_types(self):
         """Test mocking with various Python built-in types."""
