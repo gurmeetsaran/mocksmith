@@ -4,7 +4,7 @@ from decimal import Decimal
 from math import isfinite
 from typing import Any, Optional, Union
 
-from db_types.types.base import DBType
+from mocksmith.types.base import DBType
 
 
 class INTEGER(DBType[int]):

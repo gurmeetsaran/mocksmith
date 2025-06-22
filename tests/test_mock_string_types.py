@@ -2,7 +2,7 @@
 
 import pytest
 
-from db_types import CHAR, TEXT, VARCHAR
+from mocksmith import CHAR, TEXT, VARCHAR
 
 
 class TestVARCHARMock:

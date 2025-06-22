@@ -1,6 +1,6 @@
 """Specialized database types with validation for Python."""
 
-from db_types.annotations import (
+from mocksmith.annotations import (
     BigInt,
     Binary,
     Blob,
@@ -27,16 +27,16 @@ from db_types.annotations import (
     VarBinary,
     Varchar,
 )
-from db_types.types.base import DBType
-from db_types.types.binary import BINARY, BLOB, VARBINARY
-from db_types.types.boolean import BOOLEAN
-from db_types.types.constraints import (
+from mocksmith.types.base import DBType
+from mocksmith.types.binary import BINARY, BLOB, VARBINARY
+from mocksmith.types.boolean import BOOLEAN
+from mocksmith.types.constraints import (
     ConstrainedBigInt,
     ConstrainedInteger,
     ConstrainedSmallInt,
     ConstrainedTinyInt,
 )
-from db_types.types.numeric import (
+from mocksmith.types.numeric import (
     BIGINT,
     DECIMAL,
     DOUBLE,
@@ -47,14 +47,14 @@ from db_types.types.numeric import (
     SMALLINT,
     TINYINT,
 )
-from db_types.types.string import CHAR, TEXT, VARCHAR
-from db_types.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
+from mocksmith.types.string import CHAR, TEXT, VARCHAR
+from mocksmith.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
 
 # Import mock utilities
 try:
-    from db_types.decorators import mockable
-    from db_types.mock_builder import MockBuilder
-    from db_types.mock_factory import mock_factory
+    from mocksmith.decorators import mockable
+    from mocksmith.mock_builder import MockBuilder
+    from mocksmith.mock_factory import mock_factory
 
     MOCK_AVAILABLE = True
 except ImportError:

@@ -6,8 +6,8 @@ from typing import Annotated, Optional
 
 import pytest
 
-from db_types import BOOLEAN, DATE, INTEGER, VARCHAR
-from db_types.dataclass_integration import DBDataclass, validate_dataclass
+from mocksmith import BOOLEAN, DATE, INTEGER, VARCHAR
+from mocksmith.dataclass_integration import DBDataclass, validate_dataclass
 
 # All Python versions now support validation (3.9+)
 skip_validation_on_py38 = pytest.mark.skipif(
@@ -159,7 +159,7 @@ class TestDataclassIntegration:
         from datetime import datetime
         from decimal import Decimal
 
-        from db_types import DECIMAL, TIMESTAMP
+        from mocksmith import DECIMAL, TIMESTAMP
 
         @validate_dataclass
         @dataclass

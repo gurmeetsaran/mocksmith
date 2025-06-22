@@ -14,7 +14,7 @@ from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from typing import Optional
 
-from db_types import (
+from mocksmith import (
     BigInt,
     Binary,
     Blob,
@@ -39,7 +39,7 @@ from db_types import (
     VarBinary,
     Varchar,
 )
-from db_types.dataclass_integration import validate_dataclass
+from mocksmith.dataclass_integration import validate_dataclass
 
 # ============================================================================
 # EXAMPLE 1: Comprehensive Employee Model

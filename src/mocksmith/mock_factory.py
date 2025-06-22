@@ -3,7 +3,7 @@
 from dataclasses import MISSING, fields, is_dataclass
 from typing import Any, TypeVar, Union, get_args, get_origin
 
-from db_types.types.base import DBType
+from mocksmith.types.base import DBType
 
 T = TypeVar("T")
 

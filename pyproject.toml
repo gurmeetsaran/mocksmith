@@ -3,13 +3,13 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "python-db-types"
+name = "mocksmith"
 version = "0.1.0"
-description = "Specialized database types with validation for Python"
+description = "Type-safe data validation and mocking for Python dataclasses and Pydantic models"
 authors = ["Gurmeet Saran <gurmeetx@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-keywords = ["database", "types", "validation", "sql", "pydantic"]
+keywords = ["mock", "validation", "dataclass", "pydantic", "testing", "faker", "types", "sql"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -23,14 +23,13 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-packages = [{include = "db_types", from = "src"}]
+packages = [{include = "mocksmith", from = "src"}]
 
 [tool.poetry.urls]
-"Homepage" = "https://github.com/gurmeetsaran/python-db-types"
-"Documentation" = "https://python-db-types.readthedocs.io"
-"Repository" = "https://github.com/gurmeetsaran/python-db-types"
-"Bug Tracker" = "https://github.com/gurmeetsaran/python-db-types/issues"
-"Changelog" = "https://github.com/gurmeetsaran/python-db-types/blob/main/CHANGELOG.md"
+"Homepage" = "https://github.com/gurmeetsaran/mocksmith"
+"Repository" = "https://github.com/gurmeetsaran/mocksmith"
+"Bug Tracker" = "https://github.com/gurmeetsaran/mocksmith/issues"
+"Changelog" = "https://github.com/gurmeetsaran/mocksmith/blob/main/CHANGELOG.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -76,10 +75,10 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["db_types"]
+known-first-party = ["mocksmith"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/db_types/annotations.py" = ["N802"]  # Allow PascalCase function names for clean API
+"src/mocksmith/annotations.py" = ["N802"]  # Allow PascalCase function names for clean API
 
 [tool.pyright]
 pythonVersion = "3.9"
@@ -100,7 +99,7 @@ python_functions = ["test_*"]
 addopts = "-ra --strict-markers"
 
 [tool.coverage.run]
-source = ["src/db_types"]
+source = ["src/mocksmith"]
 omit = ["*/_version.py"]
 
 [tool.coverage.report]
@@ -123,5 +122,5 @@ include = '\.pyi?$'
 [tool.isort]
 profile = "black"
 line_length = 100
-known_first_party = ["db_types"]
+known_first_party = ["mocksmith"]
 skip_gitignore = true

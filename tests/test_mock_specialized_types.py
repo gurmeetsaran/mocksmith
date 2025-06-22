@@ -1,6 +1,6 @@
 """Tests for mock data generation in specialized types."""
 
-from db_types.specialized import URL, City, CountryCode, Email, PhoneNumber, State, ZipCode
+from mocksmith.specialized import URL, City, CountryCode, Email, PhoneNumber, State, ZipCode
 
 
 class TestCountryCodeMock:

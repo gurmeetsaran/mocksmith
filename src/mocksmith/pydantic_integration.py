@@ -14,7 +14,7 @@ except ImportError:
     BaseModel = None
     core_schema = None
 
-from db_types.types.base import DBType
+from mocksmith.types.base import DBType
 
 if PYDANTIC_AVAILABLE and core_schema is not None:
     assert core_schema is not None  # Type assertion for pyright

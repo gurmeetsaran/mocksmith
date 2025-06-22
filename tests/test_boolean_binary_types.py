@@ -2,8 +2,8 @@
 
 import pytest
 
-from db_types.types.binary import BINARY, BLOB, VARBINARY
-from db_types.types.boolean import BOOLEAN
+from mocksmith.types.binary import BINARY, BLOB, VARBINARY
+from mocksmith.types.boolean import BOOLEAN
 
 
 class TestBOOLEAN:

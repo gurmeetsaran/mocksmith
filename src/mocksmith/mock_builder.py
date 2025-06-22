@@ -82,7 +82,7 @@ class MockBuilder(Generic[T]):
         Returns:
             Mock instance of the target class
         """
-        from db_types.mock_factory import mock_factory
+        from mocksmith.mock_factory import mock_factory
 
         return mock_factory(self._target_class, **self._overrides)
 

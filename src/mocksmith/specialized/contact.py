@@ -3,7 +3,7 @@
 import re
 from typing import Any
 
-from db_types.types.string import VARCHAR
+from mocksmith.types.string import VARCHAR
 
 
 class Email(VARCHAR):

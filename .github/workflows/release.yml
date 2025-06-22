@@ -58,7 +58,7 @@ jobs:
     - name: Run tests
       shell: bash
       run: |
-        poetry run pytest tests -v --cov=db_types --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=59
+        poetry run pytest tests -v --cov=mocksmith --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=59
 
   build:
     needs: test

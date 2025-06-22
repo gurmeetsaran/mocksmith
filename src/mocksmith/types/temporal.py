@@ -3,7 +3,7 @@
 from datetime import date, datetime, time
 from typing import Any, Union
 
-from db_types.types.base import DBType
+from mocksmith.types.base import DBType
 
 
 class DATE(DBType[date]):

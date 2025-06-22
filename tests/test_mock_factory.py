@@ -7,14 +7,14 @@ from typing import Annotated, Optional
 
 import pytest
 
-from db_types import VARCHAR, mock_factory, mockable
-from db_types.specialized import City, CountryCode, Email
+from mocksmith import VARCHAR, mock_factory, mockable
+from mocksmith.specialized import City, CountryCode, Email
 
 # Import Pydantic if available
 try:
     from pydantic import BaseModel
 
-    from db_types.pydantic_integration import DBTypeValidator
+    from mocksmith.pydantic_integration import DBTypeValidator
 
     PYDANTIC_AVAILABLE = True
 except ImportError:
@@ -331,7 +331,7 @@ class TestPydanticMocking:
 
     def test_mock_pydantic_with_db_types(self):
         """Test mocking a Pydantic model with db_types using annotations."""
-        from db_types import Boolean, Integer, Varchar
+        from mocksmith import Boolean, Integer, Varchar
 
         class UserModel(BaseModel):
             username: Varchar(30)
@@ -366,7 +366,7 @@ class TestPydanticMocking:
 
     def test_mockable_decorator_with_pydantic(self):
         """Test @mockable decorator with Pydantic models."""
-        from db_types import Integer, Varchar
+        from mocksmith import Integer, Varchar
 
         @mockable
         class Product(BaseModel):
@@ -396,7 +396,7 @@ class TestPydanticMocking:
 
     def test_pydantic_optional_fields(self):
         """Test mocking Pydantic models with optional fields."""
-        from db_types import Varchar
+        from mocksmith import Varchar
 
         class OptionalModel(BaseModel):
             required: Varchar(50)
@@ -419,8 +419,8 @@ class TestPydanticMocking:
 
     def test_pydantic_validation_on_mock(self):
         """Test that mocked data passes Pydantic validation."""
-        from db_types import Integer, Varchar
-        from db_types.specialized import Email as EmailType
+        from mocksmith import Integer, Varchar
+        from mocksmith.specialized import Email as EmailType
 
         @mockable
         class ValidatedModel(BaseModel):
@@ -443,7 +443,7 @@ class TestDefaultMockImplementation:
 
     def test_numeric_types_default_mock(self):
         """Test that numeric types use default mock implementation."""
-        from db_types import DECIMAL, FLOAT, INTEGER
+        from mocksmith import DECIMAL, FLOAT, INTEGER
 
         # These should all work with default implementation
         int_mock = INTEGER().mock()
@@ -459,7 +459,7 @@ class TestDefaultMockImplementation:
         """Test that temporal types use default mock implementation."""
         from datetime import time
 
-        from db_types import DATE, TIME, TIMESTAMP
+        from mocksmith import DATE, TIME, TIMESTAMP
 
         date_mock = DATE().mock()
         assert isinstance(date_mock, date)
@@ -472,7 +472,7 @@ class TestDefaultMockImplementation:
 
     def test_binary_types_default_mock(self):
         """Test that binary types use default mock implementation."""
-        from db_types import BINARY, VARBINARY
+        from mocksmith import BINARY, VARBINARY
 
         binary_mock = BINARY(32).mock()
         assert isinstance(binary_mock, bytes)

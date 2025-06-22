@@ -2,7 +2,7 @@
 
 from typing import Any, Optional
 
-from db_types.types.numeric import BIGINT, INTEGER, SMALLINT, TINYINT
+from mocksmith.types.numeric import BIGINT, INTEGER, SMALLINT, TINYINT
 
 
 class ConstrainedInteger(INTEGER):

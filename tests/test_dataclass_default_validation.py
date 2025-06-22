@@ -5,8 +5,8 @@ from typing import Optional
 
 import pytest
 
-from db_types import Integer, SmallInt, TinyInt
-from db_types.dataclass_integration import validate_dataclass
+from mocksmith import Integer, SmallInt, TinyInt
+from mocksmith.dataclass_integration import validate_dataclass
 
 
 class TestDefaultValueValidation:

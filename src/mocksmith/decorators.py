@@ -2,8 +2,8 @@
 
 from typing import Callable, Optional, TypeVar, Union, overload
 
-from db_types.mock_builder import MockBuilder
-from db_types.mock_factory import mock_factory
+from mocksmith.mock_builder import MockBuilder
+from mocksmith.mock_factory import mock_factory
 
 T = TypeVar("T")
 

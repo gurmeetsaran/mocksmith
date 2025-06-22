@@ -2,7 +2,7 @@
 
 from typing import Any, Optional, Union
 
-from db_types.types.base import DBType
+from mocksmith.types.base import DBType
 
 
 class BINARY(DBType[bytes]):
