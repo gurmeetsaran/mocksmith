@@ -50,6 +50,20 @@ from db_types.types.numeric import (
 from db_types.types.string import CHAR, TEXT, VARCHAR
 from db_types.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
 
+# Import mock utilities
+try:
+    from db_types.decorators import mockable
+    from db_types.mock_builder import MockBuilder
+    from db_types.mock_factory import mock_factory
+
+    MOCK_AVAILABLE = True
+except ImportError:
+    MOCK_AVAILABLE = False
+    mockable = None  # type: ignore
+    MockBuilder = None  # type: ignore
+    mock_factory = None  # type: ignore
+
+# Core exports
 __all__ = [
     "BIGINT",
     "BINARY",
@@ -102,5 +116,9 @@ __all__ = [
     "VarBinary",
     "Varchar",
 ]
+
+# Add mock utilities if available
+if MOCK_AVAILABLE:
+    __all__.extend(["MockBuilder", "mock_factory", "mockable"])
 
 __version__ = "0.1.0"

@@ -41,6 +41,24 @@ class VARCHAR(DBType[str]):
     def __repr__(self) -> str:
         return f"VARCHAR({self.length})"
 
+    def _generate_mock(self, fake: Any) -> str:
+        """Generate mock VARCHAR data."""
+        if self.length <= 10:
+            # For short strings, use a single word
+            text = fake.word()
+        elif self.length <= 30:
+            # For medium strings, use a name
+            text = fake.name()
+        elif self.length <= 100:
+            # For longer strings, use a sentence
+            text = fake.sentence(nb_words=6, variable_nb_words=True)
+        else:
+            # For very long strings, use paragraph
+            text = fake.text(max_nb_chars=self.length)
+
+        # Ensure the text fits within the length constraint
+        return text[: self.length]
+
 
 class CHAR(DBType[str]):
     """Fixed-length character string."""
@@ -80,6 +98,26 @@ class CHAR(DBType[str]):
     def __repr__(self) -> str:
         return f"CHAR({self.length})"
 
+    def _generate_mock(self, fake: Any) -> str:
+        """Generate mock CHAR data."""
+        # CHAR is fixed-length, so we generate appropriate data
+        if self.length <= 2:
+            # For very short CHAR, use country/state codes
+            text = fake.country_code()
+        elif self.length <= 10:
+            # For short CHAR, use a word
+            text = fake.word()
+        else:
+            # For longer CHAR, use appropriate length text
+            text = fake.text(max_nb_chars=self.length)
+
+        # Ensure exact length (CHAR is fixed-length)
+        if len(text) > self.length:
+            return text[: self.length]
+        else:
+            # Pad with spaces if needed
+            return text.ljust(self.length)
+
 
 class TEXT(DBType[str]):
     """Variable-length text with no specific upper limit."""
@@ -116,3 +154,19 @@ class TEXT(DBType[str]):
         if self.max_length:
             return f"TEXT(max_length={self.max_length})"
         return "TEXT()"
+
+    def _generate_mock(self, fake: Any) -> str:
+        """Generate mock TEXT data."""
+        if self.max_length:
+            if self.max_length <= 200:
+                # For smaller text, use paragraph
+                text = fake.paragraph(nb_sentences=3)
+            else:
+                # For larger text, use multiple paragraphs
+                text = fake.text(max_nb_chars=min(self.max_length, 1000))
+
+            # Ensure it fits within max_length
+            return text[: self.max_length]
+        else:
+            # No limit, generate a reasonable amount of text
+            return fake.text(max_nb_chars=500)
