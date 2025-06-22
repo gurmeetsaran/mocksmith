@@ -1,6 +1,9 @@
 # CHANGELOG
 
 
+## v1.1.0 (2025-06-22)
+
+
 ## v1.0.0 (2025-06-22)
 
 ### Chores
@@ -127,6 +130,9 @@ Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.c
 - Fixing release package error
   ([`75bed0a`](https://github.com/gurmeetsaran/mocksmith/commit/75bed0aa62dce6c5200b21c92a1e298b39ee031e))
 
+- Update version
+  ([`3fc7e13`](https://github.com/gurmeetsaran/mocksmith/commit/3fc7e1338a222351afa5ea09398d51cf2d65e5c0))
+
 - Updated test cases and github action for release management + pyright integration
   ([#1](https://github.com/gurmeetsaran/mocksmith/pull/1),
   [`a4423b5`](https://github.com/gurmeetsaran/mocksmith/commit/a4423b52018e20cadf26de1cef5d03ddec0dd10e))
@@ -197,6 +203,14 @@ Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.c
 
 ### Features
 
+- Add automatic enum support for mock generation
+  ([`ff1ecba`](https://github.com/gurmeetsaran/mocksmith/commit/ff1ecba3534bbbd7113bf9a987a89a8b16a28fb1))
+
+- Mock factory now automatically handles Python Enum types - Randomly selects from available enum
+  values - Works with Optional[Enum] fields (80% chance of value, 20% None) - Supports all enum
+  types: string values, integers, and auto() - Added comprehensive tests and example - Works
+  seamlessly with both dataclasses and Pydantic models
+
 - Add constrained types for int ([#5](https://github.com/gurmeetsaran/mocksmith/pull/5),
   [`7670767`](https://github.com/gurmeetsaran/mocksmith/commit/7670767b020d72f85560b2ee965ea0410b9fd7a4))
 
@@ -242,7 +256,3 @@ BREAKING CHANGE: URL import path changed from mocksmith.specialized.contact to m
 
 - Remove unneeded file
   ([`83a66df`](https://github.com/gurmeetsaran/mocksmith/commit/83a66df49bad7e61b1b9b4e6299ca98e20c3d3a3))
-
-### BREAKING CHANGES
-
-- Url import path changed from mocksmith.specialized.contact to mocksmith.specialized
