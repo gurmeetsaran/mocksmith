@@ -1,4 +1,4 @@
-name: Release
+name: Release Testing
 
 on:
   push:
@@ -7,11 +7,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
-  test:
+  test-all-platforms:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -60,95 +59,12 @@ jobs:
       run: |
         poetry run pytest tests -v --cov=mocksmith --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=59
 
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: latest
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-
-    - name: Get version from tag
-      if: startsWith(github.ref, 'refs/tags/v')
-      id: tag_version
-      run: |
-        echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
-    - name: Update version in pyproject.toml
-      if: startsWith(github.ref, 'refs/tags/v')
-      run: |
-        poetry version ${{ steps.tag_version.outputs.VERSION }}
-
-    - name: Build package
-      run: poetry build
-
-    - name: Check package
-      run: |
-        pip install twine
-        twine check dist/*
-
-    - name: Upload artifacts
+    - name: Upload test results
+      if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: dist
-        path: dist/
-
-  create-release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: dist
-        path: dist/
-
-    - name: Get version from tag
-      id: tag_version
-      run: |
-        echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: dist/*
-        generate_release_notes: true
-        draft: false
-        prerelease: ${{ contains(steps.tag_version.outputs.VERSION, 'rc') || contains(steps.tag_version.outputs.VERSION, 'beta') || contains(steps.tag_version.outputs.VERSION, 'alpha') }}
-
-  publish-pypi:
-    needs: [build, create-release]
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      id-token: write  # Required for trusted publishing
-
-    steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: dist
-        path: dist/
-
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        skip-existing: true
-      # Comment out the publish step until PyPI is set up
-      # Uncomment when you have configured trusted publishing on PyPI
-      if: false  # TODO: Remove this line after setting up PyPI
+        name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+        path: |
+          .coverage
+          htmlcov/
+          coverage.xml

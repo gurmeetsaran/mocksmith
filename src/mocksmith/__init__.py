@@ -1,5 +1,7 @@
 """Specialized database types with validation for Python."""
 
+__version__ = "0.1.0"
+
 from mocksmith.annotations import (
     BigInt,
     Binary,
@@ -120,5 +122,3 @@ __all__ = [
 # Add mock utilities if available
 if MOCK_AVAILABLE:
     __all__.extend(["MockBuilder", "mock_factory", "mockable"])
-
-__version__ = "0.1.0"
