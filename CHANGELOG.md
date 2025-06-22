@@ -3,6 +3,16 @@
 
 ## v1.1.0 (2025-06-22)
 
+### Features
+
+- Add automatic enum support for mock generation
+  ([`ff1ecba`](https://github.com/gurmeetsaran/mocksmith/commit/ff1ecba3534bbbd7113bf9a987a89a8b16a28fb1))
+
+  Mock factory now automatically handles Python Enum types - Randomly selects from available enum
+  values - Works with Optional[Enum] fields (80% chance of value, 20% None) - Supports all enum
+  types: string values, integers, and auto() - Added comprehensive tests and example - Works
+  seamlessly with both dataclasses and Pydantic models
+
 
 ## v1.0.0 (2025-06-22)
 
@@ -202,14 +212,6 @@ Signed-off-by: dependabot[bot] <support@github.com>
 Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
 
 ### Features
-
-- Add automatic enum support for mock generation
-  ([`ff1ecba`](https://github.com/gurmeetsaran/mocksmith/commit/ff1ecba3534bbbd7113bf9a987a89a8b16a28fb1))
-
-- Mock factory now automatically handles Python Enum types - Randomly selects from available enum
-  values - Works with Optional[Enum] fields (80% chance of value, 20% None) - Supports all enum
-  types: string values, integers, and auto() - Added comprehensive tests and example - Works
-  seamlessly with both dataclasses and Pydantic models
 
 - Add constrained types for int ([#5](https://github.com/gurmeetsaran/mocksmith/pull/5),
   [`7670767`](https://github.com/gurmeetsaran/mocksmith/commit/7670767b020d72f85560b2ee965ea0410b9fd7a4))
