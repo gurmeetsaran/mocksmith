@@ -141,7 +141,17 @@ jobs:
         push: true
         changelog: true
         vcs_release: true  # Create GitHub release
-        build: true  # Build packages
+        build: false  # We'll build manually with Poetry
+
+    - name: Build distribution packages
+      run: |
+        poetry build
+
+    - name: Upload artifacts to GitHub Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload "v${{ steps.release.outputs.version }}" dist/* --clobber
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
