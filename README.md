@@ -217,10 +217,12 @@ The same `@mockable` decorator works with Pydantic models! Mock generation:
 - Generates appropriate data based on field names (e.g., 'email' generates valid emails)
 - Supports specialized types with realistic data
 - Works with both dataclasses and Pydantic models
+- Automatically handles Python Enum types with random value selection
 
 See mock examples:
 - [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Complete mock examples with dataclasses
 - [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Complete mock examples with Pydantic
+- [`examples/enum_mock_example.py`](examples/enum_mock_example.py) - Enum support in mock generation
 
 ## Clean Annotation Interface
 

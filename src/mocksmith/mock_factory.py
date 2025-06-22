@@ -1,11 +1,30 @@
 """Mock factory for automatic mock generation of dataclasses and Pydantic models."""
 
+import enum
 from dataclasses import MISSING, fields, is_dataclass
 from typing import Any, TypeVar, Union, get_args, get_origin
 
 from mocksmith.types.base import DBType
 
 T = TypeVar("T")
+
+# Create a singleton Faker instance to avoid repeated instantiation
+try:
+    from faker import Faker  # pyright: ignore[reportMissingImports]
+
+    _fake = Faker()
+except ImportError:
+    _fake = None  # type: ignore[assignment]
+
+
+def _get_faker() -> Any:
+    """Get the Faker instance, raising an error if not available."""
+    if _fake is None:
+        raise ImportError(
+            "faker library is required for mock generation. "
+            "Install with: pip install mocksmith[mock]"
+        )
+    return _fake
 
 
 def mock_factory(cls: type[T], **overrides: Any) -> T:
@@ -120,14 +139,15 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
             # It's an Optional type
             inner_type = next(arg for arg in args if arg is not type(None))
             # For optional fields, sometimes return None
-            from faker import (  # pyright: ignore[reportMissingImports]  # pyright: ignore[reportMissingImports]
-                Faker,
-            )
-
-            fake = Faker()
-            if fake.boolean(chance_of_getting_true=80):  # 80% chance of having a value
+            if _get_faker().boolean(chance_of_getting_true=80):  # 80% chance of having a value
                 return _generate_field_mock(inner_type, field_name, _depth + 1)
             return None
+
+    # Handle Enum types
+    if isinstance(field_type, type) and issubclass(field_type, enum.Enum):
+        # Get all enum values and pick one randomly
+        enum_values = list(field_type)
+        return _get_faker().random_element(enum_values)
 
     # Handle Annotated types (e.g., Annotated[str, VARCHAR(50)])
     if hasattr(field_type, "__metadata__"):  # It's an Annotated type
@@ -164,19 +184,13 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
     # Handle List types
     if origin is list:
         inner_type = get_args(field_type)[0] if get_args(field_type) else str
-        from faker import Faker  # pyright: ignore[reportMissingImports]
-
-        fake = Faker()
-        count = fake.random_int(min=1, max=5)
+        count = _get_faker().random_int(min=1, max=5)
         return [_generate_field_mock(inner_type, field_name, _depth + 1) for _ in range(count)]
 
     # Handle Dict types
     if origin is dict:
-        from faker import Faker  # pyright: ignore[reportMissingImports]
-
-        fake = Faker()
         key_type, value_type = get_args(field_type) if get_args(field_type) else (str, str)
-        count = fake.random_int(min=1, max=3)
+        count = _get_faker().random_int(min=1, max=3)
         return {
             _generate_field_mock(key_type, f"{field_name}_key", _depth + 1): _generate_field_mock(
                 value_type, f"{field_name}_value", _depth + 1
@@ -186,71 +200,64 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
 
     # Smart generation based on field name (only if we don't have a DBType)
     if field_name and not _depth:  # Only do smart generation at top level
-        from faker import Faker  # pyright: ignore[reportMissingImports]
-
-        fake = Faker()
-
         name_lower = field_name.lower()
 
         # Common patterns
         if field_type is str:
             if "email" in name_lower:
-                return fake.email()
+                return _get_faker().email()
             elif "phone" in name_lower:
-                return fake.phone_number()
+                return _get_faker().phone_number()
             elif "url" in name_lower or "website" in name_lower:
-                return fake.url()
+                return _get_faker().url()
             elif "address" in name_lower:
-                return fake.address()
+                return _get_faker().address()
             elif "city" in name_lower:
-                return fake.city()
+                return _get_faker().city()
             elif "country" in name_lower:
-                return fake.country()
+                return _get_faker().country()
             elif "name" in name_lower:
                 if "first" in name_lower:
-                    return fake.first_name()
+                    return _get_faker().first_name()
                 elif "last" in name_lower:
-                    return fake.last_name()
+                    return _get_faker().last_name()
                 elif "user" in name_lower:
-                    return fake.user_name()
+                    return _get_faker().user_name()
                 else:
-                    return fake.name()
+                    return _get_faker().name()
             elif "description" in name_lower or "bio" in name_lower:
-                return fake.text(max_nb_chars=200)
+                return _get_faker().text(max_nb_chars=200)
             elif "title" in name_lower:
-                return fake.sentence(nb_words=4).rstrip(".")
+                return _get_faker().sentence(nb_words=4).rstrip(".")
             elif "password" in name_lower:
-                return fake.password()
+                return _get_faker().password()
             elif "token" in name_lower or "key" in name_lower:
-                return fake.sha256()
+                return _get_faker().sha256()
             elif "id" in name_lower and name_lower.endswith("id"):
-                return fake.uuid4()
+                return _get_faker().uuid4()
 
     # Default generation for standard Python types
-    from faker import Faker  # pyright: ignore[reportMissingImports]
-
-    fake = Faker()
 
     if field_type is str:
-        return fake.word()
+        return _get_faker().word()
     elif field_type is int:
-        return fake.random_int()
+        return _get_faker().random_int()
     elif field_type is float:
-        return fake.random.random() * 100
+        return _get_faker().random.random() * 100
     elif field_type is bool:
-        return fake.boolean()
+        return _get_faker().boolean()
     elif field_type.__name__ == "date":
-        return fake.date_object()
+        return _get_faker().date_object()
     elif field_type.__name__ == "datetime":
-        return fake.date_time()
+        return _get_faker().date_time()
     elif field_type.__name__ == "time":
-        return fake.time_object()
+        return _get_faker().time_object()
     elif field_type.__name__ == "Decimal":
         from decimal import Decimal
 
-        return Decimal(str(fake.pyfloat(left_digits=5, right_digits=2)))
+        return Decimal(str(_get_faker().pyfloat(left_digits=5, right_digits=2)))
     elif field_type is bytes:
-        return fake.binary(length=32)
+        return _get_faker().binary(length=32)
     else:
         # Unknown type - return None
         return None
