@@ -81,29 +81,27 @@ def demo_basic_mocking():
 
 
 def demo_specialized_types():
-    """Demonstrate field-name based mock generation."""
-    print("\n\n=== Smart Mock Generation Based on Field Names ===\n")
+    """Demonstrate mock generation with specialized types."""
+    print("\n\n=== Mock Generation with Specialized Types ===\n")
 
     # Generate a mock customer
     customer = Customer.mock()
     print("Generated Customer:")
     print(f"  ID: {customer.id}")
     print(f"  Name: {customer.name}")
-    print(f"  Email: {customer.email}")  # Will look like an email
-    print(f"  Phone: {customer.phone}")  # Will look like a phone number
-    print(
-        f"  Country: {customer.country[:2] if len(customer.country) > 2 else customer.country}"
-    )  # Show as 2-char code
-    print(f"  City: {customer.city}")  # City name
+    print(f"  Email: {customer.email}")
+    print(f"  Phone: {customer.phone}")
+    print(f"  Country: {customer.country}")
+    print(f"  City: {customer.city}")
     print(f"  Postal Code: {customer.postal_code}")
     print(f"  Credit Limit: ${customer.credit_limit}")
     print(f"  Registered: {customer.registered}")
 
-    print("\nNote: Mock generation uses field names to create appropriate data:")
-    print("  • 'email' field → generates email addresses")
-    print("  • 'phone' field → generates phone numbers")
-    print("  • 'city' field → generates city names")
-    print("  • 'country' field → generates country names")
+    print("\nNote: Mock data is generated based on field types:")
+    print("  • Varchar fields generate random strings of appropriate length")
+    print("  • Integer fields generate random integers")
+    print("  • Date fields generate random dates")
+    print("  • DecimalType fields generate random decimal values")
 
     # Mock generation with overrides
     print("\nMock with overrides:")
@@ -232,18 +230,17 @@ def show_dataclass_notes():
     print("\n2. SPECIALIZED TYPES:")
     print("   • Use regular types with appropriate constraints")
     print("   • e.g., Varchar(2) for country codes, Varchar(20) for phone")
-    print("   • Mock generation creates appropriate fake data based on field names")
+    print("   • Mock generation creates random data respecting constraints")
 
     print("\n3. MOCKING:")
     print("   • @mockable adds .mock() and .mock_builder() class methods")
-    print("   • Basic types are automatically mocked")
-    print("   • Specialized types need manual mocking (for now)")
+    print("   • All database types are automatically mocked with appropriate data")
     print("   • Enums are automatically supported - random selection from values")
 
     print("\n4. VALIDATION:")
     print("   • @validate_dataclass adds automatic validation")
     print("   • Each db_type has .validate() method")
-    print("   • Specialized types include format validation (email, URL, etc.)")
+    print("   • Types enforce their constraints (length, precision, etc.)")
 
     print("\n5. ENUM SUPPORT:")
     print("   • Python enums work automatically with @mockable")

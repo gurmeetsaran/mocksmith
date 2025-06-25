@@ -257,64 +257,6 @@ class TestMockBuilder:
             builder.with_values(invalid_field="value")
 
 
-class TestSmartFieldDetection:
-    """Test smart field name detection."""
-
-    def test_email_field_detection(self):
-        """Test that fields named 'email' generate email addresses."""
-
-        @dataclass
-        class Model:
-            email: str
-            user_email: str
-            contact_email: str
-
-        mock = mock_factory(Model)
-
-        assert "@" in mock.email
-        assert "." in mock.email.split("@")[1]
-        assert "@" in mock.user_email
-        assert "@" in mock.contact_email
-
-    def test_name_field_detection(self):
-        """Test that name fields generate appropriate names."""
-
-        @dataclass
-        class Model:
-            name: str
-            first_name: str
-            last_name: str
-            user_name: str
-
-        mock = mock_factory(Model)
-
-        assert isinstance(mock.name, str)
-        assert isinstance(mock.first_name, str)
-        assert isinstance(mock.last_name, str)
-        assert isinstance(mock.user_name, str)
-
-        # first_name and last_name should be shorter than full name
-        assert " " in mock.name  # Full names have spaces
-        assert " " not in mock.first_name
-        assert " " not in mock.last_name
-
-    def test_id_field_detection(self):
-        """Test that ID fields generate UUIDs."""
-
-        @dataclass
-        class Model:
-            id: str
-            user_id: str
-            transaction_id: str
-
-        mock = mock_factory(Model)
-
-        # Should be UUID-like strings
-        assert len(mock.id) == 36  # UUID4 format
-        assert len(mock.user_id) == 36
-        assert "-" in mock.transaction_id
-
-
 @pytest.mark.skipif(not PYDANTIC_AVAILABLE, reason="Pydantic not installed")
 class TestPydanticMocking:
     """Test mocking functionality with Pydantic models."""

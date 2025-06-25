@@ -215,7 +215,7 @@ user = (User.mock_builder()
 
 The same `@mockable` decorator works with Pydantic models! Mock generation:
 - Respects all field constraints (length, format, etc.)
-- Generates appropriate data based on field names (e.g., 'email' generates valid emails)
+- Generates appropriate mock data for each type
 - Supports specialized types with realistic data
 - Works with both dataclasses and Pydantic models
 - Automatically handles Python Enum types with random value selection

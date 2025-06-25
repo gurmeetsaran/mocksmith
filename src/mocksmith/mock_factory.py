@@ -50,16 +50,22 @@ def _handle_unsupported_type(field_type: Any, field_name: str = "") -> Any:
         # For pathlib.Path - try to return actual Path object
         try:
             import pathlib
+            import tempfile
+
+            # Use tempfile to get secure temporary directory
+            temp_dir = tempfile.gettempdir()
 
             if field_name:
                 name_lower = field_name.lower()
                 if "dir" in name_lower or "directory" in name_lower:
-                    return pathlib.Path("/tmp/mock_directory")
+                    return pathlib.Path(temp_dir) / "mock_directory"
                 elif "file" in name_lower:
-                    return pathlib.Path("/tmp/mock_file.txt")
-            return pathlib.Path("/tmp/mock_path")
+                    return pathlib.Path(temp_dir) / "mock_file.txt"
+            return pathlib.Path(temp_dir) / "mock_path"
         except ImportError:
-            return "/tmp/mock_path"
+            import tempfile
+
+            return tempfile.gettempdir() + "/mock_path"
 
     # Try to instantiate with no arguments
     try:
@@ -609,44 +615,6 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
                 items.append(item)
             attempts += 1
         return frozenset(items)
-
-    # Smart generation based on field name (only if we don't have a DBType)
-    if field_name and not _depth:  # Only do smart generation at top level
-        name_lower = field_name.lower()
-
-        # Common patterns
-        if field_type is str:
-            if "email" in name_lower:
-                return _get_faker().email()
-            elif "phone" in name_lower:
-                return _get_faker().phone_number()
-            elif "url" in name_lower or "website" in name_lower:
-                return _get_faker().url()
-            elif "address" in name_lower:
-                return _get_faker().address()
-            elif "city" in name_lower:
-                return _get_faker().city()
-            elif "country" in name_lower:
-                return _get_faker().country()
-            elif "name" in name_lower:
-                if "first" in name_lower:
-                    return _get_faker().first_name()
-                elif "last" in name_lower:
-                    return _get_faker().last_name()
-                elif "user" in name_lower:
-                    return _get_faker().user_name()
-                else:
-                    return _get_faker().name()
-            elif "description" in name_lower or "bio" in name_lower:
-                return _get_faker().text(max_nb_chars=200)
-            elif "title" in name_lower:
-                return _get_faker().sentence(nb_words=4).rstrip(".")
-            elif "password" in name_lower:
-                return _get_faker().password()
-            elif "token" in name_lower or "key" in name_lower:
-                return _get_faker().sha256()
-            elif "id" in name_lower and name_lower.endswith("id"):
-                return _get_faker().uuid4()
 
     # Default generation for standard Python types
 
