@@ -50,7 +50,7 @@ mock = ["faker"]
 pydantic = "^2.0.0"
 
 [tool.poetry.group.mock.dependencies]
-faker = "^33.2.0"
+faker = ">=33.2,<38.0"
 
 [tool.ruff]
 line-length = 100
