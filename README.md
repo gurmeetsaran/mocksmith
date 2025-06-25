@@ -104,13 +104,14 @@ from mocksmith.specialized import (
     ZipCode,      # Postal codes
 
     # Contact types
-    Email,        # Email addresses with validation
     PhoneNumber,  # Phone numbers
-
-    # Web types
-    URL,          # URLs with validation
 )
 ```
+
+**Note**: For email and web types, use Pydantic's built-in types instead:
+- Email → Use `pydantic.EmailStr`
+- URL → Use `pydantic.HttpUrl` or `pydantic.AnyUrl`
+- IP addresses → Use `pydantic.IPvAnyAddress`, `pydantic.IPv4Address`, or `pydantic.IPv6Address`
 
 This separation keeps the main namespace clean and makes it clear which types are fundamental database types versus application-specific types.
 
@@ -185,21 +186,21 @@ Generate realistic test data automatically with the `@mockable` decorator:
 ```python
 from dataclasses import dataclass
 from mocksmith import Varchar, Integer, Date, mockable
-from mocksmith.specialized import Email, CountryCode
+from mocksmith.specialized import PhoneNumber, CountryCode
 
 @mockable
 @dataclass
 class User:
     id: Integer()
     username: Varchar(50)
-    email: Email
+    phone: PhoneNumber
     country: CountryCode
     birth_date: Date()
 
 # Generate mock instances
 user = User.mock()
 print(user.username)  # "Christina Wells"
-print(user.email)     # "michael23@example.com"
+print(user.phone)     # "(555) 123-4567"
 print(user.country)   # "US"
 
 # With overrides
@@ -214,15 +215,14 @@ user = (User.mock_builder()
 
 The same `@mockable` decorator works with Pydantic models! Mock generation:
 - Respects all field constraints (length, format, etc.)
-- Generates appropriate data based on field names (e.g., 'email' generates valid emails)
+- Generates appropriate mock data for each type
 - Supports specialized types with realistic data
 - Works with both dataclasses and Pydantic models
 - Automatically handles Python Enum types with random value selection
 
 See mock examples:
-- [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Complete mock examples with dataclasses
-- [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Complete mock examples with Pydantic
-- [`examples/enum_mock_example.py`](examples/enum_mock_example.py) - Enum support in mock generation
+- [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Complete mock examples with dataclasses including enum support
+- [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Complete mock examples with Pydantic including enum support and built-in types
 
 ## Clean Annotation Interface
 
@@ -306,6 +306,179 @@ class Product:
 - `Blob()` → Large binary object
 
 ## Pydantic Integration Features
+
+### Pydantic Built-in Types Support
+
+Mocksmith now supports automatic mock generation for Pydantic's built-in types:
+
+```python
+from pydantic import BaseModel, EmailStr, HttpUrl, IPvAnyAddress, conint, constr
+from mocksmith import mockable
+
+@mockable
+class ServerConfig(BaseModel):
+    hostname: constr(min_length=1, max_length=253)
+    ip_address: IPvAnyAddress
+    port: conint(ge=1, le=65535)
+    api_url: HttpUrl
+    admin_email: EmailStr
+
+# Generate mock with Pydantic types
+config = ServerConfig.mock()
+print(config.ip_address)  # IPv4Address('192.168.1.100')
+print(config.api_url)     # https://example.com
+print(config.admin_email) # user@example.com
+```
+
+**Tip**: For types that have Pydantic equivalents, prefer using Pydantic's built-in types:
+- Use `EmailStr` instead of `mocksmith.specialized.Email`
+- Use `HttpUrl` or `AnyUrl` instead of `mocksmith.specialized.URL`
+- Use `IPvAnyAddress`, `IPv4Address`, or `IPv6Address` for IP addresses
+
+### Using Pydantic Types in Dataclasses
+
+While Pydantic types can be used as type annotations in dataclasses, there are important limitations:
+
+```python
+from dataclasses import dataclass
+from pydantic import EmailStr, HttpUrl, conint
+
+@dataclass
+class ServerConfig:
+    hostname: str
+    email: EmailStr  # Works as type hint only
+    port: conint(ge=1, le=65535)  # No validation!
+
+# This creates an instance WITHOUT validation
+server = ServerConfig(
+    hostname="api.example.com",
+    email="invalid-email",  # Not validated!
+    port=99999  # Out of range but accepted!
+)
+```
+
+**Key Points**:
+- Pydantic types in dataclasses serve as type hints only
+- No automatic validation occurs
+- Mock generation works but produces regular Python types (str, int, etc.)
+- For validation, use Pydantic's BaseModel instead
+
+See the Pydantic types limitations section in [`examples/dataclass_example.py`](examples/dataclass_example.py) for a complete comparison.
+
+### Supported Pydantic Types for Mock Generation
+
+The `@mockable` decorator supports automatic mock generation for the following Pydantic types:
+
+#### Network Types
+- `HttpUrl` - Generates valid HTTP/HTTPS URLs
+- `AnyHttpUrl` - Generates any HTTP scheme URLs
+- `EmailStr` - Generates valid email addresses
+- `IPvAnyAddress` - Generates IPv4 or IPv6 addresses (80% IPv4, 20% IPv6)
+- `IPvAnyInterface` - Generates IP addresses with CIDR notation
+- `IPvAnyNetwork` - Generates IP network addresses
+
+#### Numeric Types
+- `PositiveInt` - Integers > 0
+- `NegativeInt` - Integers < 0
+- `NonNegativeInt` - Integers >= 0
+- `NonPositiveInt` - Integers <= 0
+- `PositiveFloat` - Floats > 0
+- `NegativeFloat` - Floats < 0
+- `NonNegativeFloat` - Floats >= 0
+- `NonPositiveFloat` - Floats <= 0
+
+#### String/Identifier Types
+- `UUID1`, `UUID3`, `UUID4`, `UUID5` - Generates UUIDs (currently all as UUID4)
+- `SecretStr` - Generates password-like strings
+- `Json` - Generates valid JSON strings
+
+#### Date/Time Types
+- `FutureDate` - Generates dates in the future
+- `PastDate` - Generates dates in the past
+- `FutureDatetime` - Generates datetimes in the future
+- `PastDatetime` - Generates datetimes in the past
+
+#### Constraint Types
+- `conint(ge=1, le=100)` - Integers with min/max constraints
+- `confloat(ge=0.0, le=1.0)` - Floats with min/max constraints
+- `constr(min_length=1, max_length=50)` - Strings with length constraints
+- `constr(pattern=r"^[A-Z]{3}[0-9]{3}$")` - Strings matching regex patterns (limited support)
+- `conlist(item_type, min_length=1, max_length=10)` - Lists with constraints
+
+#### Example Usage
+
+```python
+from pydantic import BaseModel, EmailStr, HttpUrl, conint, PositiveInt
+from mocksmith import mockable
+
+@mockable
+class UserProfile(BaseModel):
+    user_id: PositiveInt
+    email: EmailStr
+    website: HttpUrl
+    age: conint(ge=18, le=120)
+
+# Generate mock data
+user = UserProfile.mock()
+print(user.email)     # "john.doe@example.com"
+print(user.website)   # "https://example.com"
+print(user.age)       # 42 (between 18-120)
+```
+
+**Note**: When using Pydantic types in dataclasses (not BaseModel), the types work as annotations only without validation. The mock generation still works but produces regular Python types.
+
+### Handling Unsupported Types
+
+When `@mockable` encounters an unsupported type, it attempts to handle it intelligently:
+
+1. **Common types** (Path, Set, FrozenSet) - Now supported with appropriate mock values
+2. **Auto-instantiable types** - Tries to create instances with `()`, `None`, `""`, or `0`
+3. **Truly unsupported types** - Returns `None` with a warning to help identify gaps in type support
+
+#### Newly Supported Types
+```python
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Set, FrozenSet
+from mocksmith import mockable
+
+@mockable
+@dataclass
+class Config:
+    config_path: Path        # ✓ Generates Path('/tmp/mock_file.txt')
+    data_dir: Path          # ✓ Smart naming: Path('/tmp/mock_directory')
+    tags: Set[str]          # ✓ Generates {'tag1', 'tag2', ...}
+    frozen_tags: FrozenSet[int]  # ✓ Generates frozenset({1, 2, 3})
+
+config = Config.mock()
+# All fields get appropriate mock values!
+```
+
+#### Warning System
+```python
+class CustomType:
+    def __init__(self, required_arg):
+        # Cannot be auto-instantiated
+        pass
+
+@mockable
+@dataclass
+class Example:
+    name: str                              # ✓ Supported
+    custom_required: CustomType            # ⚠️ Warning issued, returns None
+    custom_optional: Optional[CustomType] = None  # ⚠️ Warning issued (if attempted), returns None
+
+# Console output:
+# UserWarning: mocksmith: Unsupported type 'CustomType' for field 'custom_required'.
+# Returning None. Consider making this field Optional or providing a mock override.
+```
+
+**Important Notes**:
+- **All unsupported types trigger warnings** - This helps identify gaps in mocksmith's type support
+- **Warnings help improve mocksmith** - If you encounter warnings, please file an issue on GitHub
+- **Optional fields** - May show warnings ~80% of the time (when generation is attempted)
+- **Override unsupported types** - Use `mock()` with overrides: `Example.mock(custom_required=CustomType('value'))`
+- **Pydantic models** - Make unsupported fields `Optional` to avoid validation errors
 
 ### Optional Fields Pattern
 

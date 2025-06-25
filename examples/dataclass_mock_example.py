@@ -1,8 +1,10 @@
 """Example showing dataclass usage with mocksmith including mocking and specialized types."""
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import datetime, timezone
 from decimal import Decimal
+from enum import Enum, auto
+from typing import Optional
 
 from mocksmith import (  # Basic types with clean syntax; For mocking
     Boolean,
@@ -13,13 +15,6 @@ from mocksmith import (  # Basic types with clean syntax; For mocking
     mockable,
 )
 from mocksmith.dataclass_integration import validate_dataclass
-from mocksmith.specialized import (  # Specialized types - work directly with dataclasses
-    City,
-    CountryCode,
-    Email,
-    PhoneNumber,
-    ZipCode,
-)
 
 
 # Example 1: Basic dataclass with db_types
@@ -41,32 +36,17 @@ class User:
 @validate_dataclass
 @dataclass
 class Customer:
-    """Customer model with specialized types.
-
-    Note: For dataclasses, we can use specialized types directly!
-    """
+    """Customer model with specialized types."""
 
     id: Integer()
     name: Varchar(100)
-
-    # Specialized types - these work out of the box with dataclasses!
-    email: Email
-    phone: PhoneNumber
-    country: CountryCode
-    city: City
-    postal_code: ZipCode
-
-    # Additional fields
+    email: Varchar(255)
+    phone: Varchar(50)  # Phone number (faker can generate long formats)
+    country: Varchar(50)  # Country name (will be truncated in display)
+    city: Varchar(100)
+    postal_code: Varchar(20)  # Postal code
     credit_limit: DecimalType(10, 2)
     registered: Date()
-
-    def __init__(self):
-        """Initialize the specialized type instances."""
-        self.email = Email()
-        self.phone = PhoneNumber()
-        self.country = CountryCode()
-        self.city = City()
-        self.postal_code = ZipCode()
 
 
 def demo_basic_mocking():
@@ -101,57 +81,142 @@ def demo_basic_mocking():
 
 
 def demo_specialized_types():
-    """Demonstrate specialized types with dataclasses."""
-    print("\n\n=== Specialized Types with Dataclasses ===\n")
+    """Demonstrate mock generation with specialized types."""
+    print("\n\n=== Mock Generation with Specialized Types ===\n")
 
-    # Create a customer template
-    customer_template = Customer()
+    # Generate a mock customer
+    customer = Customer.mock()
+    print("Generated Customer:")
+    print(f"  ID: {customer.id}")
+    print(f"  Name: {customer.name}")
+    print(f"  Email: {customer.email}")
+    print(f"  Phone: {customer.phone}")
+    print(f"  Country: {customer.country}")
+    print(f"  City: {customer.city}")
+    print(f"  Postal Code: {customer.postal_code}")
+    print(f"  Credit Limit: ${customer.credit_limit}")
+    print(f"  Registered: {customer.registered}")
 
-    # Manual creation with validation
-    print("Manual creation:")
-    try:
-        valid_customer = Customer()
-        # Set values that will be validated
-        valid_customer.id = 12345
-        valid_customer.name = "John Doe"
-        valid_customer.email.validate("john.doe@example.com")
-        valid_customer.country.validate("US")
-        valid_customer.city.validate("New York")
-        valid_customer.postal_code.validate("10001")
-        valid_customer.phone.validate("+1-555-123-4567")
-        valid_customer.credit_limit = Decimal("5000.00")
-        valid_customer.registered = date(2024, 1, 1)
+    print("\nNote: Mock data is generated based on field types:")
+    print("  • Varchar fields generate random strings of appropriate length")
+    print("  • Integer fields generate random integers")
+    print("  • Date fields generate random dates")
+    print("  • DecimalType fields generate random decimal values")
 
-        print("  ✅ Valid customer created")
-        print("  Email validation passed for: john.doe@example.com")
-        print("  Country validation passed for: US")
-
-    except ValueError as e:
-        print(f"  ❌ Validation failed: {e}")
-
-    # Mock generation for specialized types
-    print("\nMock generation for specialized types:")
-    print("(Note: Specialized types need direct mocking)")
-
-    print(f"  Email mock: {customer_template.email.mock()}")
-    print(f"  Phone mock: {customer_template.phone.mock()}")
-    print(f"  Country mock: {customer_template.country.mock()}")
-    print(f"  City mock: {customer_template.city.mock()}")
-    print(f"  Postal code mock: {customer_template.postal_code.mock()}")
+    # Mock generation with overrides
+    print("\nMock with overrides:")
+    us_customer = Customer.mock(
+        name="John Smith", country="US", city="New York", postal_code="10001"
+    )
+    print(f"  Name: {us_customer.name}")
+    print(f"  Country: {us_customer.country}")
+    print(f"  City: {us_customer.city}")
+    print(f"  Postal Code: {us_customer.postal_code}")
 
     # Validation example
-    print("\nValidation example:")
+    print("\nValidation with @validate_dataclass:")
     try:
-        # This will fail - invalid email format
-        customer_template.email.validate("invalid-email")
+        # This will fail - email too long
+        Customer(
+            id=1,
+            name="Test",
+            email="x" * 300,  # Too long for Varchar(255)!
+            phone="555-1234",
+            country="US",
+            city="Boston",
+            postal_code="02101",
+            credit_limit=Decimal("1000.00"),
+            registered=datetime.now(timezone.utc).date(),
+        )
     except ValueError as e:
-        print(f"  ✅ Email validation correctly failed: {e}")
+        print(f"  ✅ Validation correctly failed: {e}")
 
-    try:
-        # This will fail - country code too long
-        customer_template.country.validate("USA")  # Should be 2 chars
-    except ValueError as e:
-        print(f"  ✅ Country validation correctly failed: {e}")
+
+# Example 3: Enums for mock generation
+class UserRole(Enum):
+    """User roles in the system."""
+
+    ADMIN = "admin"
+    USER = "user"
+    MODERATOR = "moderator"
+    GUEST = "guest"
+
+
+class AccountStatus(Enum):
+    """Account status using auto() values."""
+
+    ACTIVE = auto()
+    SUSPENDED = auto()
+    PENDING = auto()
+    CLOSED = auto()
+
+
+class SubscriptionTier(Enum):
+    """Subscription tiers with numeric values."""
+
+    FREE = 0
+    BASIC = 1
+    PREMIUM = 2
+    ENTERPRISE = 3
+
+
+@mockable
+@dataclass
+class Employee:
+    """Employee model with enum fields."""
+
+    id: Integer()
+    name: Varchar(100)
+    email: Varchar(255)
+    role: UserRole
+    status: AccountStatus
+    subscription: SubscriptionTier
+    department: Optional[str] = None
+    hire_date: Date() = None
+
+
+def demo_enum_mocking():
+    """Demonstrate enum support in mock generation."""
+    print("\n\n=== Enum Mock Generation ===\n")
+
+    # Generate a single employee
+    employee = Employee.mock()
+    print("Generated employee:")
+    print(f"  ID: {employee.id}")
+    print(f"  Name: {employee.name}")
+    print(f"  Email: {employee.email}")
+    print(f"  Role: {employee.role.value} (enum: {employee.role.name})")
+    print(f"  Status: {employee.status.name} (value: {employee.status.value})")
+    print(f"  Subscription: {employee.subscription.name} (tier: {employee.subscription.value})")
+    print(f"  Department: {employee.department}")
+    print(f"  Hire Date: {employee.hire_date}")
+
+    # Generate multiple to show randomness
+    print("\nGenerating 10 employees to show enum distribution:")
+    employees = [Employee.mock() for _ in range(10)]
+
+    role_counts = {}
+    for emp in employees:
+        role_counts[emp.role.value] = role_counts.get(emp.role.value, 0) + 1
+
+    print("\nRole distribution:")
+    for role, count in sorted(role_counts.items()):
+        print(f"  {role}: {count} employees")
+
+    # Using builder pattern with enums
+    print("\nUsing builder pattern with specific enum values:")
+    admin = (
+        Employee.mock_builder()
+        .with_name("Admin User")
+        .with_role(UserRole.ADMIN)
+        .with_status(AccountStatus.ACTIVE)
+        .with_subscription(SubscriptionTier.ENTERPRISE)
+        .build()
+    )
+    print(f"Built admin: {admin.name}")
+    print(f"  Role: {admin.role.value}")
+    print(f"  Status: {admin.status.name}")
+    print(f"  Subscription: {admin.subscription.name}")
 
 
 def show_dataclass_notes():
@@ -163,22 +228,28 @@ def show_dataclass_notes():
     print("   • These work automatically with @mockable decorator")
 
     print("\n2. SPECIALIZED TYPES:")
-    print("   • Can use Email, Country, etc. directly")
-    print("   • Need to instantiate in __init__ method")
-    print("   • Each instance has .mock() and .validate() methods")
+    print("   • Use regular types with appropriate constraints")
+    print("   • e.g., Varchar(2) for country codes, Varchar(20) for phone")
+    print("   • Mock generation creates random data respecting constraints")
 
     print("\n3. MOCKING:")
     print("   • @mockable adds .mock() and .mock_builder() class methods")
-    print("   • Basic types are automatically mocked")
-    print("   • Specialized types need manual mocking (for now)")
+    print("   • All database types are automatically mocked with appropriate data")
+    print("   • Enums are automatically supported - random selection from values")
 
     print("\n4. VALIDATION:")
     print("   • @validate_dataclass adds automatic validation")
     print("   • Each db_type has .validate() method")
-    print("   • Specialized types include format validation (email, URL, etc.)")
+    print("   • Types enforce their constraints (length, precision, etc.)")
+
+    print("\n5. ENUM SUPPORT:")
+    print("   • Python enums work automatically with @mockable")
+    print("   • Mock generation randomly selects from enum values")
+    print("   • Works with string, numeric, and auto() enum values")
 
 
 if __name__ == "__main__":
     demo_basic_mocking()
     demo_specialized_types()
+    demo_enum_mocking()
     show_dataclass_notes()

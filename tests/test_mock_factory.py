@@ -8,7 +8,7 @@ from typing import Annotated, Optional
 import pytest
 
 from mocksmith import VARCHAR, mock_factory, mockable
-from mocksmith.specialized import City, CountryCode, Email
+from mocksmith.specialized import City, CountryCode, PhoneNumber
 
 # Import Pydantic if available
 try:
@@ -43,20 +43,20 @@ class TestMockFactory:
         """Test mocking a dataclass with db_types."""
         # Define instances for use in annotations
         _username = VARCHAR(30)
-        _email = Email()
+        _phone = PhoneNumber()
         _city = City()
 
         @dataclass
         class UserModel:
             username: Annotated[str, _username]
-            email: Annotated[str, _email]
+            phone: Annotated[str, _phone]
             city: Annotated[str, _city]
 
         mock = mock_factory(UserModel)
 
         assert isinstance(mock.username, str)
         assert len(mock.username) <= 30
-        assert "@" in mock.email
+        assert isinstance(mock.phone, str)
         assert isinstance(mock.city, str)
 
     def test_mock_with_overrides(self):
@@ -257,64 +257,6 @@ class TestMockBuilder:
             builder.with_values(invalid_field="value")
 
 
-class TestSmartFieldDetection:
-    """Test smart field name detection."""
-
-    def test_email_field_detection(self):
-        """Test that fields named 'email' generate email addresses."""
-
-        @dataclass
-        class Model:
-            email: str
-            user_email: str
-            contact_email: str
-
-        mock = mock_factory(Model)
-
-        assert "@" in mock.email
-        assert "." in mock.email.split("@")[1]
-        assert "@" in mock.user_email
-        assert "@" in mock.contact_email
-
-    def test_name_field_detection(self):
-        """Test that name fields generate appropriate names."""
-
-        @dataclass
-        class Model:
-            name: str
-            first_name: str
-            last_name: str
-            user_name: str
-
-        mock = mock_factory(Model)
-
-        assert isinstance(mock.name, str)
-        assert isinstance(mock.first_name, str)
-        assert isinstance(mock.last_name, str)
-        assert isinstance(mock.user_name, str)
-
-        # first_name and last_name should be shorter than full name
-        assert " " in mock.name  # Full names have spaces
-        assert " " not in mock.first_name
-        assert " " not in mock.last_name
-
-    def test_id_field_detection(self):
-        """Test that ID fields generate UUIDs."""
-
-        @dataclass
-        class Model:
-            id: str
-            user_id: str
-            transaction_id: str
-
-        mock = mock_factory(Model)
-
-        # Should be UUID-like strings
-        assert len(mock.id) == 36  # UUID4 format
-        assert len(mock.user_id) == 36
-        assert "-" in mock.transaction_id
-
-
 @pytest.mark.skipif(not PYDANTIC_AVAILABLE, reason="Pydantic not installed")
 class TestPydanticMocking:
     """Test mocking functionality with Pydantic models."""
@@ -351,20 +293,20 @@ class TestPydanticMocking:
 
     def test_mock_pydantic_with_specialized_types(self):
         """Test mocking Pydantic model with specialized types."""
-        _email = Email()
+        _phone = PhoneNumber()
         _country = CountryCode()
         _city = City()
 
         class Customer(BaseModel):
             name: str
-            email: Annotated[str, DBTypeValidator(_email)]
+            phone: Annotated[str, DBTypeValidator(_phone)]
             country: Annotated[str, DBTypeValidator(_country)]
             city: Annotated[str, DBTypeValidator(_city)]
 
         mock = mock_factory(Customer)
 
         assert isinstance(mock.name, str)
-        assert "@" in mock.email
+        assert isinstance(mock.phone, str)
         assert len(mock.country) == 2  # Country code should be 2 chars
         assert isinstance(mock.city, str)
 
@@ -444,13 +386,12 @@ class TestPydanticMocking:
     def test_pydantic_validation_on_mock(self):
         """Test that mocked data passes Pydantic validation."""
         from mocksmith import Integer, Varchar
-        from mocksmith.specialized import Email as EmailType
 
         @mockable
         class ValidatedModel(BaseModel):
             username: Varchar(20)
             age: Integer()
-            email: Annotated[str, DBTypeValidator(EmailType())]
+            phone: Annotated[str, DBTypeValidator(PhoneNumber())]
 
         # Generate 10 mocks and ensure they all pass validation
         for _ in range(10):
@@ -458,7 +399,7 @@ class TestPydanticMocking:
 
             # Should not raise ValidationError
             assert len(mock.username) <= 20
-            assert "@" in mock.email
+            assert isinstance(mock.phone, str)
             assert isinstance(mock.age, int)
 
 
