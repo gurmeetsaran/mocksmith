@@ -1,6 +1,6 @@
 """Tests for mock data generation in specialized types."""
 
-from mocksmith.specialized import URL, City, CountryCode, Email, PhoneNumber, State, ZipCode
+from mocksmith.specialized import City, CountryCode, PhoneNumber, State, ZipCode
 
 
 class TestCountryCodeMock:
@@ -109,42 +109,6 @@ class TestZipCodeMock:
         zipcode.validate(mock_value)
 
 
-class TestEmailMock:
-    """Test mock generation for Email type."""
-
-    def test_email_mock_format(self):
-        """Email should generate valid email addresses."""
-        email = Email()
-        mock_value = email.mock()
-
-        assert isinstance(mock_value, str)
-        assert "@" in mock_value
-        assert "." in mock_value.split("@")[1]
-
-    def test_email_mock_validates(self):
-        """Generated email should pass validation."""
-        email = Email()
-        mock_value = email.mock()
-
-        # Should not raise - validates both length and format
-        email.validate(mock_value)
-
-    def test_email_respects_length(self):
-        """Email should respect length constraint."""
-        email = Email(length=50)
-        mock_value = email.mock()
-
-        assert len(mock_value) <= 50
-
-    def test_email_generates_variety(self):
-        """Should generate different email addresses."""
-        email = Email()
-        values = [email.mock() for _ in range(10)]
-
-        unique_values = set(values)
-        assert len(unique_values) == 10  # All should be unique
-
-
 class TestPhoneNumberMock:
     """Test mock generation for PhoneNumber type."""
 
@@ -163,31 +127,3 @@ class TestPhoneNumberMock:
 
         # Should not raise
         phone.validate(mock_value)
-
-
-class TestURLMock:
-    """Test mock generation for URL type."""
-
-    def test_url_mock_format(self):
-        """URL should generate valid URLs."""
-        url = URL()
-        mock_value = url.mock()
-
-        assert isinstance(mock_value, str)
-        assert mock_value.startswith("http://") or mock_value.startswith("https://")
-        assert "." in mock_value
-
-    def test_url_mock_validates(self):
-        """Generated URL should pass validation."""
-        url = URL()
-        mock_value = url.mock()
-
-        # Should not raise - validates both length and format
-        url.validate(mock_value)
-
-    def test_url_respects_length(self):
-        """URL should respect length constraint."""
-        url = URL(length=100)
-        mock_value = url.mock()
-
-        assert len(mock_value) <= 100

@@ -564,6 +564,50 @@ def demonstrate_validation_errors():
         print(f"   ✗ {e}")
 
 
+def demonstrate_pydantic_types_limitations():
+    """Show limitations of using Pydantic types in dataclasses."""
+    print("\n" + "=" * 80)
+    print("PYDANTIC TYPES IN DATACLASSES - LIMITATIONS".center(80))
+    print("=" * 80)
+
+    print("\nIMPORTANT: Pydantic types in dataclasses work as type hints only!")
+    print("No automatic validation occurs.\n")
+
+    try:
+        from pydantic import EmailStr, HttpUrl, conint
+
+        @dataclass
+        class ServerConfig:
+            """Dataclass using Pydantic types as annotations."""
+
+            hostname: str
+            port: conint(ge=1, le=65535)
+            admin_email: EmailStr
+            api_url: HttpUrl
+
+        # This creates an instance WITHOUT validation
+        server = ServerConfig(
+            hostname="api.example.com",
+            port=99999,  # Out of range! But no error
+            admin_email="invalid-email",  # Invalid! But no error
+            api_url="not-a-url",  # Invalid! But no error
+        )
+
+        print("Example: Created dataclass with INVALID data:")
+        print(f"  Port: {server.port} (should be 1-65535)")
+        print(f"  Email: {server.admin_email} (invalid format)")
+        print(f"  URL: {server.api_url} (invalid URL)")
+        print("\nNote: All invalid values were accepted!")
+
+        print("\nRECOMMENDATION:")
+        print("• For validation with Pydantic types, use Pydantic's BaseModel")
+        print("• For dataclasses, use mocksmith's types: Varchar(50), Integer(), etc.")
+        print("• mocksmith types provide validation via @validate_dataclass")
+
+    except ImportError:
+        print("(Pydantic not installed - skipping this demonstration)")
+
+
 def main():
     """Run all demonstrations."""
     demonstrate_basic_usage()
@@ -572,6 +616,7 @@ def main():
     demonstrate_tinyint()
     demonstrate_sql_serialization()
     demonstrate_validation_errors()
+    demonstrate_pydantic_types_limitations()
 
     print("\n" + "=" * 80)
     print("KEY FEATURES".center(80))

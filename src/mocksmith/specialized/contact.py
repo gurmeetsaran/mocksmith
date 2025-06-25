@@ -1,44 +1,8 @@
 """Contact information specialized types."""
 
-import re
 from typing import Any
 
 from mocksmith.types.string import VARCHAR
-
-
-class Email(VARCHAR):
-    """Email address type with validation."""
-
-    def __init__(self, length: int = 255):
-        super().__init__(length)
-        # Basic email regex pattern
-        self.email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-
-    def validate(self, value: Any) -> None:
-        """Validate email format in addition to base validation."""
-        # First do base VARCHAR validation
-        super().validate(value)
-
-        if value is None:
-            return
-
-        # Check email format
-        if not self.email_pattern.match(value):
-            raise ValueError(f"Invalid email format: {value}")
-
-    def _generate_mock(self, fake: Any) -> str:
-        """Generate a valid email address."""
-        email = fake.email()
-        # Ensure it fits within the length constraint
-        if len(email) > self.length:
-            # Generate a shorter email
-            username = fake.user_name()[:10]
-            domain = fake.domain_name()
-            email = f"{username}@{domain}"
-        return email[: self.length]
-
-    def __repr__(self) -> str:
-        return f"Email(length={self.length})"
 
 
 class PhoneNumber(VARCHAR):
