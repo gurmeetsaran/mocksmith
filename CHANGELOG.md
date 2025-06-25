@@ -1,17 +1,73 @@
 # CHANGELOG
 
 
-## v1.1.0 (2025-06-22)
+## v2.0.0 (2025-06-25)
+
+### Documentation
+
+- Fix changelog entry for v1.1.0 [skip ci]
+  ([`bc9d674`](https://github.com/gurmeetsaran/mocksmith/commit/bc9d674f473af77ea580246e24ec606471e19491))
+
+- Moved enum support feature from v1.0.0 to v1.1.0 where it belongs - Removed duplicate entry from
+  v1.0.0 section
 
 ### Features
 
-- Add automatic enum support for mock generation
-  ([`ff1ecba`](https://github.com/gurmeetsaran/mocksmith/commit/ff1ecba3534bbbd7113bf9a987a89a8b16a28fb1))
+- Add Pydantic built-in types support and improve unsupported type handling
+  ([#15](https://github.com/gurmeetsaran/mocksmith/pull/15),
+  [`54ddad7`](https://github.com/gurmeetsaran/mocksmith/commit/54ddad7e3e86f32935f7bee3843ad1f80c722621))
 
-  Mock factory now automatically handles Python Enum types - Randomly selects from available enum
-  values - Works with Optional[Enum] fields (80% chance of value, 20% None) - Supports all enum
-  types: string values, integers, and auto() - Added comprehensive tests and example - Works
-  seamlessly with both dataclasses and Pydantic models
+* feat: add IP address types for network data validation
+
+- Added IPAddress type that accepts both IPv4 and IPv6 addresses - Added IPv4Address type for
+  IPv4-only validation - Added IPv6Address type for IPv6-only validation - All types include proper
+  validation using Python's ipaddress module - Mock generation creates realistic IP addresses -
+  Added comprehensive tests and example - Works with both dataclasses and Pydantic models
+
+* feat: add Pydantic built-in types support and improve unsupported type handling
+
+BREAKING CHANGE: Remove Email, URL, IPAddress, IPv4Address, and IPv6Address specialized types in
+  favor of Pydantic equivalents
+
+- Add comprehensive support for Pydantic built-in types in mock generation: - Network types:
+  HttpUrl, EmailStr, IPvAnyAddress, IPv4/6Address - Numeric types: PositiveInt, NegativeFloat,
+  conint, confloat - String types: UUID4, SecretStr, constr with patterns - Date/time types:
+  FutureDate, PastDate, FutureDatetime, PastDatetime - Support for Pydantic v2 Annotated types with
+  constraints
+
+- Improve unsupported type handling: - Add intelligent fallback with auto-instantiation attempts -
+  Always show warnings for unsupported types to encourage feature requests - Add special handling
+  for Path, Set, and FrozenSet types - Return None with helpful warning messages
+
+- Remove redundant specialized types: - Email → use Pydantic's EmailStr - URL → use Pydantic's
+  HttpUrl or AnyUrl - IPAddress/IPv4Address/IPv6Address → use Pydantic's IP types - Reduces code
+  duplication and maintenance burden
+
+- Consolidate examples from 7 files to 4 main files: - Merge enum and Pydantic built-in types
+  examples into main mock examples - Add Pydantic types limitations section to dataclass example -
+  Improve organization and reduce example sprawl
+
+- Update documentation: - Document all supported Pydantic types - Add unsupported type handling
+  section - Clarify Pydantic types in dataclasses limitations - Update migration guide for removed
+  types
+
+- Update tests to reflect removed types and new functionality
+
+This change modernizes mocksmith to leverage Pydantic's type system while providing better developer
+  experience through clear warnings and expanded type support.
+
+* fix: use secure temporary paths instead of hardcoded /tmp
+
+- Replace hardcoded /tmp paths with tempfile.gettempdir() - Addresses bandit security warning B108 -
+  Remove smart field name detection from mock generation - Update examples and tests accordingly
+
+### BREAKING CHANGES
+
+- Remove Email, URL, IPAddress, IPv4Address, and IPv6Address specialized types in favor of Pydantic
+  equivalents
+
+
+## v1.1.0 (2025-06-22)
 
 
 ## v1.0.0 (2025-06-22)
@@ -212,6 +268,14 @@ Signed-off-by: dependabot[bot] <support@github.com>
 Co-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>
 
 ### Features
+
+- Add automatic enum support for mock generation
+  ([`ff1ecba`](https://github.com/gurmeetsaran/mocksmith/commit/ff1ecba3534bbbd7113bf9a987a89a8b16a28fb1))
+
+- Mock factory now automatically handles Python Enum types - Randomly selects from available enum
+  values - Works with Optional[Enum] fields (80% chance of value, 20% None) - Supports all enum
+  types: string values, integers, and auto() - Added comprehensive tests and example - Works
+  seamlessly with both dataclasses and Pydantic models
 
 - Add constrained types for int ([#5](https://github.com/gurmeetsaran/mocksmith/pull/5),
   [`7670767`](https://github.com/gurmeetsaran/mocksmith/commit/7670767b020d72f85560b2ee965ea0410b9fd7a4))
