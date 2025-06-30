@@ -31,7 +31,7 @@ packages = [{include = "mocksmith", from = "src"}]
 "Bug Tracker" = "https://github.com/gurmeetsaran/mocksmith/issues"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
@@ -47,7 +47,7 @@ pydantic = ["pydantic"]
 mock = ["faker"]
 
 [tool.poetry.group.pydantic.dependencies]
-pydantic = "^2.0.0"
+pydantic = ">=2.0.0"
 
 [tool.poetry.group.mock.dependencies]
 faker = ">=33.2,<38.0"
