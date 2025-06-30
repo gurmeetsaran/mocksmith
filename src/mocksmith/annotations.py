@@ -6,7 +6,7 @@ Pydantic models and Python dataclasses.
 
 from datetime import date, datetime, time
 from decimal import Decimal
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any, Optional, Union
 
 from mocksmith.types.binary import BINARY as _BINARY
 from mocksmith.types.binary import BLOB as _BLOB
@@ -128,6 +128,153 @@ def Money() -> Any:
             discount: Money()
     """
     return DecimalType(19, 4)
+
+
+def ConstrainedMoney(
+    *,
+    gt: Optional[Union[int, float, Decimal]] = None,
+    ge: Optional[Union[int, float, Decimal]] = None,
+    lt: Optional[Union[int, float, Decimal]] = None,
+    le: Optional[Union[int, float, Decimal]] = None,
+    multiple_of: Optional[Union[int, float, Decimal]] = None,
+) -> Any:
+    """Money type with constraints using Pydantic's condecimal.
+
+    This provides a Money type (DECIMAL(19,4)) with additional validation constraints.
+    Works seamlessly with Pydantic models and mocksmith's mock generation.
+
+    Args:
+        gt: Value must be greater than this
+        ge: Value must be greater than or equal to this
+        lt: Value must be less than this
+        le: Value must be less than or equal to this
+        multiple_of: Value must be a multiple of this
+
+    Example:
+        class Product(BaseModel):
+            price: ConstrainedMoney(gt=0)  # Positive money
+            discount: ConstrainedMoney(ge=0, le=100)  # 0-100
+
+        # Or use shortcuts:
+        class Order(BaseModel):
+            total: PositiveMoney()  # Same as ConstrainedMoney(gt=0)
+            balance: NonNegativeMoney()  # Same as ConstrainedMoney(ge=0)
+    """
+    try:
+        from pydantic import condecimal
+
+        return condecimal(
+            max_digits=19,
+            decimal_places=4,
+            gt=gt,
+            ge=ge,
+            lt=lt,
+            le=le,
+            multiple_of=multiple_of,
+        )
+    except ImportError:
+        # Fallback to regular Money if Pydantic not available
+        return DecimalType(19, 4)
+
+
+def PositiveMoney() -> Any:
+    """Money type that only accepts positive values (> 0).
+
+    Shortcut for ConstrainedMoney(gt=0).
+
+    Example:
+        class Product(BaseModel):
+            price: PositiveMoney()
+            cost: PositiveMoney()
+    """
+    return ConstrainedMoney(gt=0)
+
+
+def NonNegativeMoney() -> Any:
+    """Money type that accepts zero and positive values (>= 0).
+
+    Shortcut for ConstrainedMoney(ge=0).
+
+    Example:
+        class Account(BaseModel):
+            balance: NonNegativeMoney()
+            credit_limit: NonNegativeMoney()
+    """
+    return ConstrainedMoney(ge=0)
+
+
+def ConstrainedDecimal(
+    precision: int,
+    scale: int,
+    *,
+    gt: Optional[Union[int, float, Decimal]] = None,
+    ge: Optional[Union[int, float, Decimal]] = None,
+    lt: Optional[Union[int, float, Decimal]] = None,
+    le: Optional[Union[int, float, Decimal]] = None,
+    multiple_of: Optional[Union[int, float, Decimal]] = None,
+) -> Any:
+    """Decimal type with constraints using Pydantic's condecimal.
+
+    Args:
+        precision: Total number of digits
+        scale: Number of decimal places
+        gt: Value must be greater than this
+        ge: Value must be greater than or equal to this
+        lt: Value must be less than this
+        le: Value must be less than or equal to this
+        multiple_of: Value must be a multiple of this
+
+    Example:
+        class Measurement(BaseModel):
+            weight: ConstrainedDecimal(10, 2, gt=0)  # Positive weight
+            temperature: ConstrainedDecimal(5, 2, ge=-273.15)  # Above absolute zero
+    """
+    try:
+        from pydantic import condecimal
+
+        return condecimal(
+            max_digits=precision,
+            decimal_places=scale,
+            gt=gt,
+            ge=ge,
+            lt=lt,
+            le=le,
+            multiple_of=multiple_of,
+        )
+    except ImportError:
+        # Fallback to regular DecimalType if Pydantic not available
+        return DecimalType(precision, scale)
+
+
+def ConstrainedFloat(
+    *,
+    gt: Optional[float] = None,
+    ge: Optional[float] = None,
+    lt: Optional[float] = None,
+    le: Optional[float] = None,
+    multiple_of: Optional[float] = None,
+) -> Any:
+    """Float type with constraints using Pydantic's confloat.
+
+    Args:
+        gt: Value must be greater than this
+        ge: Value must be greater than or equal to this
+        lt: Value must be less than this
+        le: Value must be less than or equal to this
+        multiple_of: Value must be a multiple of this
+
+    Example:
+        class Scientific(BaseModel):
+            probability: ConstrainedFloat(ge=0.0, le=1.0)  # 0-1 range
+            temperature: ConstrainedFloat(gt=-273.15)  # Above absolute zero
+    """
+    try:
+        from pydantic import confloat
+
+        return confloat(gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of)
+    except ImportError:
+        # Fallback to regular Float if Pydantic not available
+        return Float()
 
 
 def Float(*, precision: Optional[int] = None) -> Any:
@@ -566,6 +713,9 @@ __all__ = [
     "Bool",
     "Boolean",
     "Char",
+    "ConstrainedDecimal",
+    "ConstrainedFloat",
+    "ConstrainedMoney",
     "Date",
     "DateTime",
     "DecimalType",
@@ -576,9 +726,11 @@ __all__ = [
     "Money",
     "NegativeInteger",
     "NonNegativeInteger",
+    "NonNegativeMoney",
     "NonPositiveInteger",
     "Numeric",
     "PositiveInteger",
+    "PositiveMoney",
     "Real",
     "SmallInt",
     "String",

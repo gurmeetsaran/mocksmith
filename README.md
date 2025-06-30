@@ -17,6 +17,7 @@ Type-safe data validation with automatic mock generation for Python dataclasses 
 - **Clean API**: Simple, intuitive interface for both Pydantic AND dataclasses - just `name: Varchar(50)`
 - **Comprehensive Types**: STRING (VARCHAR, CHAR, TEXT), NUMERIC (INTEGER, DECIMAL, FLOAT), TEMPORAL (DATE, TIME, TIMESTAMP), and more
 - **Mock Data Generation**: Built-in mock/fake data generation for testing with `@mockable` decorator
+- **Constrained Types**: Support for min/max constraints on numeric types - `price: PositiveMoney()`, `age: Integer(min_value=0, max_value=120)`
 
 ## Why mocksmith?
 
@@ -45,7 +46,7 @@ from mocksmith import Varchar, Money, Boolean
 
 class Product(BaseModel):
     name: Varchar(100)         # Enforces VARCHAR(100) constraint
-    price: Money()             # Decimal with proper precision
+    price: Money()             # Decimal(19,4) - use PositiveMoney() for price > 0
     in_stock: Boolean() = True # Flexible boolean parsing
 ```
 
@@ -88,7 +89,11 @@ from mocksmith import (
     # Temporal types
     DATE, TIME, TIMESTAMP, Date, Time, Timestamp,
     # Other types
-    BOOLEAN, BINARY, Boolean, Binary
+    BOOLEAN, BINARY, Boolean, Binary,
+    # Constrained types
+    PositiveInteger, NonNegativeInteger, NegativeInteger, NonPositiveInteger,
+    Money, PositiveMoney, NonNegativeMoney, ConstrainedMoney,
+    ConstrainedDecimal, ConstrainedFloat
 )
 ```
 
@@ -145,6 +150,7 @@ The same syntax works with dataclasses! See full examples:
 - [`examples/dataclass_example.py`](examples/dataclass_example.py) - Comprehensive dataclass examples with all features
 - [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Mock data generation with Pydantic models
 - [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Mock data generation with dataclasses
+- [`examples/constrained_types_example.py`](examples/constrained_types_example.py) - Constrained types with validation and mock generation
 
 ### Common Use Cases
 
@@ -617,6 +623,14 @@ For complete working examples, see the [`examples/`](examples/) directory:
   - TINYINT and REAL type usage
   - Boolean type conversions
 
+- [`constrained_types_example.py`](examples/constrained_types_example.py) - Constrained types with validation:
+  - PositiveMoney, NonNegativeMoney, ConstrainedMoney usage
+  - ConstrainedDecimal with precision and range constraints
+  - ConstrainedFloat for percentages and probabilities
+  - Mock generation respecting all constraints
+  - Validation examples showing error handling
+  - Builder pattern with constrained types
+
 ### Example: E-commerce Order System
 
 ```python
@@ -783,6 +797,66 @@ Integer(
     positive=True,         # Shortcut for min_value=1
     negative=True,         # Shortcut for max_value=-1
 )
+```
+
+### Constrained Money and Decimal Types
+
+mocksmith provides constrained versions of Money and Decimal types using Pydantic's constraint system:
+
+```python
+from mocksmith import (
+    ConstrainedMoney, PositiveMoney, NonNegativeMoney,
+    ConstrainedDecimal, ConstrainedFloat
+)
+
+# Money with constraints
+price: PositiveMoney()                          # > 0
+balance: NonNegativeMoney()                     # >= 0
+discount: ConstrainedMoney(ge=0, le=100)        # 0-100 range
+payment: ConstrainedMoney(gt=0, le=10000)       # 0 < payment <= 10000
+
+# Decimal with precision and constraints
+weight: ConstrainedDecimal(10, 2, gt=0)         # Positive weight, max 10 digits, 2 decimal places
+temperature: ConstrainedDecimal(5, 2, ge=-273.15)  # Above absolute zero
+
+# Float with constraints
+percentage: ConstrainedFloat(ge=0.0, le=1.0)    # 0-1 range
+rate: ConstrainedFloat(gt=0, lt=0.5)            # 0 < rate < 0.5
+```
+
+These constrained types:
+- Work seamlessly with Pydantic validation
+- Generate appropriate mock data respecting constraints
+- Provide the same clean API as other mocksmith types
+- Fall back gracefully if Pydantic is not available
+
+**Example Usage:**
+
+```python
+from pydantic import BaseModel
+from mocksmith import mockable, PositiveMoney, NonNegativeMoney, ConstrainedMoney, ConstrainedFloat
+
+@mockable
+class Order(BaseModel):
+    subtotal: PositiveMoney()                    # Must be > 0
+    discount: ConstrainedMoney(ge=0, le=50)      # 0-50 range
+    tax: NonNegativeMoney()                      # >= 0
+    discount_rate: ConstrainedFloat(ge=0, le=0.3)  # 0-30%
+
+# Validation works
+order = Order(
+    subtotal="100.00",    # ✓ Converts to Decimal
+    discount="25.00",     # ✓ Within 0-50 range
+    tax="8.50",          # ✓ Non-negative
+    discount_rate=0.15   # ✓ 15% is within 0-30%
+)
+
+# Mock generation respects constraints
+mock_order = Order.mock()
+assert mock_order.subtotal > 0
+assert 0 <= mock_order.discount <= 50
+assert mock_order.tax >= 0
+assert 0 <= mock_order.discount_rate <= 0.3
 ```
 
 ## Development

@@ -116,6 +116,8 @@ def _generate_pydantic_type_mock(field_type: Any, field_name: str = "") -> Any:
         Mock value appropriate for the Pydantic type
     """
     fake = _get_faker()
+    from decimal import Decimal
+
     type_name = field_type.__name__ if hasattr(field_type, "__name__") else str(field_type)
 
     # Network types
@@ -243,6 +245,54 @@ def _generate_pydantic_type_mock(field_type: Any, field_name: str = "") -> Any:
                 max_val = le
 
             return fake.pyfloat(min_value=min_val, max_value=max_val)
+        elif base_type is Decimal:
+            # Handle condecimal
+            gt = getattr(field_type, "gt", None)
+            ge = getattr(field_type, "ge", None)
+            lt = getattr(field_type, "lt", None)
+            le = getattr(field_type, "le", None)
+            max_digits = getattr(field_type, "max_digits", None)
+            decimal_places = getattr(field_type, "decimal_places", None)
+
+            min_val = -10000.0
+            max_val = 10000.0
+
+            if gt is not None:
+                min_val = float(gt) + 0.01
+            elif ge is not None:
+                min_val = float(ge)
+
+            if lt is not None:
+                max_val = float(lt) - 0.01
+            elif le is not None:
+                max_val = float(le)
+
+            # Generate decimal with constraints
+            if decimal_places is not None:
+                float_val = fake.pyfloat(
+                    min_value=min_val,
+                    max_value=max_val,
+                    right_digits=decimal_places,
+                )
+                # Round to the correct number of decimal places
+                quantizer = Decimal("0.1") ** decimal_places
+                dec_val = Decimal(str(float_val)).quantize(quantizer)
+
+                # Ensure we respect max_digits constraint
+                if max_digits is not None:
+                    integer_digits = max_digits - decimal_places
+                    max_integer_value = 10**integer_digits - 1
+
+                    if abs(dec_val) > max_integer_value:
+                        if dec_val > 0:
+                            dec_val = Decimal(str(max_integer_value))
+                        else:
+                            dec_val = Decimal(str(-max_integer_value))
+
+                return dec_val
+            else:
+                float_val = fake.pyfloat(min_value=min_val, max_value=max_val)
+                return Decimal(str(float_val))
 
     # Default: return None for unknown Pydantic types
     return None
@@ -259,6 +309,7 @@ def _generate_pydantic_annotated_mock(field_type: Any, field_name: str = "") -> 
         Mock value that satisfies the constraints
     """
     fake = _get_faker()
+    from decimal import Decimal
 
     # Get the base type and metadata
     args = get_args(field_type)
@@ -277,31 +328,60 @@ def _generate_pydantic_annotated_mock(field_type: Any, field_name: str = "") -> 
         return str(fake.uuid4())
 
     # Handle numeric constraints
-    if base_type in (int, float):
+    if base_type in (int, float, Decimal):
         min_val = None
         max_val = None
+        max_digits = None
+        decimal_places = None
 
         for m in metadata:
-            # Handle Interval constraints (from conint, confloat)
+            # Handle Interval constraints (from conint, confloat, condecimal)
             if hasattr(m, "ge") and m.ge is not None:
                 min_val = m.ge
             elif hasattr(m, "gt") and m.gt is not None:
-                min_val = m.gt + (1 if base_type is int else 0.01)
+                if base_type is int:
+                    min_val = m.gt + 1
+                elif base_type is Decimal:
+                    min_val = Decimal(str(m.gt)) + Decimal("0.01")
+                else:
+                    min_val = m.gt + 0.01
 
             if hasattr(m, "le") and m.le is not None:
                 max_val = m.le
             elif hasattr(m, "lt") and m.lt is not None:
-                max_val = m.lt - (1 if base_type is int else 0.01)
+                if base_type is int:
+                    max_val = m.lt - 1
+                elif base_type is Decimal:
+                    max_val = Decimal(str(m.lt)) - Decimal("0.01")
+                else:
+                    max_val = m.lt - 0.01
 
             # Handle Lt, Le, Gt, Ge constraints (e.g., NegativeFloat)
             if hasattr(m, "__class__") and m.__class__.__name__ == "Lt" and hasattr(m, "lt"):
-                max_val = m.lt - (1 if base_type is int else 0.01)
+                if base_type is int:
+                    max_val = m.lt - 1
+                elif base_type is Decimal:
+                    max_val = Decimal(str(m.lt)) - Decimal("0.01")
+                else:
+                    max_val = m.lt - 0.01
             elif hasattr(m, "__class__") and m.__class__.__name__ == "Le" and hasattr(m, "le"):
                 max_val = m.le
             elif hasattr(m, "__class__") and m.__class__.__name__ == "Gt" and hasattr(m, "gt"):
-                min_val = m.gt + (1 if base_type is int else 0.01)
+                if base_type is int:
+                    min_val = m.gt + 1
+                elif base_type is Decimal:
+                    min_val = Decimal(str(m.gt)) + Decimal("0.01")
+                else:
+                    min_val = m.gt + 0.01
             elif hasattr(m, "__class__") and m.__class__.__name__ == "Ge" and hasattr(m, "ge"):
                 min_val = m.ge
+
+            # Handle decimal-specific constraints
+            if base_type is Decimal:
+                if hasattr(m, "max_digits") and m.max_digits is not None:
+                    max_digits = m.max_digits
+                if hasattr(m, "decimal_places") and m.decimal_places is not None:
+                    decimal_places = m.decimal_places
 
         # Set defaults if not specified
         if min_val is None:
@@ -309,8 +389,52 @@ def _generate_pydantic_annotated_mock(field_type: Any, field_name: str = "") -> 
         if max_val is None:
             max_val = 10000 if base_type is int else 10000.0
 
+        # Ensure min_val <= max_val
+        if min_val > max_val:
+            # If constraints are impossible, adjust max to be at least min
+            if base_type is int:
+                max_val = int(min_val) + 1
+            elif base_type is Decimal:
+                max_val = Decimal(str(min_val)) + Decimal("0.01")
+            else:
+                max_val = float(min_val) + 0.01
+
         if base_type is int:
             return fake.random_int(min=int(min_val), max=int(max_val))
+        elif base_type is Decimal:
+            # Generate decimal with constraints
+            if decimal_places is not None:
+                # Generate a float and round to decimal places
+                float_val = fake.pyfloat(
+                    min_value=float(min_val) if min_val is not None else -10000.0,
+                    max_value=float(max_val) if max_val is not None else 10000.0,
+                    right_digits=decimal_places,
+                )
+                # Round to the correct number of decimal places
+                quantizer = Decimal("0.1") ** decimal_places
+                dec_val = Decimal(str(float_val)).quantize(quantizer)
+
+                # Ensure we respect max_digits constraint
+                if max_digits is not None:
+                    # Calculate max allowed integer digits
+                    integer_digits = max_digits - (decimal_places or 0)
+                    max_integer_value = 10**integer_digits - 1
+
+                    # Clamp the value to respect max_digits
+                    if abs(dec_val) > max_integer_value:
+                        if dec_val > 0:
+                            dec_val = Decimal(str(max_integer_value))
+                        else:
+                            dec_val = Decimal(str(-max_integer_value))
+
+                return dec_val
+            else:
+                # No decimal places specified, generate as float and convert
+                float_val = fake.pyfloat(
+                    min_value=float(min_val) if min_val is not None else -10000.0,
+                    max_value=float(max_val) if max_val is not None else 10000.0,
+                )
+                return Decimal(str(float_val))
         else:
             return fake.pyfloat(min_value=float(min_val), max_value=float(max_val))
 
