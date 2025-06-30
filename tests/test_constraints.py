@@ -27,10 +27,10 @@ class TestConstrainedInteger:
         constrained.validate(100)
 
         # Invalid values
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
             constrained.validate(9)
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             constrained.validate(101)
 
     def test_multiple_of_constraint(self):
@@ -45,10 +45,10 @@ class TestConstrainedInteger:
         constrained.validate(-10)
 
         # Invalid values
-        with pytest.raises(ValueError, match="not a multiple of"):
+        with pytest.raises(ValueError, match="Input should be a multiple of"):
             constrained.validate(3)
 
-        with pytest.raises(ValueError, match="not a multiple of"):
+        with pytest.raises(ValueError, match="Input should be a multiple of"):
             constrained.validate(7)
 
     def test_positive_constraint(self):
@@ -60,10 +60,10 @@ class TestConstrainedInteger:
         constrained.validate(100)
 
         # Invalid values
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
             constrained.validate(0)
 
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
             constrained.validate(-1)
 
     def test_negative_constraint(self):
@@ -75,10 +75,10 @@ class TestConstrainedInteger:
         constrained.validate(-100)
 
         # Invalid values
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             constrained.validate(0)
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             constrained.validate(1)
 
     def test_combined_constraints(self):
@@ -91,10 +91,10 @@ class TestConstrainedInteger:
         constrained.validate(100)
 
         # Invalid values
-        with pytest.raises(ValueError, match="not a multiple of"):
+        with pytest.raises(ValueError, match="Input should be a multiple of"):
             constrained.validate(15)
 
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
             constrained.validate(0)
 
     def test_invalid_constraint_combinations(self):
@@ -129,7 +129,7 @@ class TestConstrainedInteger:
     def test_repr(self):
         """Test string representation."""
         basic = ConstrainedInteger()
-        assert repr(basic) == "ConstrainedInteger"
+        assert repr(basic) == "ConstrainedInteger()"
 
         with_constraints = ConstrainedInteger(min_value=10, max_value=100, multiple_of=5)
         repr_str = repr(with_constraints)
@@ -151,10 +151,10 @@ class TestPositiveInteger:
         pos_int.validate(2147483647)  # Max INTEGER
 
         # Invalid values
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
             pos_int.validate(0)
 
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
             pos_int.validate(-1)
 
     def test_with_max_value(self):
@@ -164,7 +164,7 @@ class TestPositiveInteger:
         pos_int.validate(1)
         pos_int.validate(50)
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             pos_int.validate(51)
 
     def test_with_multiple_of(self):
@@ -175,7 +175,7 @@ class TestPositiveInteger:
         pos_int.validate(6)
         pos_int.validate(9)
 
-        with pytest.raises(ValueError, match="not a multiple of"):
+        with pytest.raises(ValueError, match="Input should be a multiple of"):
             pos_int.validate(4)
 
 
@@ -192,10 +192,10 @@ class TestNegativeInteger:
         neg_int.validate(-2147483648)  # Min INTEGER
 
         # Invalid values
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             neg_int.validate(0)
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             neg_int.validate(1)
 
     def test_with_min_value(self):
@@ -205,7 +205,7 @@ class TestNegativeInteger:
         neg_int.validate(-1)
         neg_int.validate(-50)
 
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
             neg_int.validate(-51)
 
 
@@ -222,7 +222,7 @@ class TestNonNegativeInteger:
         non_neg.validate(100)
 
         # Invalid values
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
             non_neg.validate(-1)
 
 
@@ -239,7 +239,7 @@ class TestNonPositiveInteger:
         non_pos.validate(-100)
 
         # Invalid values
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             non_pos.validate(1)
 
 
@@ -267,7 +267,7 @@ class TestConstrainedBigInt:
         big.validate(2000000000000)
 
         # Invalid values - not a multiple of 1 billion
-        with pytest.raises(ValueError, match="not a multiple of"):
+        with pytest.raises(ValueError, match="Input should be a multiple of"):
             big.validate(1000000000500)  # 1 trillion + 500
 
 
@@ -294,10 +294,10 @@ class TestConstrainedSmallInt:
         small.validate(-100)
 
         # Invalid values
-        with pytest.raises(ValueError, match="not a multiple of"):
+        with pytest.raises(ValueError, match="Input should be a multiple of"):
             small.validate(15)
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             small.validate(110)
 
     def test_bounds_exceed_smallint(self):
@@ -334,10 +334,10 @@ class TestConstrainedTinyInt:
         tiny.validate(-10)
 
         # Invalid values
-        with pytest.raises(ValueError, match="not a multiple of"):
+        with pytest.raises(ValueError, match="Input should be a multiple of"):
             tiny.validate(3)
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             tiny.validate(15)
 
     def test_bounds_exceed_tinyint(self):
@@ -359,7 +359,7 @@ class TestConstrainedTinyInt:
         tiny.validate(1)
         tiny.validate(100)
 
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
             tiny.validate(0)
 
     def test_negative_tinyint(self):
@@ -371,5 +371,5 @@ class TestConstrainedTinyInt:
         tiny.validate(-1)
         tiny.validate(-100)
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             tiny.validate(0)

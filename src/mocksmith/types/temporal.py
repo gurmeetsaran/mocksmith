@@ -17,10 +17,8 @@ class DATE(DBType[date]):
     def python_type(self) -> type[date]:
         return date
 
-    def validate(self, value: Any) -> None:
-        if value is None:
-            return
-
+    def _validate_custom(self, value: Any) -> None:
+        """Validate date value."""
         if not isinstance(value, (date, datetime, str)):
             raise ValueError(f"Expected date value, got {type(value).__name__}")
 
@@ -67,10 +65,8 @@ class TIME(DBType[time]):
     def python_type(self) -> type[time]:
         return time
 
-    def validate(self, value: Any) -> None:
-        if value is None:
-            return
-
+    def _validate_custom(self, value: Any) -> None:
+        """Validate time value."""
         if not isinstance(value, (time, datetime, str)):
             raise ValueError(f"Expected time value, got {type(value).__name__}")
 
@@ -127,10 +123,8 @@ class TIMESTAMP(DBType[datetime]):
     def python_type(self) -> type[datetime]:
         return datetime
 
-    def validate(self, value: Any) -> None:
-        if value is None:
-            return
-
+    def _validate_custom(self, value: Any) -> None:
+        """Validate timestamp value."""
         if not isinstance(value, (datetime, date, str)):
             raise ValueError(f"Expected datetime value, got {type(value).__name__}")
 

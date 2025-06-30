@@ -22,10 +22,8 @@ class BINARY(DBType[bytes]):
     def python_type(self) -> type[bytes]:
         return bytes
 
-    def validate(self, value: Any) -> None:
-        if value is None:
-            return
-
+    def _validate_custom(self, value: Any) -> None:
+        """Validate binary value."""
         if not isinstance(value, (bytes, bytearray, str)):
             raise ValueError(f"Expected binary value, got {type(value).__name__}")
 
@@ -91,10 +89,8 @@ class VARBINARY(DBType[bytes]):
     def python_type(self) -> type[bytes]:
         return bytes
 
-    def validate(self, value: Any) -> None:
-        if value is None:
-            return
-
+    def _validate_custom(self, value: Any) -> None:
+        """Validate varbinary value."""
         if not isinstance(value, (bytes, bytearray, str)):
             raise ValueError(f"Expected binary value, got {type(value).__name__}")
 
@@ -157,10 +153,8 @@ class BLOB(DBType[bytes]):
     def python_type(self) -> type[bytes]:
         return bytes
 
-    def validate(self, value: Any) -> None:
-        if value is None:
-            return
-
+    def _validate_custom(self, value: Any) -> None:
+        """Validate blob value."""
         if not isinstance(value, (bytes, bytearray, str)):
             raise ValueError(f"Expected binary value, got {type(value).__name__}")
 

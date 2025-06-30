@@ -20,10 +20,10 @@ class TestVARCHAR:
 
     def test_validation_failure(self):
         vchar = VARCHAR(5)
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="String should have at most"):
             vchar.validate("too long string")
 
-        with pytest.raises(ValueError, match="Expected string"):
+        with pytest.raises(ValueError, match="Input should be a valid string"):
             vchar.validate(123)
 
     def test_nullable_serialization(self):
@@ -62,7 +62,7 @@ class TestCHAR:
         char = CHAR(3)
         char.validate("abc")
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="String should have at most"):
             char.validate("abcd")
 
 
@@ -76,7 +76,7 @@ class TestTEXT:
         text = TEXT(max_length=1000)
         text.validate("x" * 1000)
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="String should have at most"):
             text.validate("x" * 1001)
 
     def test_serialize_deserialize(self):

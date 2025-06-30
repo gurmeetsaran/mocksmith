@@ -22,7 +22,7 @@ class TestDefaultValueValidation:
             hour: SmallInt(min_value=0, max_value=23) = 24
 
         # But fails when trying to create an instance
-        with pytest.raises(ValueError, match="exceeds maximum 23"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to 23"):
             InvalidConfig()
 
     def test_invalid_default_integer_constraint(self):
@@ -33,7 +33,7 @@ class TestDefaultValueValidation:
         class InvalidPercentage:
             percentage: Integer(min_value=0, max_value=100) = 150
 
-        with pytest.raises(ValueError, match="exceeds maximum 100"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to 100"):
             InvalidPercentage()
 
     def test_invalid_default_below_minimum(self):
@@ -44,7 +44,7 @@ class TestDefaultValueValidation:
         class InvalidNegative:
             level: TinyInt(min_value=0, max_value=10) = -1
 
-        with pytest.raises(ValueError, match="below minimum 0"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
             InvalidNegative()
 
     def test_valid_defaults_work(self):
@@ -91,7 +91,7 @@ class TestDefaultValueValidation:
             # This will be validated when the factory is called
             value: Integer(min_value=0, max_value=100) = field(default_factory=invalid_factory)
 
-        with pytest.raises(ValueError, match="exceeds maximum 100"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to 100"):
             ConfigWithFactory()
 
     def test_none_default_with_nullable(self):
@@ -133,5 +133,5 @@ class TestDefaultValueValidation:
         assert hasattr(BadDefaultsClass, "__dataclass_fields__")
 
         # But instantiation fails
-        with pytest.raises(ValueError, match="exceeds maximum 10"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to 10"):
             BadDefaultsClass()

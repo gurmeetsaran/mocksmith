@@ -2,7 +2,10 @@
 
 from typing import Any, Optional
 
-from mocksmith.types.base import DBType
+from mocksmith.types.base import PYDANTIC_AVAILABLE, DBType
+
+if PYDANTIC_AVAILABLE:
+    from pydantic import constr
 
 
 class VARCHAR(DBType[str]):
@@ -22,10 +25,14 @@ class VARCHAR(DBType[str]):
     def python_type(self) -> type[str]:
         return str
 
-    def validate(self, value: Any) -> None:
-        if value is None:
-            return
+    def get_pydantic_type(self) -> Optional[Any]:
+        """Return Pydantic constr type if available."""
+        if PYDANTIC_AVAILABLE:
+            return constr(max_length=self.length)
+        return None
 
+    def _validate_custom(self, value: Any) -> None:
+        """Fallback validation when Pydantic is not available."""
         if not isinstance(value, str):
             raise ValueError(f"Expected string, got {type(value).__name__}")
 
@@ -77,10 +84,15 @@ class CHAR(DBType[str]):
     def python_type(self) -> type[str]:
         return str
 
-    def validate(self, value: Any) -> None:
-        if value is None:
-            return
+    def get_pydantic_type(self) -> Optional[Any]:
+        """Return Pydantic constr type if available."""
+        if PYDANTIC_AVAILABLE:
+            # CHAR allows up to length, but we pad on serialize
+            return constr(max_length=self.length)
+        return None
 
+    def _validate_custom(self, value: Any) -> None:
+        """Fallback validation when Pydantic is not available."""
         if not isinstance(value, str):
             raise ValueError(f"Expected string, got {type(value).__name__}")
 
@@ -134,10 +146,14 @@ class TEXT(DBType[str]):
     def python_type(self) -> type[str]:
         return str
 
-    def validate(self, value: Any) -> None:
-        if value is None:
-            return
+    def get_pydantic_type(self) -> Optional[Any]:
+        """Return Pydantic constr type if available."""
+        if PYDANTIC_AVAILABLE and self.max_length:
+            return constr(max_length=self.max_length)
+        return None
 
+    def _validate_custom(self, value: Any) -> None:
+        """Fallback validation when Pydantic is not available."""
         if not isinstance(value, str):
             raise ValueError(f"Expected string, got {type(value).__name__}")
 

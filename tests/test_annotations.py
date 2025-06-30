@@ -96,17 +96,17 @@ class TestAnnotationsAPI:
         assert model.multiple_int == 15
 
         # Test validation
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to 1"):
             TestModel(
                 regular_int=42, positive_int=0, bounded_int=50, multiple_int=15  # Should fail
             )
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             TestModel(
                 regular_int=42, positive_int=1, bounded_int=101, multiple_int=15  # Should fail
             )
 
-        with pytest.raises(ValueError, match="not a multiple"):
+        with pytest.raises(ValueError, match="Input should be a multiple of"):
             TestModel(
                 regular_int=42, positive_int=1, bounded_int=50, multiple_int=13  # Should fail
             )
@@ -125,9 +125,9 @@ class TestAnnotationsAPI:
         assert model.small == 50
 
         # Test BigInt constraint
-        with pytest.raises(ValueError, match="below minimum"):
+        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
             TestSizes(big=0, small=50)
 
         # Test SmallInt constraint
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Input should be less than or equal to"):
             TestSizes(big=1, small=101)

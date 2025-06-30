@@ -16,10 +16,8 @@ class BOOLEAN(DBType[bool]):
     def python_type(self) -> type[bool]:
         return bool
 
-    def validate(self, value: Any) -> None:
-        if value is None:
-            return
-
+    def _validate_custom(self, value: Any) -> None:
+        """Validate boolean value."""
         # Accept various truthy/falsy representations
         valid_types = (bool, int, str)
         if not isinstance(value, valid_types):

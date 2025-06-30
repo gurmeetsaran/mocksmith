@@ -67,7 +67,7 @@ class TestBINARY:
         binary.validate(b"hi")
         binary.validate("text")  # will be encoded
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="Binary length .* exceeds maximum"):
             binary.validate(b"too long")
 
     def test_serialize_padding(self):
@@ -114,7 +114,7 @@ class TestBLOB:
         blob = BLOB(max_length=1000)
         blob.validate(b"x" * 1000)
 
-        with pytest.raises(ValueError, match="exceeds maximum"):
+        with pytest.raises(ValueError, match="BLOB length .* exceeds maximum"):
             blob.validate(b"x" * 1001)
 
     def test_large_data(self):

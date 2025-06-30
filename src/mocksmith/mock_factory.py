@@ -518,8 +518,25 @@ def _mock_dataclass(cls: type[T], overrides: dict[str, Any]) -> T:
             mock_data[field.name] = overrides[field.name]
             continue
 
-        # Skip optional fields with defaults if they return None
-        mock_value = _generate_field_mock(field.type, field.name)
+        # Check if field.type is Annotated and has DBType in metadata
+        mock_value = None
+        origin = get_origin(field.type)
+        if origin is Annotated:
+            # Get metadata from the Annotated type
+            metadata = getattr(field.type, "__metadata__", ())
+            for metadata_item in metadata:
+                # Check if metadata item has db_type attribute (from DBTypeValidator)
+                if hasattr(metadata_item, "db_type") and isinstance(metadata_item.db_type, DBType):
+                    mock_value = metadata_item.db_type.mock()
+                    break
+                # Also check if metadata item IS a DBType directly (for dataclasses)
+                elif isinstance(metadata_item, DBType):
+                    mock_value = metadata_item.mock()
+                    break
+
+        # If no DBType found, use regular generation
+        if mock_value is None:
+            mock_value = _generate_field_mock(field.type, field.name)
 
         # Only include the field if it's required or has a non-None value
         if field.default is not MISSING and mock_value is None:
@@ -545,8 +562,13 @@ def _mock_pydantic_model(cls: type[T], overrides: dict[str, Any]) -> T:
         mock_value = None
         if hasattr(field_info, "metadata"):
             for metadata_item in field_info.metadata:
+                # Check if metadata item has db_type attribute (from DBTypeValidator)
                 if hasattr(metadata_item, "db_type") and isinstance(metadata_item.db_type, DBType):
                     mock_value = metadata_item.db_type.mock()
+                    break
+                # Also check if metadata item IS a DBType directly (for dataclasses)
+                elif isinstance(metadata_item, DBType):
+                    mock_value = metadata_item.mock()
                     break
 
         # If no DBType found in metadata, check for Pydantic constraints

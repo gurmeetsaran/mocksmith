@@ -5,12 +5,23 @@ from typing import Any, Generic, Optional, TypeVar
 
 T = TypeVar("T")
 
+# Try to import Pydantic validators
+try:
+    from pydantic import TypeAdapter, ValidationError
+
+    PYDANTIC_AVAILABLE = True
+except ImportError:
+    PYDANTIC_AVAILABLE = False
+    ValidationError = ValueError  # type: ignore
+    TypeAdapter = None  # type: ignore
+
 
 class DBType(ABC, Generic[T]):
     """Base class for all database types."""
 
     def __init__(self):
         self._python_type: Optional[type[T]] = None
+        self._type_adapter: Optional[Any] = None
 
     @property
     @abstractmethod
@@ -24,9 +35,63 @@ class DBType(ABC, Generic[T]):
         """Return the corresponding Python type."""
         pass
 
-    @abstractmethod
+    def get_pydantic_type(self) -> Optional[Any]:
+        """
+        Get the Pydantic type annotation for this type.
+
+        Subclasses should override this to return appropriate Pydantic type
+        annotations (constr, conint, etc.) when PYDANTIC_AVAILABLE is True.
+
+        Returns:
+            Pydantic type annotation or None
+        """
+        return None
+
     def validate(self, value: Any) -> None:
-        """Validate the value against type constraints.
+        """
+        Validate the value using Pydantic validator if available,
+        otherwise fall back to custom validation.
+
+        Args:
+            value: Value to validate
+
+        Raises:
+            ValueError: If validation fails
+        """
+        if value is None:
+            return
+
+        # Try to use Pydantic TypeAdapter if available
+        if PYDANTIC_AVAILABLE and TypeAdapter is not None:
+            if self._type_adapter is None:
+                pydantic_type = self.get_pydantic_type()
+                if pydantic_type is not None:
+                    self._type_adapter = TypeAdapter(pydantic_type)
+
+            if self._type_adapter is not None:
+                try:
+                    # Use TypeAdapter to validate
+                    self._type_adapter.validate_python(value)
+                except ValidationError as e:
+                    # Convert Pydantic validation error to ValueError for consistency
+                    errors = e.errors()
+                    if errors:
+                        msg = errors[0].get("msg", str(e))
+                        raise ValueError(msg) from e
+                    raise ValueError(str(e)) from e
+                except ValueError as e:
+                    raise e
+                return
+
+        # Fall back to custom validation
+        self._validate_custom(value)
+
+    @abstractmethod
+    def _validate_custom(self, value: Any) -> None:
+        """
+        Custom validation logic as fallback when Pydantic is not available.
+
+        This should implement the same validation rules as the Pydantic validator.
 
         Args:
             value: Value to validate

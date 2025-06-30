@@ -35,16 +35,18 @@ class TestINTEGER:
     def test_validation_failure(self):
         int_type = INTEGER()
 
-        with pytest.raises(ValueError, match="out of range"):
+        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
             int_type.validate(2147483648)  # too large
 
-        with pytest.raises(ValueError, match="out of range"):
+        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
             int_type.validate(-2147483649)  # too small
 
-        with pytest.raises(ValueError, match="Expected integer"):
+        with pytest.raises(
+            ValueError, match="Input should be a valid integer|got a number with a fractional part"
+        ):
             int_type.validate(10.5)  # non-integer float
 
-        with pytest.raises(ValueError, match="Expected numeric"):
+        with pytest.raises(ValueError, match="Expected numeric|Input should be a valid integer"):
             int_type.validate("not a number")
 
     def test_serialize(self):
@@ -60,7 +62,7 @@ class TestBIGINT:
         bigint.validate(9223372036854775807)  # max
         bigint.validate(-9223372036854775808)  # min
 
-        with pytest.raises(ValueError, match="out of range"):
+        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
             bigint.validate(9223372036854775808)
 
 
@@ -70,7 +72,7 @@ class TestSMALLINT:
         smallint.validate(32767)  # max
         smallint.validate(-32768)  # min
 
-        with pytest.raises(ValueError, match="out of range"):
+        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
             smallint.validate(32768)
 
 
@@ -92,13 +94,15 @@ class TestDECIMAL:
     def test_validation_precision(self):
         dec = DECIMAL(5, 2)
 
-        with pytest.raises(ValueError, match="exceeds precision"):
+        with pytest.raises(ValueError, match="Decimal input should have no more than .* digits"):
             dec.validate("12345.67")  # too many total digits
 
     def test_validation_scale(self):
         dec = DECIMAL(5, 2)
 
-        with pytest.raises(ValueError, match="decimal places, exceeds scale"):
+        with pytest.raises(
+            ValueError, match="Decimal input should have no more than .* decimal places"
+        ):
             dec.validate("12.456")  # too many decimal places
 
     def test_serialize(self):
@@ -165,10 +169,10 @@ class TestTINYINT:
         tinyint.validate(-50)
 
         # Edge cases
-        with pytest.raises(ValueError, match="out of range for TINYINT"):
+        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
             tinyint.validate(128)  # Too large
 
-        with pytest.raises(ValueError, match="out of range for TINYINT"):
+        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
             tinyint.validate(-129)  # Too small
 
     def test_sql_type(self):
@@ -190,7 +194,9 @@ class TestTINYINT:
         tinyint.validate(-10.0)
 
         # Invalid non-integer floats
-        with pytest.raises(ValueError, match="Expected integer value"):
+        with pytest.raises(
+            ValueError, match="Input should be a valid integer|Expected integer value"
+        ):
             tinyint.validate(10.5)
 
     def test_serialization(self):
