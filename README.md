@@ -193,8 +193,8 @@ from mocksmith.specialized import PhoneNumber, CountryCode
 class User:
     id: Integer()
     username: Varchar(50)
-    phone: PhoneNumber
-    country: CountryCode
+    phone: PhoneNumber()
+    country: CountryCode()
     birth_date: Date()
 
 # Generate mock instances
@@ -523,7 +523,7 @@ class Order(BaseModel):
     order_date: Date()
 
     # String to datetime conversion
-    created_at: Timestamp()
+    created_at: Timestamp(with_timezone=False)
 
 # All these string values are automatically converted
 order = Order(
