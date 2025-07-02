@@ -55,44 +55,133 @@ except ImportError:
 
 
 # String Types
-def Varchar(length: int) -> Any:
-    """Variable-length string with maximum length.
+def Varchar(
+    length: int,
+    *,
+    min_length: Optional[int] = None,
+    startswith: Optional[str] = None,
+    endswith: Optional[str] = None,
+    strip_whitespace: bool = False,
+    to_lower: bool = False,
+    to_upper: bool = False,
+    **pydantic_kwargs: Any,
+) -> Any:
+    """Variable-length string with maximum length and optional constraints.
+
+    Args:
+        length: Maximum length of the string
+        min_length: Minimum length of the string
+        startswith: String must start with this prefix
+        endswith: String must end with this suffix
+        strip_whitespace: Whether to strip whitespace
+        to_lower: Convert to lowercase
+        to_upper: Convert to uppercase
+        **pydantic_kwargs: Additional Pydantic-specific arguments
 
     Example:
         class User(BaseModel):
-            name: Varchar(50)
-            email: Varchar(100)
+            name: Varchar(50, min_length=2)
+            email: Varchar(100, to_lower=True, endswith='@example.com')
+            username: Varchar(30, min_length=3, to_lower=True)
+            order_id: Varchar(20, startswith='ORD-')
     """
-    db_type = _VARCHAR(length)
+    db_type = _VARCHAR(
+        length,
+        min_length=min_length,
+        startswith=startswith,
+        endswith=endswith,
+        strip_whitespace=strip_whitespace,
+        to_lower=to_lower,
+        to_upper=to_upper,
+        **pydantic_kwargs,
+    )
     if _PYDANTIC_AVAILABLE:
         # Include both DBTypeValidator for Pydantic and the raw db_type for dataclasses
         return Annotated[str, _get_validator(db_type), db_type]
     return Annotated[str, db_type]
 
 
-def Char(length: int) -> Any:
-    """Fixed-length string (padded with spaces).
+def Char(
+    length: int,
+    *,
+    startswith: Optional[str] = None,
+    endswith: Optional[str] = None,
+    strip_whitespace: bool = False,
+    to_lower: bool = False,
+    to_upper: bool = False,
+    **pydantic_kwargs: Any,
+) -> Any:
+    """Fixed-length string (padded with spaces) with optional constraints.
+
+    Args:
+        length: Fixed length of the string
+        startswith: String must start with this prefix
+        endswith: String must end with this suffix
+        strip_whitespace: Whether to strip whitespace on input
+        to_lower: Convert to lowercase
+        to_upper: Convert to uppercase
+        **pydantic_kwargs: Additional Pydantic-specific arguments
 
     Example:
         class Account(BaseModel):
             code: Char(10)
-            country: Char(2)
+            country: Char(2, to_upper=True)
+            product_code: Char(8, startswith='PRD-')
     """
-    db_type = _CHAR(length)
+    db_type = _CHAR(
+        length,
+        startswith=startswith,
+        endswith=endswith,
+        strip_whitespace=strip_whitespace,
+        to_lower=to_lower,
+        to_upper=to_upper,
+        **pydantic_kwargs,
+    )
     if _PYDANTIC_AVAILABLE:
         return Annotated[str, _get_validator(db_type), db_type]
     return Annotated[str, db_type]
 
 
-def Text(*, max_length: Optional[int] = None) -> Any:
-    """Variable-length text field.
+def Text(
+    *,
+    max_length: Optional[int] = None,
+    min_length: Optional[int] = None,
+    startswith: Optional[str] = None,
+    endswith: Optional[str] = None,
+    strip_whitespace: bool = False,
+    to_lower: bool = False,
+    to_upper: bool = False,
+    **pydantic_kwargs: Any,
+) -> Any:
+    """Variable-length text field with optional constraints.
+
+    Args:
+        max_length: Optional maximum length
+        min_length: Minimum length of the text
+        startswith: Text must start with this prefix
+        endswith: Text must end with this suffix
+        strip_whitespace: Whether to strip whitespace
+        to_lower: Convert to lowercase
+        to_upper: Convert to uppercase
+        **pydantic_kwargs: Additional Pydantic-specific arguments
 
     Example:
         class Article(BaseModel):
-            content: Text()
+            content: Text(min_length=100)
             summary: Text(max_length=500)
+            description: Text(strip_whitespace=True)
+            review: Text(min_length=50, startswith='Review: ')
     """
-    db_type = _TEXT(max_length=max_length)
+    db_type = _TEXT(
+        max_length=max_length,
+        min_length=min_length,
+        startswith=startswith,
+        endswith=endswith,
+        strip_whitespace=strip_whitespace,
+        to_lower=to_lower,
+        to_upper=to_upper,
+        **pydantic_kwargs,
+    )
     if _PYDANTIC_AVAILABLE:
         return Annotated[str, _get_validator(db_type), db_type]
     return Annotated[str, db_type]
