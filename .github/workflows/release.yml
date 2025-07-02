@@ -17,6 +17,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write  # Required for PyPI trusted publishing
 
 jobs:
   test:
@@ -118,23 +119,6 @@ jobs:
           git push
           git push --tags
 
-      - name: Extract changelog for release
-        id: changelog
-        run: |
-          # Extract the latest version's changelog entry
-          VERSION="${{ steps.bump.outputs.new_version }}"
-
-          # Extract content between this version and the previous one
-          awk -v ver="## $VERSION" '
-            $0 ~ ver {flag=1; next}
-            /^## / && flag {exit}
-            flag {print}
-          ' CHANGELOG.md > changelog.md
-
-          # Also output for debugging
-          echo "Changelog content for version $VERSION:"
-          cat changelog.md
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -152,3 +136,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           gh release upload ${{ steps.bump.outputs.new_version }} dist/* --clobber
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
