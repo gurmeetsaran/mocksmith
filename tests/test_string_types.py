@@ -12,6 +12,38 @@ class TestVARCHAR:
         assert vchar.sql_type == "VARCHAR(50)"
         assert vchar.python_type is str
 
+    def test_startswith_endswith_length_validation(self):
+        # Test that startswith/endswith can't be longer than the field
+        with pytest.raises(ValueError, match="startswith .* is too long"):
+            VARCHAR(5, startswith="TOOLONG")
+
+        with pytest.raises(ValueError, match="endswith .* is too long"):
+            VARCHAR(5, endswith="TOOLONG")
+
+        with pytest.raises(ValueError, match="startswith \\+ endswith is too long"):
+            VARCHAR(10, startswith="START", endswith="FINISH")
+
+    def test_startswith_endswith_constraints(self):
+        # Test startswith constraint
+        vchar = VARCHAR(20, startswith="ORD-")
+        vchar.validate("ORD-12345")
+        with pytest.raises(ValueError, match="String should match pattern"):
+            vchar.validate("INV-12345")
+
+        # Test endswith constraint
+        vchar = VARCHAR(50, endswith="@example.com")
+        vchar.validate("user@example.com")
+        with pytest.raises(ValueError, match="String should match pattern"):
+            vchar.validate("user@other.com")
+
+        # Test both startswith and endswith
+        vchar = VARCHAR(20, startswith="INV-", endswith="-2024")
+        vchar.validate("INV-001-2024")
+        with pytest.raises(ValueError, match="String should match pattern"):
+            vchar.validate("ORD-001-2024")
+        with pytest.raises(ValueError, match="String should match pattern"):
+            vchar.validate("INV-001-2023")
+
     def test_validation_success(self):
         vchar = VARCHAR(10)
         vchar.validate("hello")
@@ -48,6 +80,21 @@ class TestCHAR:
         assert char.length == 10
         assert char.sql_type == "CHAR(10)"
 
+    def test_startswith_endswith_length_validation(self):
+        # Test that startswith/endswith can't be longer than the field
+        with pytest.raises(ValueError, match="startswith .* is too long"):
+            CHAR(5, startswith="TOOLONG")
+
+        with pytest.raises(ValueError, match="endswith .* is too long"):
+            CHAR(5, endswith="TOOLONG")
+
+    def test_startswith_endswith_constraints(self):
+        # Test startswith constraint
+        char = CHAR(8, startswith="PRD-")
+        char.validate("PRD-1234")
+        with pytest.raises(ValueError, match="String should match pattern"):
+            char.validate("ABC-1234")
+
     def test_serialize_padding(self):
         char = CHAR(5)
         assert char.serialize("hi") == "hi   "  # Padded to 5 chars
@@ -71,6 +118,33 @@ class TestTEXT:
         text = TEXT()
         assert text.sql_type == "TEXT"
         assert text.max_length is None
+
+    def test_startswith_endswith_length_validation(self):
+        # Test that startswith/endswith can't be longer than max_length
+        with pytest.raises(ValueError, match="startswith .* is too long"):
+            TEXT(max_length=5, startswith="TOOLONG")
+
+        with pytest.raises(ValueError, match="endswith .* is too long"):
+            TEXT(max_length=5, endswith="TOOLONG")
+
+    def test_startswith_endswith_constraints(self):
+        # Test startswith constraint
+        text = TEXT(startswith="Review: ")
+        text.validate("Review: Great product!")
+        with pytest.raises(ValueError, match="String should match pattern"):
+            text.validate("This is a great product!")
+
+        # Test endswith constraint
+        text = TEXT(endswith=" - END")
+        text.validate("This is the content - END")
+        with pytest.raises(ValueError, match="String should match pattern"):
+            text.validate("This is the content")
+
+        # Test both with length constraints
+        text = TEXT(min_length=20, max_length=100, startswith="Note: ")
+        text.validate("Note: This is a valid note with enough content.")
+        with pytest.raises(ValueError, match="String should have at least"):
+            text.validate("Note: Too short")
 
     def test_with_max_length(self):
         text = TEXT(max_length=1000)
