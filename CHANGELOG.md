@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## 3.0.0 (2025-07-02)
+
+### Feat
+
+- simplify string types to use only startswith/endswith constraints (#19)
+- add hybrid validation using Pydantic constraints internally
+- add constrained type for money, decimal and float (#17)
+
+## v2.0.1 (2025-06-30)
+
+### Fix
+
+- remove upper bound constraints from Python and Pydantic dependencies (#16)
+
 ## v2.0.0 (2025-06-25)
 
 ### Documentation
