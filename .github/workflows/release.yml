@@ -1,72 +1,154 @@
-name: Manual Release Testing
+name: Release
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to test (e.g., 0.1.0)'
-        required: false
-        type: string
+      increment:
+        description: 'Version increment type'
+        required: true
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+        default: auto
 
 permissions:
-  contents: read
+  contents: write
+  pull-requests: write
 
 jobs:
-  test-all-platforms:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
-        exclude:
-          # Skip some combinations to save CI time
-          - os: windows-latest
-            python-version: "3.9"
-          - os: macos-latest
-            python-version: "3.9"
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install dependencies
+        run: |
+          poetry install --with dev --extras pydantic --extras mock
+
+      - name: Lint with ruff
+        run: |
+          poetry run ruff check src tests
+
+      - name: Type check with pyright
+        run: |
+          poetry run pyright
+
+      - name: Run tests
+        run: |
+          poetry run pytest tests -v
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: 1.8.3
-        virtualenvs-create: true
-        virtualenvs-in-project: true
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
 
-    - name: Install dependencies
-      shell: bash
-      run: |
-        poetry install --with dev --extras pydantic --extras mock
+      - name: Install dependencies
+        run: |
+          poetry install --with dev
+          pip install commitizen
 
-    - name: Lint with ruff
-      shell: bash
-      run: |
-        poetry run ruff check src tests
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
 
-    - name: Type check with pyright
-      shell: bash
-      run: |
-        poetry run pyright
+      - name: Get current version
+        id: current_version
+        run: |
+          echo "version=$(poetry version -s)" >> $GITHUB_OUTPUT
 
-    - name: Run tests
-      shell: bash
-      run: |
-        poetry run pytest tests -v --cov=mocksmith --cov-report=xml --cov-report=html --cov-report=term --cov-fail-under=59
+      - name: Bump version
+        id: bump
+        run: |
+          if [ "${{ inputs.increment }}" = "auto" ]; then
+            echo "🤖 Auto-determining version bump from conventional commits..."
+            poetry run cz bump --changelog --yes
+          else
+            echo "📌 Manual version bump: ${{ inputs.increment }}"
+            poetry run cz bump --increment ${{ inputs.increment }} --changelog --yes
+          fi
 
-    - name: Upload test results
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
-        path: |
-          .coverage
-          htmlcov/
-          coverage.xml
+          # Get the new version
+          NEW_VERSION=$(poetry version -s)
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Check if this is a pre-release (starts with 0.)
+          if [[ $NEW_VERSION == 0.* ]]; then
+            echo "pre_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "pre_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push changes
+        run: |
+          git push
+          git push --tags
+
+      - name: Extract changelog for release
+        id: changelog
+        run: |
+          # Extract the latest version's changelog entry
+          VERSION="${{ steps.bump.outputs.new_version }}"
+
+          # Extract content between this version and the previous one
+          awk -v ver="## $VERSION" '
+            $0 ~ ver {flag=1; next}
+            /^## / && flag {exit}
+            flag {print}
+          ' CHANGELOG.md > changelog.md
+
+          # Also output for debugging
+          echo "Changelog content for version $VERSION:"
+          cat changelog.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.bump.outputs.new_version }}
+          name: ${{ steps.bump.outputs.new_version }}
+          body_path: CHANGELOG.md
+          prerelease: ${{ steps.bump.outputs.pre_release }}
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Build packages
+        run: poetry build
+
+      - name: Upload artifacts to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ steps.bump.outputs.new_version }} dist/* --clobber
