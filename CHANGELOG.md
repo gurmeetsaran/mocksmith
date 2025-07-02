@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 3.0.1 (2025-07-02)
+
+### Fix
+
+- release workflow
+
 ## 3.0.0 (2025-07-02)
 
 ### Feat
