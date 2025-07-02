@@ -129,7 +129,7 @@ version_provider = "poetry"
 update_changelog_on_bump = true
 major_version_zero = false
 changelog_merge_prerelease = true
-changelog_start_rev = "2.1.0"
+changelog_start_rev = "3.0.0"
 version_files = [
     "src/mocksmith/__init__.py:__version__",
     "pyproject.toml:tool.poetry.version"
