@@ -1,5 +1,5 @@
 {
-  "include": ["src", "tests", "examples"],
+  "include": ["src"],
   "exclude": ["**/__pycache__", "**/.pytest_cache", "venv", ".venv"],
   "pythonVersion": "3.9",
   "pythonPlatform": "All",
