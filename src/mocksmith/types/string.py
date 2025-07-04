@@ -5,7 +5,7 @@ from typing import Any, Optional
 from mocksmith.types.base import PYDANTIC_AVAILABLE, DBType
 
 if PYDANTIC_AVAILABLE:
-    from pydantic import constr
+    from pydantic import constr  # type: ignore[import-not-found]
 
 
 class VARCHAR(DBType[str]):

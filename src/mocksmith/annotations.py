@@ -271,7 +271,7 @@ def ConstrainedMoney(
             balance: NonNegativeMoney()  # Same as ConstrainedMoney(ge=0)
     """
     try:
-        from pydantic import condecimal
+        from pydantic import condecimal  # type: ignore[import-not-found]
 
         return condecimal(
             max_digits=19,
@@ -340,7 +340,7 @@ def ConstrainedDecimal(
             temperature: ConstrainedDecimal(5, 2, ge=-273.15)  # Above absolute zero
     """
     try:
-        from pydantic import condecimal
+        from pydantic import condecimal  # type: ignore[import-not-found]
 
         return condecimal(
             max_digits=precision,
@@ -379,7 +379,7 @@ def ConstrainedFloat(
             temperature: ConstrainedFloat(gt=-273.15)  # Above absolute zero
     """
     try:
-        from pydantic import confloat
+        from pydantic import confloat  # type: ignore[import-not-found]
 
         return confloat(gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of)
     except ImportError:

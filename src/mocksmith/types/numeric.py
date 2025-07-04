@@ -7,7 +7,7 @@ from typing import Any, Optional, TypeVar, Union
 from mocksmith.types.base import PYDANTIC_AVAILABLE, DBType
 
 if PYDANTIC_AVAILABLE:
-    from pydantic import condecimal, confloat, conint
+    from pydantic import condecimal, confloat, conint  # type: ignore[import-not-found]
 
 T = TypeVar("T", Decimal, float)
 
