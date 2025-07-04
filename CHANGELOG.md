@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 3.0.3 (2025-07-04)
+
+### Refactor
+
+- consolidate numeric types using inheritance and update constraint parameters (#20)
+
 ## 3.0.2 (2025-07-02)
 
 ### Fix
