@@ -19,7 +19,7 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class InvalidConfig:
-            hour: SmallInt(min_value=0, max_value=23) = 24
+            hour: SmallInt(ge=0, le=23) = 24
 
         # But fails when trying to create an instance
         with pytest.raises(ValueError, match="Input should be less than or equal to 23"):
@@ -31,7 +31,7 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class InvalidPercentage:
-            percentage: Integer(min_value=0, max_value=100) = 150
+            percentage: Integer(ge=0, le=100) = 150
 
         with pytest.raises(ValueError, match="Input should be less than or equal to 100"):
             InvalidPercentage()
@@ -42,7 +42,7 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class InvalidNegative:
-            level: TinyInt(min_value=0, max_value=10) = -1
+            level: TinyInt(ge=0, le=10) = -1
 
         with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
             InvalidNegative()
@@ -53,9 +53,9 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class ValidConfig:
-            hour: SmallInt(min_value=0, max_value=23) = 12
-            percentage: Integer(min_value=0, max_value=100) = 75
-            level: TinyInt(min_value=0, max_value=5) = 3
+            hour: SmallInt(ge=0, le=23) = 12
+            percentage: Integer(ge=0, le=100) = 75
+            level: TinyInt(ge=0, le=5) = 3
 
         # Should create instance successfully
         config = ValidConfig()
@@ -69,7 +69,7 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class ConfigWithBadDefault:
-            hour: SmallInt(min_value=0, max_value=23) = 24
+            hour: SmallInt(ge=0, le=23) = 24
 
         # Can't create with default
         with pytest.raises(ValueError):
@@ -89,7 +89,7 @@ class TestDefaultValueValidation:
         @dataclass
         class ConfigWithFactory:
             # This will be validated when the factory is called
-            value: Integer(min_value=0, max_value=100) = field(default_factory=invalid_factory)
+            value: Integer(ge=0, le=100) = field(default_factory=invalid_factory)
 
         with pytest.raises(ValueError, match="Input should be less than or equal to 100"):
             ConfigWithFactory()
@@ -100,7 +100,7 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class NullableConfig:
-            optional_hour: Optional[SmallInt(min_value=0, max_value=23)] = None
+            optional_hour: Optional[SmallInt(ge=0, le=23)] = None
 
         config = NullableConfig()
         assert config.optional_hour is None
@@ -111,9 +111,9 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class MultipleInvalid:
-            hour: SmallInt(min_value=0, max_value=23) = 24
-            percentage: Integer(min_value=0, max_value=100) = 150
-            level: TinyInt(min_value=1, max_value=5) = 0
+            hour: SmallInt(ge=0, le=23) = 24
+            percentage: Integer(ge=0, le=100) = 150
+            level: TinyInt(ge=1, le=5) = 0
 
         # Should fail on the first invalid field during instantiation
         with pytest.raises(ValueError):
@@ -126,7 +126,7 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class BadDefaultsClass:
-            value: Integer(min_value=0, max_value=10) = 100
+            value: Integer(ge=0, le=10) = 100
 
         # We can even inspect the class
         assert BadDefaultsClass.__name__ == "BadDefaultsClass"

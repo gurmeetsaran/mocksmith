@@ -37,12 +37,6 @@ from mocksmith.annotations import (
 from mocksmith.types.base import DBType
 from mocksmith.types.binary import BINARY, BLOB, VARBINARY
 from mocksmith.types.boolean import BOOLEAN
-from mocksmith.types.constraints import (
-    ConstrainedBigInt,
-    ConstrainedInteger,
-    ConstrainedSmallInt,
-    ConstrainedTinyInt,
-)
 from mocksmith.types.numeric import (
     BIGINT,
     DECIMAL,
@@ -97,13 +91,9 @@ __all__ = [
     "Blob",
     "Boolean",
     "Char",
-    "ConstrainedBigInt",
     "ConstrainedDecimal",
     "ConstrainedFloat",
-    "ConstrainedInteger",
     "ConstrainedMoney",
-    "ConstrainedSmallInt",
-    "ConstrainedTinyInt",
     "DBType",
     "Date",
     "DateTime",

@@ -111,19 +111,19 @@ class ProductInventory:
 
     # IDs must be positive
     product_id: PositiveInteger()
-    warehouse_id: Integer(positive=True)  # Alternative syntax
+    warehouse_id: Integer(gt=0)  # Positive integer
 
     # Quantities with constraints
     quantity_on_hand: NonNegativeInteger()  # >= 0
-    reorder_level: Integer(min_value=0, max_value=10000)
-    min_order_quantity: Integer(min_value=1, max_value=1000)
+    reorder_level: Integer(ge=0, le=10000)
+    min_order_quantity: Integer(ge=1, le=1000)
 
     # Percentage constraints
-    discount_percentage: Integer(min_value=0, max_value=100, multiple_of=5)
+    discount_percentage: Integer(ge=0, le=100, multiple_of=5)
 
     # Financial constraints
     unit_cost_cents: NonNegativeInteger()  # Price in cents
-    max_discount_amount: Integer(min_value=0, max_value=100000)  # $0 to $1000
+    max_discount_amount: Integer(ge=0, le=100000)  # $0 to $1000
 
     # Fields with defaults must come after required fields
     tax_rate_percentage: DecimalType(4, 2) = Decimal("0.00")  # 0.00 to 99.99
@@ -141,22 +141,22 @@ class GameCharacter:
 
     # Basic info with constraints
     character_id: PositiveInteger()
-    player_id: BigInt(positive=True)
+    player_id: BigInt(gt=0)
 
     # Level and experience
-    level: Integer(min_value=1, max_value=100)
+    level: Integer(ge=1, le=100)
     experience_points: NonNegativeInteger()
     skill_points: NonNegativeInteger()
 
     # Stats that can go negative (debuffs)
-    health: Integer(min_value=-100, max_value=9999)
+    health: Integer(ge=-100, le=9999)
     mana: NonNegativeInteger()
-    stamina: Integer(min_value=0, max_value=100)
+    stamina: Integer(ge=0, le=100)
 
     # Modifiers
-    strength_modifier: Integer(min_value=-10, max_value=10)
-    defense_modifier: Integer(min_value=-10, max_value=10)
-    speed_modifier: SmallInt(min_value=-5, max_value=5)
+    strength_modifier: Integer(ge=-10, le=10)
+    defense_modifier: Integer(ge=-10, le=10)
+    speed_modifier: SmallInt(ge=-5, le=5)
 
     # Currency (can have debt)
     gold: NonNegativeInteger()
@@ -164,7 +164,7 @@ class GameCharacter:
     bank_balance: Integer()  # Can be positive or negative
 
     # Reputation system
-    reputation: Integer(min_value=-1000, max_value=1000, multiple_of=10)
+    reputation: Integer(ge=-1000, le=1000, multiple_of=10)
     honor_points: NonNegativeInteger()
     infamy_points: NonNegativeInteger()
 
@@ -180,25 +180,25 @@ class SystemConfig:
     """Demonstrates TINYINT usage for small bounded values."""
 
     config_id: PositiveInteger()
-    server_id: SmallInt(positive=True)
+    server_id: SmallInt(gt=0)
 
     # Log levels (0-5)
-    log_level: TinyInt(min_value=0, max_value=5)  # 0=DEBUG, 5=CRITICAL
+    log_level: TinyInt(ge=0, le=5)  # 0=DEBUG, 5=CRITICAL
 
     # System limits
-    max_retries: TinyInt(min_value=0, max_value=10)
-    thread_pool_size: TinyInt(min_value=1, max_value=100)
-    connection_pool_size: TinyInt(min_value=1, max_value=50)
+    max_retries: TinyInt(ge=0, le=10)
+    thread_pool_size: TinyInt(ge=1, le=100)
+    connection_pool_size: TinyInt(ge=1, le=50)
 
     # Percentage values (perfect for TINYINT)
-    cpu_threshold_percent: TinyInt(min_value=0, max_value=100)
-    memory_threshold_percent: TinyInt(min_value=0, max_value=100)
-    disk_threshold_percent: TinyInt(min_value=0, max_value=100)
+    cpu_threshold_percent: TinyInt(ge=0, le=100)
+    memory_threshold_percent: TinyInt(ge=0, le=100)
+    disk_threshold_percent: TinyInt(ge=0, le=100)
 
     # Priority and quality settings
-    priority: TinyInt(min_value=-5, max_value=5)  # -5=lowest, 5=highest
-    quality_level: TinyInt(min_value=1, max_value=10)
-    compression_level: TinyInt(min_value=0, max_value=9)
+    priority: TinyInt(ge=-5, le=5)  # -5=lowest, 5=highest
+    quality_level: TinyInt(ge=1, le=10)
+    compression_level: TinyInt(ge=0, le=9)
 
 
 # ============================================================================
@@ -211,8 +211,8 @@ class SystemConfig:
 class ScientificMeasurement:
     """Demonstrates floating-point types and precision."""
 
-    measurement_id: BigInt(positive=True)
-    experiment_id: Integer(positive=True)
+    measurement_id: BigInt(gt=0)
+    experiment_id: Integer(gt=0)
 
     # Different float types
     temperature_celsius: Float()  # General floating point
@@ -630,7 +630,7 @@ def main():
 ✓ SQL serialization: to_sql_dict() for database operations
 ✓ All standard SQL types: INTEGER, VARCHAR, DECIMAL, TIMESTAMP, etc.
 ✓ Constraint types: PositiveInteger(), NonNegativeInteger(), etc.
-✓ Flexible constraints: min_value, max_value, multiple_of
+✓ Flexible constraints: gt, ge, lt, le, multiple_of
 ✓ TINYINT support: Perfect for small bounded values (8-bit)
 ✓ REAL vs FLOAT: Proper SQL type generation
 """

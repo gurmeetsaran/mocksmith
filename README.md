@@ -17,7 +17,7 @@ Type-safe data validation with automatic mock generation for Python dataclasses 
 - **Clean API**: Simple, intuitive interface for both Pydantic AND dataclasses - just `name: Varchar(50)`
 - **Comprehensive Types**: STRING (VARCHAR, CHAR, TEXT), NUMERIC (INTEGER, DECIMAL, FLOAT), TEMPORAL (DATE, TIME, TIMESTAMP), and more
 - **Mock Data Generation**: Built-in mock/fake data generation for testing with `@mockable` decorator
-- **Constrained Types**: Support for min/max constraints on numeric types - `price: PositiveMoney()`, `age: Integer(min_value=0, max_value=120)`
+- **Constrained Types**: Support for min/max constraints on numeric types - `price: PositiveMoney()`, `age: Integer(ge=0, le=120)`
 
 ## Why mocksmith?
 
@@ -60,18 +60,14 @@ class Product(BaseModel):
 ## Installation
 
 ```bash
+# Standard installation (includes mock generation)
 pip install mocksmith
-```
 
-For Pydantic support:
-```bash
+# With Pydantic validation support (recommended)
 pip install "mocksmith[pydantic]"
 ```
 
-For mock data generation:
-```bash
-pip install "mocksmith[mock]"
-```
+The standard installation includes Faker for mock data generation and custom validation logic. Adding Pydantic provides better performance and integration with Pydantic types.
 
 ## Import Structure
 
@@ -176,7 +172,7 @@ from mocksmith import Integer, PositiveInteger, NonNegativeInteger
 
 class UserAccount(BaseModel):
     user_id: PositiveInteger()
-    age: Integer(min_value=13, max_value=120)
+    age: Integer(ge=13, le=120)
     balance_cents: NonNegativeInteger()
 ```
 
@@ -294,7 +290,7 @@ class Product:
 - `NegativeInteger()` → Integer < 0
 - `NonNegativeInteger()` → Integer ≥ 0
 - `NonPositiveInteger()` → Integer ≤ 0
-- `ConstrainedInteger(min_value=x, max_value=y, multiple_of=z)` → Custom constraints
+- `ConstrainedInteger(ge=x, le=y, multiple_of=z)` → Custom constraints
 - `ConstrainedBigInt(...)` → Constrained 64-bit integer
 - `ConstrainedSmallInt(...)` → Constrained 16-bit integer
 - `ConstrainedTinyInt(...)` → Constrained 8-bit integer
@@ -697,7 +693,7 @@ When using `@validate_dataclass`, default values are validated when an instance 
 @dataclass
 class Config:
     # This class definition succeeds even with invalid default
-    hour: SmallInt(min_value=0, max_value=23) = 24
+    hour: SmallInt(ge=0, le=23) = 24
 
 # But creating an instance fails with validation error
 try:
@@ -758,9 +754,9 @@ from mocksmith import Integer, PositiveInteger, NonNegativeInteger
 
 # Enhanced Integer functions - no constraints = standard type
 id: Integer()                    # Standard 32-bit integer
-quantity: Integer(min_value=0)   # With constraints (same as NonNegativeInteger)
-discount: Integer(min_value=0, max_value=100)  # Percentage 0-100
-price: Integer(positive=True)    # Same as PositiveInteger()
+quantity: Integer(ge=0)   # With constraints (same as NonNegativeInteger)
+discount: Integer(ge=0, le=100)  # Percentage 0-100
+price: Integer(gt=0)    # Same as PositiveInteger()
 
 # Specialized constraint types
 id: PositiveInteger()            # > 0
@@ -776,10 +772,10 @@ For complete examples with both dataclasses and Pydantic, see:
 ```python
 # Enhanced Integer functions - no constraints = standard type
 Integer()                   # Standard 32-bit integer
-Integer(min_value=0)        # With constraints
-Integer(positive=True)      # Shortcut for > 0
+Integer(ge=0)        # With constraints
+Integer(gt=0)      # Shortcut for > 0
 BigInt()                    # Standard 64-bit integer
-BigInt(min_value=0, max_value=1000000)  # With constraints
+BigInt(ge=0, le=1000000)  # With constraints
 SmallInt()                  # Standard 16-bit integer
 SmallInt(multiple_of=10)    # With constraints
 
@@ -791,11 +787,11 @@ NonPositiveInteger()        # <= 0
 
 # Full constraint options
 Integer(
-    min_value=10,          # Minimum allowed value
-    max_value=100,         # Maximum allowed value
-    multiple_of=5,         # Must be divisible by this
-    positive=True,         # Shortcut for min_value=1
-    negative=True,         # Shortcut for max_value=-1
+    gt=10,             # Value must be greater than 10
+    ge=10,             # Value must be greater than or equal to 10
+    lt=100,            # Value must be less than 100
+    le=100,            # Value must be less than or equal to 100
+    multiple_of=5,     # Must be divisible by this
 )
 ```
 

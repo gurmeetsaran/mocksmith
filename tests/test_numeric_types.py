@@ -23,6 +23,17 @@ class TestINTEGER:
         assert int_type.sql_type == "INTEGER"
         assert int_type.python_type is int
 
+    def test_creation_with_constraints(self):
+        # Test with various constraints
+        int_type = INTEGER(gt=0, le=100)
+        assert int_type.gt == 0
+        assert int_type.le == 100
+
+        int_type2 = INTEGER(ge=10, lt=20, multiple_of=2)
+        assert int_type2.ge == 10
+        assert int_type2.lt == 20
+        assert int_type2.multiple_of == 2
+
     def test_validation_success(self):
         int_type = INTEGER()
         int_type.validate(0)
@@ -31,6 +42,34 @@ class TestINTEGER:
         int_type.validate(2147483647)  # max value
         int_type.validate(-2147483648)  # min value
         int_type.validate(100.0)  # float with no decimal
+
+    def test_validation_with_constraints(self):
+        # Test gt constraint
+        int_type = INTEGER(gt=0)
+        int_type.validate(1)
+        int_type.validate(100)
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            int_type.validate(0)
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            int_type.validate(-1)
+
+        # Test ge/le constraints
+        int_type = INTEGER(ge=10, le=20)
+        int_type.validate(10)
+        int_type.validate(15)
+        int_type.validate(20)
+        with pytest.raises(ValueError, match="Input should be greater than or equal to 10"):
+            int_type.validate(9)
+        with pytest.raises(ValueError, match="Input should be less than or equal to 20"):
+            int_type.validate(21)
+
+        # Test multiple_of constraint
+        int_type = INTEGER(multiple_of=5)
+        int_type.validate(0)
+        int_type.validate(10)
+        int_type.validate(-15)
+        with pytest.raises(ValueError, match="Input should be a multiple of 5"):
+            int_type.validate(3)
 
     def test_validation_failure(self):
         int_type = INTEGER()
@@ -84,12 +123,50 @@ class TestDECIMAL:
         assert dec.sql_type == "DECIMAL(10,2)"
         assert dec.python_type == Decimal
 
+    def test_creation_with_constraints(self):
+        # Test with various constraints
+        dec = DECIMAL(10, 2, gt=0, le=1000)
+        assert dec.gt == Decimal("0")
+        assert dec.le == Decimal("1000")
+
+        dec2 = DECIMAL(5, 2, ge=Decimal("10.5"), multiple_of=Decimal("0.25"))
+        assert dec2.ge == Decimal("10.5")
+        assert dec2.multiple_of == Decimal("0.25")
+
     def test_validation_success(self):
         dec = DECIMAL(5, 2)
         dec.validate("123.45")
         dec.validate(123.45)
         dec.validate(Decimal("123.45"))
         dec.validate(123)  # integer is ok
+
+    def test_validation_with_constraints(self):
+        # Test gt constraint
+        dec = DECIMAL(10, 2, gt=0)
+        dec.validate(Decimal("0.01"))
+        dec.validate(100)
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            dec.validate(0)
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            dec.validate(Decimal("-10"))
+
+        # Test ge/le constraints
+        dec = DECIMAL(5, 2, ge=10, le=100)
+        dec.validate(10)
+        dec.validate(50.5)
+        dec.validate(100)
+        with pytest.raises(ValueError, match="Input should be greater than or equal to 10"):
+            dec.validate(9.99)
+        with pytest.raises(ValueError, match="Input should be less than or equal to 100"):
+            dec.validate(100.01)
+
+        # Test multiple_of constraint
+        dec = DECIMAL(5, 2, multiple_of=Decimal("0.25"))
+        dec.validate(Decimal("10.25"))
+        dec.validate(Decimal("10.50"))
+        dec.validate(Decimal("10.75"))
+        with pytest.raises(ValueError, match="Input should be a multiple of 0.25"):
+            dec.validate(Decimal("10.30"))
 
     def test_validation_precision(self):
         dec = DECIMAL(5, 2)
@@ -133,6 +210,47 @@ class TestFLOAT:
     def test_with_precision(self):
         float_type = FLOAT(24)
         assert float_type.sql_type == "FLOAT(24)"
+
+    def test_creation_with_constraints(self):
+        # Test with various constraints
+        float_type = FLOAT(gt=0.0, le=100.0)
+        assert float_type.gt == 0.0
+        assert float_type.le == 100.0
+
+        float_type2 = FLOAT(ge=0.0, lt=1.0, multiple_of=0.1)
+        assert float_type2.ge == 0.0
+        assert float_type2.lt == 1.0
+        assert float_type2.multiple_of == 0.1
+
+    def test_validation_with_constraints(self):
+        # Test gt constraint
+        float_type = FLOAT(gt=0.0)
+        float_type.validate(0.1)
+        float_type.validate(100.5)
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            float_type.validate(0.0)
+        with pytest.raises(ValueError, match="Input should be greater than 0"):
+            float_type.validate(-1.0)
+
+        # Test ge/le constraints
+        float_type = FLOAT(ge=0.0, le=1.0)
+        float_type.validate(0.0)
+        float_type.validate(0.5)
+        float_type.validate(1.0)
+        with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
+            float_type.validate(-0.1)
+        with pytest.raises(ValueError, match="Input should be less than or equal to 1"):
+            float_type.validate(1.1)
+
+        # Test allow_inf_nan
+        float_type = FLOAT(allow_inf_nan=True)
+        float_type.validate(float("inf"))
+        float_type.validate(float("-inf"))
+        float_type.validate(float("nan"))
+
+        float_type2 = FLOAT(allow_inf_nan=False)
+        with pytest.raises(ValueError, match="Input should be a finite number"):
+            float_type2.validate(float("inf"))
 
     def test_serialize(self):
         float_type = FLOAT()

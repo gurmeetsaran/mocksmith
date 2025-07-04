@@ -2,16 +2,6 @@
 
 from mocksmith.types.binary import BINARY, BLOB, VARBINARY
 from mocksmith.types.boolean import BOOLEAN
-from mocksmith.types.constraints import (
-    ConstrainedBigInt,
-    ConstrainedInteger,
-    ConstrainedSmallInt,
-    ConstrainedTinyInt,
-    NegativeInteger,
-    NonNegativeInteger,
-    NonPositiveInteger,
-    PositiveInteger,
-)
 from mocksmith.types.numeric import (
     BIGINT,
     DECIMAL,
@@ -202,98 +192,6 @@ class TestBinarySQLTypes:
         assert blob_with_max.sql_type == "BLOB"
 
 
-class TestConstrainedSQLTypes:
-    """Test SQL type generation for constrained types."""
-
-    def test_constrained_integer_sql_types(self):
-        """Test ConstrainedInteger SQL type generation with CHECK constraints."""
-        # No constraints
-        basic = ConstrainedInteger()
-        assert basic.sql_type == "INTEGER"
-
-        # Min constraint only
-        min_only = ConstrainedInteger(min_value=0)
-        assert min_only.sql_type == "INTEGER CHECK (>= 0)"
-
-        # Max constraint only
-        max_only = ConstrainedInteger(max_value=100)
-        assert max_only.sql_type == "INTEGER CHECK (<= 100)"
-
-        # Both min and max
-        min_max = ConstrainedInteger(min_value=0, max_value=100)
-        assert min_max.sql_type == "INTEGER CHECK (>= 0 AND <= 100)"
-
-        # Multiple of constraint
-        multiple = ConstrainedInteger(multiple_of=5)
-        assert multiple.sql_type == "INTEGER CHECK (% 5 = 0)"
-
-        # All constraints
-        all_constraints = ConstrainedInteger(min_value=0, max_value=100, multiple_of=10)
-        assert all_constraints.sql_type == "INTEGER CHECK (>= 0 AND <= 100 AND % 10 = 0)"
-
-    def test_positive_integer_sql_type(self):
-        """Test PositiveInteger SQL type generation."""
-        pos_int = PositiveInteger()
-        assert pos_int.sql_type == "INTEGER CHECK (>= 1)"
-
-    def test_negative_integer_sql_type(self):
-        """Test NegativeInteger SQL type generation."""
-        neg_int = NegativeInteger()
-        assert neg_int.sql_type == "INTEGER CHECK (<= -1)"
-
-    def test_non_negative_integer_sql_type(self):
-        """Test NonNegativeInteger SQL type generation."""
-        non_neg = NonNegativeInteger()
-        assert non_neg.sql_type == "INTEGER CHECK (>= 0)"
-
-    def test_non_positive_integer_sql_type(self):
-        """Test NonPositiveInteger SQL type generation."""
-        non_pos = NonPositiveInteger()
-        assert non_pos.sql_type == "INTEGER CHECK (<= 0)"
-
-    def test_constrained_bigint_sql_types(self):
-        """Test ConstrainedBigInt SQL type generation."""
-        # Basic
-        basic = ConstrainedBigInt()
-        assert basic.sql_type == "BIGINT"
-
-        # With constraints
-        constrained = ConstrainedBigInt(min_value=1000000, max_value=9999999)
-        assert constrained.sql_type == "BIGINT CHECK (>= 1000000 AND <= 9999999)"
-
-        # Positive shortcut
-        positive = ConstrainedBigInt(positive=True)
-        assert positive.sql_type == "BIGINT CHECK (>= 1)"
-
-    def test_constrained_smallint_sql_types(self):
-        """Test ConstrainedSmallInt SQL type generation."""
-        # Basic
-        basic = ConstrainedSmallInt()
-        assert basic.sql_type == "SMALLINT"
-
-        # With constraints
-        constrained = ConstrainedSmallInt(min_value=-100, max_value=100, multiple_of=10)
-        assert constrained.sql_type == "SMALLINT CHECK (>= -100 AND <= 100 AND % 10 = 0)"
-
-        # Negative shortcut
-        negative = ConstrainedSmallInt(negative=True)
-        assert negative.sql_type == "SMALLINT CHECK (<= -1)"
-
-    def test_constrained_tinyint_sql_types(self):
-        """Test ConstrainedTinyInt SQL types."""
-        # Basic (no constraints)
-        basic = ConstrainedTinyInt()
-        assert basic.sql_type == "TINYINT"
-
-        # With constraints
-        constrained = ConstrainedTinyInt(min_value=-10, max_value=10, multiple_of=5)
-        assert constrained.sql_type == "TINYINT CHECK (>= -10 AND <= 10 AND % 5 = 0)"
-
-        # Positive shortcut
-        positive = ConstrainedTinyInt(positive=True)
-        assert positive.sql_type == "TINYINT CHECK (>= 1)"
-
-
 class TestComplexSQLTypes:
     """Test complex SQL type scenarios."""
 
@@ -328,24 +226,6 @@ class TestComplexSQLTypes:
             assert (
                 timestamp_type.sql_type == expected_sql
             ), f"Expected {expected_sql}, got {timestamp_type.sql_type}"
-
-    def test_constrained_integer_edge_cases(self):
-        """Test edge cases for constrained integer SQL generation."""
-        # Only positive flag
-        pos = ConstrainedInteger(positive=True)
-        assert pos.sql_type == "INTEGER CHECK (>= 1)"
-
-        # Only negative flag
-        neg = ConstrainedInteger(negative=True)
-        assert neg.sql_type == "INTEGER CHECK (<= -1)"
-
-        # Multiple of with min/max
-        mult_bounded = ConstrainedInteger(min_value=10, max_value=100, multiple_of=5)
-        assert mult_bounded.sql_type == "INTEGER CHECK (>= 10 AND <= 100 AND % 5 = 0)"
-
-        # Positive with additional max constraint
-        pos_max = ConstrainedInteger(positive=True, max_value=50)
-        assert pos_max.sql_type == "INTEGER CHECK (>= 1 AND <= 50)"
 
 
 class TestSQLTypeInheritance:
