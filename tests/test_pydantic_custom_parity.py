@@ -5,6 +5,19 @@ from decimal import Decimal
 
 import pytest
 
+# Check if pydantic is available
+try:
+    import pydantic  # noqa: F401
+
+    PYDANTIC_AVAILABLE = True
+except ImportError:
+    PYDANTIC_AVAILABLE = False
+
+# Skip entire module if pydantic is not available
+pytestmark = pytest.mark.skipif(
+    not PYDANTIC_AVAILABLE, reason="Pydantic not installed - skipping parity tests"
+)
+
 # Temporarily disable Pydantic to test custom validation
 original_modules = sys.modules.copy()
 

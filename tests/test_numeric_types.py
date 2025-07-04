@@ -48,9 +48,9 @@ class TestINTEGER:
         int_type = INTEGER(gt=0)
         int_type.validate(1)
         int_type.validate(100)
-        with pytest.raises(ValueError, match="Input should be greater than 0"):
+        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
             int_type.validate(0)
-        with pytest.raises(ValueError, match="Input should be greater than 0"):
+        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
             int_type.validate(-1)
 
         # Test ge/le constraints
@@ -58,9 +58,13 @@ class TestINTEGER:
         int_type.validate(10)
         int_type.validate(15)
         int_type.validate(20)
-        with pytest.raises(ValueError, match="Input should be greater than or equal to 10"):
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be greater than or equal to 10"
+        ):
             int_type.validate(9)
-        with pytest.raises(ValueError, match="Input should be less than or equal to 20"):
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be less than or equal to 20"
+        ):
             int_type.validate(21)
 
         # Test multiple_of constraint
@@ -68,16 +72,22 @@ class TestINTEGER:
         int_type.validate(0)
         int_type.validate(10)
         int_type.validate(-15)
-        with pytest.raises(ValueError, match="Input should be a multiple of 5"):
+        with pytest.raises(ValueError, match="(Input should|Value must) be a multiple of 5"):
             int_type.validate(3)
 
     def test_validation_failure(self):
         int_type = INTEGER()
 
-        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
+        with pytest.raises(
+            ValueError,
+            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
+        ):
             int_type.validate(2147483648)  # too large
 
-        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
+        with pytest.raises(
+            ValueError,
+            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
+        ):
             int_type.validate(-2147483649)  # too small
 
         with pytest.raises(
@@ -101,7 +111,10 @@ class TestBIGINT:
         bigint.validate(9223372036854775807)  # max
         bigint.validate(-9223372036854775808)  # min
 
-        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
+        with pytest.raises(
+            ValueError,
+            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
+        ):
             bigint.validate(9223372036854775808)
 
 
@@ -111,7 +124,10 @@ class TestSMALLINT:
         smallint.validate(32767)  # max
         smallint.validate(-32768)  # min
 
-        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
+        with pytest.raises(
+            ValueError,
+            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
+        ):
             smallint.validate(32768)
 
 
@@ -145,9 +161,9 @@ class TestDECIMAL:
         dec = DECIMAL(10, 2, gt=0)
         dec.validate(Decimal("0.01"))
         dec.validate(100)
-        with pytest.raises(ValueError, match="Input should be greater than 0"):
+        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
             dec.validate(0)
-        with pytest.raises(ValueError, match="Input should be greater than 0"):
+        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
             dec.validate(Decimal("-10"))
 
         # Test ge/le constraints
@@ -155,9 +171,13 @@ class TestDECIMAL:
         dec.validate(10)
         dec.validate(50.5)
         dec.validate(100)
-        with pytest.raises(ValueError, match="Input should be greater than or equal to 10"):
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be greater than or equal to 10"
+        ):
             dec.validate(9.99)
-        with pytest.raises(ValueError, match="Input should be less than or equal to 100"):
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be less than or equal to 100"
+        ):
             dec.validate(100.01)
 
         # Test multiple_of constraint
@@ -165,20 +185,27 @@ class TestDECIMAL:
         dec.validate(Decimal("10.25"))
         dec.validate(Decimal("10.50"))
         dec.validate(Decimal("10.75"))
-        with pytest.raises(ValueError, match="Input should be a multiple of 0.25"):
+        with pytest.raises(ValueError, match="(Input should|Value must) be a multiple of 0.25"):
             dec.validate(Decimal("10.30"))
 
     def test_validation_precision(self):
         dec = DECIMAL(5, 2)
 
-        with pytest.raises(ValueError, match="Decimal input should have no more than .* digits"):
+        with pytest.raises(
+            ValueError,
+            match="(Decimal input should have no more than .* digits|Value.*has too many digits)",
+        ):
             dec.validate("12345.67")  # too many total digits
 
     def test_validation_scale(self):
         dec = DECIMAL(5, 2)
 
         with pytest.raises(
-            ValueError, match="Decimal input should have no more than .* decimal places"
+            ValueError,
+            match=(
+                "(Decimal input should have no more than .* decimal places|"
+                "Value.*has too many decimal places)"
+            ),
         ):
             dec.validate("12.456")  # too many decimal places
 
@@ -227,9 +254,9 @@ class TestFLOAT:
         float_type = FLOAT(gt=0.0)
         float_type.validate(0.1)
         float_type.validate(100.5)
-        with pytest.raises(ValueError, match="Input should be greater than 0"):
+        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
             float_type.validate(0.0)
-        with pytest.raises(ValueError, match="Input should be greater than 0"):
+        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
             float_type.validate(-1.0)
 
         # Test ge/le constraints
@@ -237,9 +264,13 @@ class TestFLOAT:
         float_type.validate(0.0)
         float_type.validate(0.5)
         float_type.validate(1.0)
-        with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be greater than or equal to 0"
+        ):
             float_type.validate(-0.1)
-        with pytest.raises(ValueError, match="Input should be less than or equal to 1"):
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be less than or equal to 1"
+        ):
             float_type.validate(1.1)
 
         # Test allow_inf_nan
@@ -287,10 +318,16 @@ class TestTINYINT:
         tinyint.validate(-50)
 
         # Edge cases
-        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
+        with pytest.raises(
+            ValueError,
+            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
+        ):
             tinyint.validate(128)  # Too large
 
-        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
+        with pytest.raises(
+            ValueError,
+            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
+        ):
             tinyint.validate(-129)  # Too small
 
     def test_sql_type(self):
