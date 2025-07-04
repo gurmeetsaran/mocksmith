@@ -153,18 +153,18 @@ class OrderItem(BaseModel):
     """Demonstrates constrained numeric types in e-commerce context."""
 
     # IDs must be positive
-    order_id: BigInt(positive=True)
+    order_id: BigInt(gt=0)
     product_id: PositiveInteger()
-    customer_id: Integer(positive=True)
+    customer_id: Integer(gt=0)
 
     # Quantities with constraints
-    quantity: Integer(min_value=1, max_value=9999)
+    quantity: Integer(ge=1, le=9999)
     unit_price_cents: NonNegativeInteger()  # Price in cents
     discount_amount_cents: NonNegativeInteger()
 
     # Percentage constraints
-    discount_percentage: Integer(min_value=0, max_value=100, multiple_of=5)
-    tax_rate_basis_points: Integer(min_value=0, max_value=10000, multiple_of=25)  # 0.25% increments
+    discount_percentage: Integer(ge=0, le=100, multiple_of=5)
+    tax_rate_basis_points: Integer(ge=0, le=10000, multiple_of=25)  # 0.25% increments
 
     # Status and metadata
     status: Varchar(20) = "pending"
@@ -207,18 +207,18 @@ class UserAccount(BaseModel):
     email: Varchar(255)
 
     # Age and demographic constraints
-    age: Integer(min_value=13, max_value=120)
+    age: Integer(ge=13, le=120)
     years_active: NonNegativeInteger()
 
     # Financial information
-    credit_score: Integer(min_value=300, max_value=850)
+    credit_score: Integer(ge=300, le=850)
     credit_balance_cents: NonNegativeInteger()  # In cents
     loyalty_points: NonNegativeInteger()
     cashback_percentage: DecimalType(3, 2) = Decimal("1.00")  # 0.00 to 9.99%
 
     # Preferences with TINYINT
-    notification_hour: TinyInt(min_value=0, max_value=23)  # 0-23 hour
-    timezone_offset: SmallInt(min_value=-12, max_value=14)  # GMT offset
+    notification_hour: TinyInt(ge=0, le=23)  # 0-23 hour
+    timezone_offset: SmallInt(ge=-12, le=14)  # GMT offset
     language_preference: Char(2) = "en"  # ISO 639-1
 
     # Account status
@@ -250,26 +250,26 @@ class GameCharacter(BaseModel):
 
     # Character identification
     character_id: PositiveInteger()
-    player_id: BigInt(positive=True)
+    player_id: BigInt(gt=0)
     character_name: Varchar(50)
     character_class: Varchar(20)
 
     # Level and progression
-    level: Integer(min_value=1, max_value=100)
+    level: Integer(ge=1, le=100)
     experience_points: NonNegativeInteger()
     skill_points: NonNegativeInteger()
-    prestige_level: TinyInt(min_value=0, max_value=10) = 0
+    prestige_level: TinyInt(ge=0, le=10) = 0
 
     # Stats that can be negative (debuffs)
-    health: Integer(min_value=-100, max_value=9999)
+    health: Integer(ge=-100, le=9999)
     mana: NonNegativeInteger()
-    stamina: Integer(min_value=0, max_value=100)
+    stamina: Integer(ge=0, le=100)
 
     # Attribute modifiers (-10 to +10)
-    strength_modifier: Integer(min_value=-10, max_value=10) = 0
-    defense_modifier: Integer(min_value=-10, max_value=10) = 0
-    speed_modifier: SmallInt(min_value=-5, max_value=5) = 0
-    intelligence_modifier: TinyInt(min_value=-10, max_value=10) = 0
+    strength_modifier: Integer(ge=-10, le=10) = 0
+    defense_modifier: Integer(ge=-10, le=10) = 0
+    speed_modifier: SmallInt(ge=-5, le=5) = 0
+    intelligence_modifier: TinyInt(ge=-10, le=10) = 0
 
     # Currency system
     gold: NonNegativeInteger() = 0
@@ -278,12 +278,12 @@ class GameCharacter(BaseModel):
     bank_balance: Integer() = 0  # Can be negative (overdraft)
 
     # Reputation (-1000 to 1000, in increments of 10)
-    reputation: Integer(min_value=-1000, max_value=1000, multiple_of=10) = 0
+    reputation: Integer(ge=-1000, le=1000, multiple_of=10) = 0
     honor_points: NonNegativeInteger() = 0
     infamy_points: NonNegativeInteger() = 0
 
     # Inventory limits
-    inventory_slots: TinyInt(min_value=10, max_value=100) = 20
+    inventory_slots: TinyInt(ge=10, le=100) = 20
     used_slots: NonNegativeInteger() = 0
 
     @field_validator("used_slots")
@@ -317,18 +317,18 @@ class RateLimitConfig(BaseModel):
     api_key: Varchar(64)
 
     # Rate limits (must be multiples for easier calculation)
-    requests_per_minute: Integer(min_value=1, max_value=10000, multiple_of=10) = 100
-    requests_per_hour: Integer(min_value=1, max_value=100000, multiple_of=100) = 1000
-    requests_per_day: Integer(min_value=1, max_value=1000000, multiple_of=1000) = 10000
+    requests_per_minute: Integer(ge=1, le=10000, multiple_of=10) = 100
+    requests_per_hour: Integer(ge=1, le=100000, multiple_of=100) = 1000
+    requests_per_day: Integer(ge=1, le=1000000, multiple_of=1000) = 10000
 
     # Burst configuration
-    burst_size: SmallInt(min_value=1, max_value=1000) = 10
-    burst_window_seconds: Integer(min_value=1, max_value=60, multiple_of=5) = 10
+    burst_size: SmallInt(ge=1, le=1000) = 10
+    burst_window_seconds: Integer(ge=1, le=60, multiple_of=5) = 10
 
     # Cooldown and penalties
-    cooldown_seconds: Integer(min_value=0, max_value=3600, multiple_of=30) = 60
-    penalty_multiplier: TinyInt(min_value=1, max_value=10) = 2
-    max_penalties: TinyInt(min_value=0, max_value=10) = 3
+    cooldown_seconds: Integer(ge=0, le=3600, multiple_of=30) = 60
+    penalty_multiplier: TinyInt(ge=1, le=10) = 2
+    max_penalties: TinyInt(ge=0, le=10) = 3
 
     # Configuration flags
     is_active: Boolean() = True
@@ -356,9 +356,9 @@ class RateLimitConfig(BaseModel):
 class ScientificMeasurement(BaseModel):
     """Demonstrates floating-point types and REAL validation."""
 
-    measurement_id: BigInt(positive=True)
-    experiment_id: Integer(positive=True)
-    instrument_id: SmallInt(positive=True)
+    measurement_id: BigInt(gt=0)
+    experiment_id: Integer(gt=0)
+    instrument_id: SmallInt(gt=0)
 
     # Different float types with SQL implications
     temperature_kelvin: Float()  # General floating point (FLOAT)
@@ -840,7 +840,7 @@ def main():
 ✓ Custom field validators with @field_validator
 ✓ JSON serialization with proper encoding
 ✓ Computed properties and methods
-✓ All constraint types: PositiveInteger(), min_value, max_value, multiple_of
+✓ All constraint types: PositiveInteger(), gt, ge, lt, le, multiple_of
 ✓ TINYINT for small values (8-bit)
 ✓ REAL vs FLOAT with proper validation
 ✓ Numeric alias for SQL standard naming

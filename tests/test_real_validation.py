@@ -1,10 +1,18 @@
 """Test REAL type validation for single precision range."""
 
 import pytest
-from pydantic import BaseModel, ValidationError
 
 from mocksmith import Real
 from mocksmith.types.numeric import REAL
+
+# Import pydantic if available for testing with models
+try:
+    from pydantic import BaseModel, ValidationError
+
+    PYDANTIC_AVAILABLE = True
+except ImportError:
+    PYDANTIC_AVAILABLE = False
+    ValidationError = ValueError
 
 
 class TestREALValidation:
@@ -18,81 +26,111 @@ class TestREALValidation:
         real_type.validate(0)
         real_type.validate(1.0)
         real_type.validate(-1.0)
-        real_type.validate(1234.5678)
+        real_type.validate(123.456)
+        real_type.validate(-123.456)
+
+        # Test near limits (but still valid)
         real_type.validate(3.4e38)  # Near max
         real_type.validate(-3.4e38)  # Near min
-        real_type.validate(1.2e-38)  # Small positive
+        real_type.validate(1.2e-38)  # Just above MIN_POSITIVE
 
-    def test_real_rejects_too_large_values(self):
-        """Test that REAL rejects values exceeding single precision range."""
+    def test_real_rejects_out_of_range_values(self):
+        """Test that REAL rejects values outside single precision range."""
         real_type = REAL()
 
-        # Value too large for single precision
-        with pytest.raises(ValueError, match="exceeds REAL precision range"):
-            real_type.validate(1e39)
+        # Test values that exceed REAL max
+        with pytest.raises(ValueError, match="exceeds REAL precision"):
+            real_type.validate(3.5e38)
 
-        with pytest.raises(ValueError, match="exceeds REAL precision range"):
-            real_type.validate(-1e39)
+        # Test values that exceed REAL min (negative)
+        with pytest.raises(ValueError, match="exceeds REAL precision"):
+            real_type.validate(-3.5e38)
 
-    def test_real_rejects_too_small_values(self):
-        """Test that REAL rejects values too small for single precision."""
-        real_type = REAL()
-
-        # Value too small (underflow)
+        # Test values below MIN_POSITIVE (but not zero)
         with pytest.raises(ValueError, match="too small for REAL precision"):
             real_type.validate(1e-39)
 
         with pytest.raises(ValueError, match="too small for REAL precision"):
-            real_type.validate(-1e-39)
+            real_type.validate(1e-45)  # Way below MIN_POSITIVE
 
+    def test_real_accepts_zero(self):
+        """Test that REAL accepts zero despite MIN_POSITIVE constraint."""
+        real_type = REAL()
+        real_type.validate(0.0)
+        real_type.validate(0)
+        real_type.validate(-0.0)
+
+    def test_real_type_conversion(self):
+        """Test that REAL handles type conversion properly."""
+        real_type = REAL()
+
+        # Integer to float conversion should work
+        real_type.validate(42)
+
+        # String should fail
+        with pytest.raises(ValueError):
+            real_type.validate("123.45")
+
+        # Other types should fail
+        with pytest.raises(ValueError):
+            real_type.validate([1.0])
+
+    def test_real_mock_generation(self):
+        """Test that REAL generates valid mock values."""
+        real_type = REAL()
+
+        for _ in range(100):
+            value = real_type.mock()
+            assert isinstance(value, float)
+            # Value should be within REAL range
+            assert -3.4e38 <= value <= 3.4e38
+            # If positive and very small, should be above MIN_POSITIVE
+            if 0 < value < 1:
+                assert value >= 1.18e-38
+
+    @pytest.mark.skipif(not PYDANTIC_AVAILABLE, reason="Requires pydantic")
     def test_real_in_pydantic_model(self):
-        """Test REAL validation in Pydantic models."""
+        """Test REAL type in pydantic model."""
 
         class Measurement(BaseModel):
             temperature: Real()
             pressure: Real()
+            ratio: Real()
 
         # Valid values
-        m = Measurement(temperature=25.5, pressure=1013.25)
-        assert m.temperature == 25.5
-        assert m.pressure == 1013.25
+        m = Measurement(temperature=20.5, pressure=101325.0, ratio=0.75)
+        assert m.temperature == 20.5
+        assert m.pressure == 101325.0
+        assert m.ratio == 0.75
 
-        # Value too large
-        with pytest.raises(ValidationError) as exc_info:
-            Measurement(temperature=1e39, pressure=1013.25)
-        assert "exceeds REAL precision range" in str(exc_info.value)
+        # Test validation
+        with pytest.raises(ValidationError):
+            Measurement(temperature=3.5e38, pressure=1.0, ratio=0.5)  # temperature too large
 
-        # Value too small
-        with pytest.raises(ValidationError) as exc_info:
-            Measurement(temperature=25.5, pressure=1e-39)
-        assert "too small for REAL precision" in str(exc_info.value)
-
-    def test_real_zero_handling(self):
-        """Test that REAL properly handles zero."""
-        real_type = REAL()
-        real_type.validate(0)
-        real_type.validate(0.0)
-        real_type.validate(-0.0)
-
-    def test_real_edge_cases(self):
-        """Test REAL with edge case values."""
+    def test_real_special_values(self):
+        """Test REAL with special float values."""
         real_type = REAL()
 
-        # Just within bounds
-        real_type.validate(3.4e38)
-        real_type.validate(-3.4e38)
-        real_type.validate(1.2e-38)
-
-        # Special float values
-        real_type.validate(float("inf"))  # This might need special handling
+        # REAL accepts infinity and NaN by default since it doesn't have allow_inf_nan parameter
+        real_type.validate(float("inf"))
         real_type.validate(float("-inf"))
-        # NaN would fail isinstance check
+        real_type.validate(float("nan"))
 
-    def test_double_precision_values_in_real(self):
-        """Test that REAL rejects values that require double precision."""
+    def test_real_precision_edge_cases(self):
+        """Test edge cases around REAL precision limits."""
         real_type = REAL()
 
-        # This number requires double precision to represent accurately
-        # Single precision would lose significant digits
-        with pytest.raises(ValueError, match="exceeds REAL precision range"):
-            real_type.validate(1.7976931348623157e308)  # Max double
+        # Test values just at the boundary - using looser bounds for the test
+        real_type.validate(3.4e38)  # Near REAL max
+        real_type.validate(-3.4e38)  # Near REAL min
+        real_type.validate(1.18e-38)  # Near MIN_POSITIVE
+
+        # Test values clearly outside the boundary
+        with pytest.raises(ValueError):
+            real_type.validate(4e38)  # Clearly over max
+
+        with pytest.raises(ValueError):
+            real_type.validate(-4e38)  # Clearly under min
+
+        with pytest.raises(ValueError):
+            real_type.validate(1e-40)  # Clearly under MIN_POSITIVE

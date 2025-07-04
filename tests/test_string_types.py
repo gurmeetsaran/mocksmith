@@ -27,21 +27,45 @@ class TestVARCHAR:
         # Test startswith constraint
         vchar = VARCHAR(20, startswith="ORD-")
         vchar.validate("ORD-12345")
-        with pytest.raises(ValueError, match="String should match pattern"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should match pattern|String must start with|String must end with|"
+                "Text must start with|Text must end with)"
+            ),
+        ):
             vchar.validate("INV-12345")
 
         # Test endswith constraint
         vchar = VARCHAR(50, endswith="@example.com")
         vchar.validate("user@example.com")
-        with pytest.raises(ValueError, match="String should match pattern"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should match pattern|String must start with|String must end with|"
+                "Text must start with|Text must end with)"
+            ),
+        ):
             vchar.validate("user@other.com")
 
         # Test both startswith and endswith
         vchar = VARCHAR(20, startswith="INV-", endswith="-2024")
         vchar.validate("INV-001-2024")
-        with pytest.raises(ValueError, match="String should match pattern"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should match pattern|String must start with|String must end with|"
+                "Text must start with|Text must end with)"
+            ),
+        ):
             vchar.validate("ORD-001-2024")
-        with pytest.raises(ValueError, match="String should match pattern"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should match pattern|String must start with|String must end with|"
+                "Text must start with|Text must end with)"
+            ),
+        ):
             vchar.validate("INV-001-2023")
 
     def test_validation_success(self):
@@ -52,10 +76,16 @@ class TestVARCHAR:
 
     def test_validation_failure(self):
         vchar = VARCHAR(5)
-        with pytest.raises(ValueError, match="String should have at most"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should have at most|String length.*exceeds maximum|"
+                "Text length.*exceeds maximum)"
+            ),
+        ):
             vchar.validate("too long string")
 
-        with pytest.raises(ValueError, match="Input should be a valid string"):
+        with pytest.raises(ValueError, match="(Input should be a valid string|Expected string)"):
             vchar.validate(123)
 
     def test_nullable_serialization(self):
@@ -92,7 +122,13 @@ class TestCHAR:
         # Test startswith constraint
         char = CHAR(8, startswith="PRD-")
         char.validate("PRD-1234")
-        with pytest.raises(ValueError, match="String should match pattern"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should match pattern|String must start with|String must end with|"
+                "Text must start with|Text must end with)"
+            ),
+        ):
             char.validate("ABC-1234")
 
     def test_serialize_padding(self):
@@ -109,7 +145,13 @@ class TestCHAR:
         char = CHAR(3)
         char.validate("abc")
 
-        with pytest.raises(ValueError, match="String should have at most"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should have at most|String length.*exceeds maximum|"
+                "Text length.*exceeds maximum)"
+            ),
+        ):
             char.validate("abcd")
 
 
@@ -131,26 +173,50 @@ class TestTEXT:
         # Test startswith constraint
         text = TEXT(startswith="Review: ")
         text.validate("Review: Great product!")
-        with pytest.raises(ValueError, match="String should match pattern"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should match pattern|String must start with|String must end with|"
+                "Text must start with|Text must end with)"
+            ),
+        ):
             text.validate("This is a great product!")
 
         # Test endswith constraint
         text = TEXT(endswith=" - END")
         text.validate("This is the content - END")
-        with pytest.raises(ValueError, match="String should match pattern"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should match pattern|String must start with|String must end with|"
+                "Text must start with|Text must end with)"
+            ),
+        ):
             text.validate("This is the content")
 
         # Test both with length constraints
         text = TEXT(min_length=20, max_length=100, startswith="Note: ")
         text.validate("Note: This is a valid note with enough content.")
-        with pytest.raises(ValueError, match="String should have at least"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should have at least|String length.*is less than minimum|"
+                "Text length.*is less than minimum)"
+            ),
+        ):
             text.validate("Note: Too short")
 
     def test_with_max_length(self):
         text = TEXT(max_length=1000)
         text.validate("x" * 1000)
 
-        with pytest.raises(ValueError, match="String should have at most"):
+        with pytest.raises(
+            ValueError,
+            match=(
+                "(String should have at most|String length.*exceeds maximum|"
+                "Text length.*exceeds maximum)"
+            ),
+        ):
             text.validate("x" * 1001)
 
     def test_serialize_deserialize(self):

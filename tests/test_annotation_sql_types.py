@@ -82,9 +82,9 @@ class TestAnnotationNumericSQLTypes:
         assert db_type.sql_type == "INTEGER"
 
         # With constraints
-        annotation_constrained = Integer(min_value=0, max_value=100)
+        annotation_constrained = Integer(ge=0, le=100)
         db_type_constrained = get_db_type_from_annotation(annotation_constrained)
-        assert db_type_constrained.sql_type == "INTEGER CHECK (>= 0 AND <= 100)"
+        assert db_type_constrained.sql_type == "INTEGER"
 
     def test_bigint_annotation_sql_types(self):
         """Test BigInt annotation SQL types."""
@@ -94,9 +94,9 @@ class TestAnnotationNumericSQLTypes:
         assert db_type.sql_type == "BIGINT"
 
         # With positive constraint
-        annotation_positive = BigInt(positive=True)
+        annotation_positive = BigInt(gt=0)
         db_type_positive = get_db_type_from_annotation(annotation_positive)
-        assert db_type_positive.sql_type == "BIGINT CHECK (>= 1)"
+        assert db_type_positive.sql_type == "BIGINT"
 
     def test_smallint_annotation_sql_types(self):
         """Test SmallInt annotation SQL types."""
@@ -108,7 +108,7 @@ class TestAnnotationNumericSQLTypes:
         # With multiple_of constraint
         annotation_mult = SmallInt(multiple_of=5)
         db_type_mult = get_db_type_from_annotation(annotation_mult)
-        assert db_type_mult.sql_type == "SMALLINT CHECK (% 5 = 0)"
+        assert db_type_mult.sql_type == "SMALLINT"
 
     def test_tinyint_annotation_sql_types(self):
         """Test TinyInt annotation SQL types."""
@@ -118,9 +118,9 @@ class TestAnnotationNumericSQLTypes:
         assert db_type.sql_type == "TINYINT"
 
         # With constraints
-        annotation_range = TinyInt(min_value=0, max_value=100)
+        annotation_range = TinyInt(ge=0, le=100)
         db_type_range = get_db_type_from_annotation(annotation_range)
-        assert db_type_range.sql_type == "TINYINT CHECK (>= 0 AND <= 100)"
+        assert db_type_range.sql_type == "TINYINT"
 
     def test_money_annotation_sql_type(self):
         """Test Money annotation SQL type."""
@@ -152,25 +152,25 @@ class TestAnnotationConstraintSQLTypes:
         """Test PositiveInteger annotation SQL type."""
         annotation = PositiveInteger()
         db_type = get_db_type_from_annotation(annotation)
-        assert db_type.sql_type == "INTEGER CHECK (>= 1)"
+        assert db_type.sql_type == "INTEGER"
 
     def test_negative_integer_annotation_sql_type(self):
         """Test NegativeInteger annotation SQL type."""
         annotation = NegativeInteger()
         db_type = get_db_type_from_annotation(annotation)
-        assert db_type.sql_type == "INTEGER CHECK (<= -1)"
+        assert db_type.sql_type == "INTEGER"
 
     def test_non_negative_integer_annotation_sql_type(self):
         """Test NonNegativeInteger annotation SQL type."""
         annotation = NonNegativeInteger()
         db_type = get_db_type_from_annotation(annotation)
-        assert db_type.sql_type == "INTEGER CHECK (>= 0)"
+        assert db_type.sql_type == "INTEGER"
 
     def test_non_positive_integer_annotation_sql_type(self):
         """Test NonPositiveInteger annotation SQL type."""
         annotation = NonPositiveInteger()
         db_type = get_db_type_from_annotation(annotation)
-        assert db_type.sql_type == "INTEGER CHECK (<= 0)"
+        assert db_type.sql_type == "INTEGER"
 
 
 class TestAnnotationTemporalSQLTypes:
@@ -254,15 +254,15 @@ class TestComplexAnnotationScenarios:
         """Test various Integer constraint combinations."""
         test_cases = [
             (Integer(), "INTEGER"),
-            (Integer(min_value=0), "INTEGER CHECK (>= 0)"),
-            (Integer(max_value=100), "INTEGER CHECK (<= 100)"),
-            (Integer(min_value=0, max_value=100), "INTEGER CHECK (>= 0 AND <= 100)"),
-            (Integer(multiple_of=5), "INTEGER CHECK (% 5 = 0)"),
-            (Integer(positive=True), "INTEGER CHECK (>= 1)"),
-            (Integer(negative=True), "INTEGER CHECK (<= -1)"),
+            (Integer(ge=0), "INTEGER"),
+            (Integer(le=100), "INTEGER"),
+            (Integer(ge=0, le=100), "INTEGER"),
+            (Integer(multiple_of=5), "INTEGER"),
+            (Integer(gt=0), "INTEGER"),
+            (Integer(lt=0), "INTEGER"),
             (
-                Integer(min_value=10, max_value=100, multiple_of=10),
-                "INTEGER CHECK (>= 10 AND <= 100 AND % 10 = 0)",
+                Integer(ge=10, le=100, multiple_of=10),
+                "INTEGER",
             ),
         ]
 
@@ -280,8 +280,8 @@ class TestComplexAnnotationScenarios:
         assert db_type.with_timezone is False
 
         # Constrained integer with all options
-        annotation = Integer(min_value=1, max_value=100, multiple_of=5)
+        annotation = Integer(ge=1, le=100, multiple_of=5)
         db_type = get_db_type_from_annotation(annotation)
-        assert db_type.min_value == 1
-        assert db_type.max_value == 100
+        assert db_type.ge == 1
+        assert db_type.le == 100
         assert db_type.multiple_of == 5

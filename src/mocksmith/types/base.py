@@ -7,7 +7,7 @@ T = TypeVar("T")
 
 # Try to import Pydantic validators
 try:
-    from pydantic import TypeAdapter, ValidationError
+    from pydantic import TypeAdapter, ValidationError  # type: ignore[import-not-found]
 
     PYDANTIC_AVAILABLE = True
 except ImportError:

@@ -32,7 +32,9 @@ class TestDataclassIntegration:
         assert user.active is True
 
         # Validation should work
-        with pytest.raises(ValueError, match="String should have at most"):
+        with pytest.raises(
+            ValueError, match="(String should have at most|String length.*exceeds maximum)"
+        ):
             User(name="x" * 51, age=30, active=True)
 
     def test_annotated_with_defaults(self):
@@ -83,7 +85,10 @@ class TestDataclassIntegration:
         assert account.balance == 1000
 
         # Out of range
-        with pytest.raises(ValueError, match="Input should be (less|greater) than or equal to"):
+        with pytest.raises(
+            ValueError,
+            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
+        ):
             Account(id=1, balance=2147483648)
 
     @skip_validation_on_py38
@@ -149,7 +154,9 @@ class TestDataclassIntegration:
         assert user.name == "Bob"
 
         # Validation should work on all fields
-        with pytest.raises(ValueError, match="String should have at most"):
+        with pytest.raises(
+            ValueError, match="(String should have at most|String length.*exceeds maximum)"
+        ):
             User(
                 id=1, created=date(2023, 1, 1), name="x" * 101, email="test@example.com"  # Too long
             )

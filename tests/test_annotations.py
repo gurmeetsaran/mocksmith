@@ -7,8 +7,6 @@ import pytest
 
 from mocksmith import BigInt, Integer, PositiveInteger, SmallInt
 from mocksmith.dataclass_integration import validate_dataclass
-from mocksmith.types.constraints import ConstrainedInteger
-from mocksmith.types.constraints import PositiveInteger as _PositiveInteger
 from mocksmith.types.numeric import INTEGER
 
 
@@ -42,29 +40,35 @@ class TestAnnotationsAPI:
 
         assert db_type is not None
         assert isinstance(db_type, INTEGER)
-        assert not isinstance(db_type, ConstrainedInteger)
+        # No constraints
+        assert db_type.gt is None
+        assert db_type.ge is None
+        assert db_type.lt is None
+        assert db_type.le is None
 
     def test_integer_with_constraints(self):
-        """Test Integer with constraints returns ConstrainedInteger."""
-        annotation = Integer(min_value=0, max_value=100)
+        """Test Integer with constraints."""
+        annotation = Integer(ge=0, le=100)
 
         # Get the db_type
         db_type = get_db_type_from_annotation(annotation)
 
         assert db_type is not None
-        assert isinstance(db_type, ConstrainedInteger)
-        assert db_type.min_value == 0
-        assert db_type.max_value == 100
+        assert isinstance(db_type, INTEGER)
+        # Check constraints are set correctly
+        assert db_type.ge == 0
+        assert db_type.le == 100
 
     def test_integer_positive_shortcut(self):
-        """Test Integer(positive=True) works correctly."""
-        annotation = Integer(positive=True)
+        """Test positive integer using gt=0."""
+        annotation = Integer(gt=0)
 
         # Get the db_type
         db_type = get_db_type_from_annotation(annotation)
 
         assert db_type is not None
-        assert db_type.min_value == 1
+        assert isinstance(db_type, INTEGER)
+        assert db_type.gt == 0  # positive=True sets gt=0
 
     def test_positive_integer_helper(self):
         """Test PositiveInteger() helper function."""
@@ -74,7 +78,8 @@ class TestAnnotationsAPI:
         db_type = get_db_type_from_annotation(annotation)
 
         assert db_type is not None
-        assert isinstance(db_type, _PositiveInteger)
+        assert isinstance(db_type, INTEGER)
+        assert db_type.gt == 0  # PositiveInteger sets gt=0
 
     def test_integration_with_dataclass(self):
         """Test annotations work with dataclasses."""
@@ -83,8 +88,8 @@ class TestAnnotationsAPI:
         @dataclass
         class TestModel:
             regular_int: Integer()
-            positive_int: Integer(positive=True)
-            bounded_int: Integer(min_value=0, max_value=100)
+            positive_int: Integer(gt=0)
+            bounded_int: Integer(ge=0, le=100)
             multiple_int: Integer(multiple_of=5)
 
         # Valid instance
@@ -96,17 +101,17 @@ class TestAnnotationsAPI:
         assert model.multiple_int == 15
 
         # Test validation
-        with pytest.raises(ValueError, match="Input should be greater than or equal to 1"):
+        with pytest.raises(ValueError, match="greater than 0"):
             TestModel(
                 regular_int=42, positive_int=0, bounded_int=50, multiple_int=15  # Should fail
             )
 
-        with pytest.raises(ValueError, match="Input should be less than or equal to"):
+        with pytest.raises(ValueError, match="less than or equal to 100"):
             TestModel(
                 regular_int=42, positive_int=1, bounded_int=101, multiple_int=15  # Should fail
             )
 
-        with pytest.raises(ValueError, match="Input should be a multiple of"):
+        with pytest.raises(ValueError, match="multiple of 5"):
             TestModel(
                 regular_int=42, positive_int=1, bounded_int=50, multiple_int=13  # Should fail
             )
@@ -117,17 +122,17 @@ class TestAnnotationsAPI:
         @validate_dataclass
         @dataclass
         class TestSizes:
-            big: BigInt(positive=True)
-            small: SmallInt(min_value=0, max_value=100)
+            big: BigInt(gt=0)
+            small: SmallInt(ge=0, le=100)
 
         model = TestSizes(big=123456789, small=50)
         assert model.big == 123456789
         assert model.small == 50
 
         # Test BigInt constraint
-        with pytest.raises(ValueError, match="Input should be greater than or equal to"):
+        with pytest.raises(ValueError, match="greater than 0"):
             TestSizes(big=0, small=50)
 
         # Test SmallInt constraint
-        with pytest.raises(ValueError, match="Input should be less than or equal to"):
+        with pytest.raises(ValueError, match="less than or equal to 100"):
             TestSizes(big=1, small=101)

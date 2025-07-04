@@ -32,6 +32,16 @@ packages = [{include = "mocksmith", from = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9"
+faker = ">=33.2,<38.0"
+
+[tool.poetry.extras]
+pydantic = ["pydantic"]  # Add Pydantic validation support
+
+[tool.poetry.group.pydantic]
+optional = true
+
+[tool.poetry.group.pydantic.dependencies]
+pydantic = ">=2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
@@ -42,15 +52,6 @@ ruff = ">=0.8.4,<0.13.0"
 pre-commit = "^4.0.1"
 pyright = "^1.1.390"
 
-[tool.poetry.extras]
-pydantic = ["pydantic"]
-mock = ["faker"]
-
-[tool.poetry.group.pydantic.dependencies]
-pydantic = ">=2.0.0"
-
-[tool.poetry.group.mock.dependencies]
-faker = ">=33.2,<38.0"
 
 [tool.ruff]
 line-length = 100

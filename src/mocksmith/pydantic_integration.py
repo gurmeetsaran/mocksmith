@@ -5,8 +5,8 @@
 from typing import Any, Callable
 
 try:
-    from pydantic import BaseModel
-    from pydantic_core import core_schema
+    from pydantic import BaseModel  # type: ignore[import-not-found]
+    from pydantic_core import core_schema  # type: ignore[import-not-found]
 
     PYDANTIC_AVAILABLE = True
 except ImportError:

@@ -12,14 +12,6 @@ from mocksmith.types.binary import BINARY as _BINARY
 from mocksmith.types.binary import BLOB as _BLOB
 from mocksmith.types.binary import VARBINARY as _VARBINARY
 from mocksmith.types.boolean import BOOLEAN as _BOOLEAN
-from mocksmith.types.constraints import ConstrainedBigInt as _ConstrainedBigInt
-from mocksmith.types.constraints import ConstrainedInteger as _ConstrainedInteger
-from mocksmith.types.constraints import ConstrainedSmallInt as _ConstrainedSmallInt
-from mocksmith.types.constraints import ConstrainedTinyInt as _ConstrainedTinyInt
-from mocksmith.types.constraints import NegativeInteger as _NegativeInteger
-from mocksmith.types.constraints import NonNegativeInteger as _NonNegativeInteger
-from mocksmith.types.constraints import NonPositiveInteger as _NonPositiveInteger
-from mocksmith.types.constraints import PositiveInteger as _PositiveInteger
 from mocksmith.types.numeric import BIGINT as _BIGINT
 from mocksmith.types.numeric import DECIMAL as _DECIMAL
 from mocksmith.types.numeric import DOUBLE as _DOUBLE
@@ -190,19 +182,48 @@ def Text(
 # Numeric Types
 
 
-def DecimalType(precision: int, scale: int) -> Any:
-    """Fixed-point decimal number.
+def DecimalType(
+    precision: int,
+    scale: int,
+    *,
+    gt: Optional[Union[int, float, Decimal]] = None,
+    ge: Optional[Union[int, float, Decimal]] = None,
+    lt: Optional[Union[int, float, Decimal]] = None,
+    le: Optional[Union[int, float, Decimal]] = None,
+    multiple_of: Optional[Union[int, float, Decimal]] = None,
+    strict: bool = False,
+    **pydantic_kwargs: Any,
+) -> Any:
+    """Fixed-point decimal number with optional constraints.
 
     Args:
         precision: Total number of digits
         scale: Number of digits after decimal point
+        gt: Value must be greater than this
+        ge: Value must be greater than or equal to this
+        lt: Value must be less than this
+        le: Value must be less than or equal to this
+        multiple_of: Value must be a multiple of this
+        strict: In strict mode, types won't be coerced
+        **pydantic_kwargs: Additional Pydantic-specific arguments
 
     Example:
         class Invoice(BaseModel):
-            amount: DecimalType(10, 2)  # Up to 99999999.99
-            tax_rate: DecimalType(5, 4)  # Up to 9.9999
+            amount: DecimalType(10, 2, ge=0)  # Non-negative amount
+            discount_rate: DecimalType(5, 4, ge=0, le=1)  # 0.0000 to 1.0000
+            price: DecimalType(19, 4, gt=0)  # Positive price
     """
-    db_type = _DECIMAL(precision, scale)
+    db_type = _DECIMAL(
+        precision,
+        scale,
+        gt=gt,
+        ge=ge,
+        lt=lt,
+        le=le,
+        multiple_of=multiple_of,
+        strict=strict,
+        **pydantic_kwargs,
+    )
     if _PYDANTIC_AVAILABLE:
         return Annotated[Decimal, _get_validator(db_type), db_type]
     return Annotated[Decimal, db_type]
@@ -250,7 +271,7 @@ def ConstrainedMoney(
             balance: NonNegativeMoney()  # Same as ConstrainedMoney(ge=0)
     """
     try:
-        from pydantic import condecimal
+        from pydantic import condecimal  # type: ignore[import-not-found]
 
         return condecimal(
             max_digits=19,
@@ -319,7 +340,7 @@ def ConstrainedDecimal(
             temperature: ConstrainedDecimal(5, 2, ge=-273.15)  # Above absolute zero
     """
     try:
-        from pydantic import condecimal
+        from pydantic import condecimal  # type: ignore[import-not-found]
 
         return condecimal(
             max_digits=precision,
@@ -358,7 +379,7 @@ def ConstrainedFloat(
             temperature: ConstrainedFloat(gt=-273.15)  # Above absolute zero
     """
     try:
-        from pydantic import confloat
+        from pydantic import confloat  # type: ignore[import-not-found]
 
         return confloat(gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of)
     except ImportError:
@@ -366,15 +387,48 @@ def ConstrainedFloat(
         return Float()
 
 
-def Float(*, precision: Optional[int] = None) -> Any:
-    """Floating-point number.
+def Float(
+    *,
+    precision: Optional[int] = None,
+    gt: Optional[float] = None,
+    ge: Optional[float] = None,
+    lt: Optional[float] = None,
+    le: Optional[float] = None,
+    multiple_of: Optional[float] = None,
+    allow_inf_nan: bool = False,
+    strict: bool = False,
+    **pydantic_kwargs: Any,
+) -> Any:
+    """Floating-point number with optional constraints.
+
+    Args:
+        precision: SQL precision (optional)
+        gt: Value must be greater than this
+        ge: Value must be greater than or equal to this
+        lt: Value must be less than this
+        le: Value must be less than or equal to this
+        multiple_of: Value must be a multiple of this
+        allow_inf_nan: Whether to allow inf/-inf/nan values
+        strict: In strict mode, types won't be coerced
+        **pydantic_kwargs: Additional Pydantic-specific arguments
 
     Example:
         class Measurement(BaseModel):
-            temperature: Float()
-            pressure: Float(precision=24)
+            temperature: Float(ge=-273.15)  # Above absolute zero
+            percentage: Float(ge=0.0, le=100.0)
+            probability: Float(ge=0.0, le=1.0)
     """
-    db_type = _FLOAT(precision=precision)
+    db_type = _FLOAT(
+        precision=precision,
+        gt=gt,
+        ge=ge,
+        lt=lt,
+        le=le,
+        multiple_of=multiple_of,
+        allow_inf_nan=allow_inf_nan,
+        strict=strict,
+        **pydantic_kwargs,
+    )
     if _PYDANTIC_AVAILABLE:
         return Annotated[float, _get_validator(db_type), db_type]
     return Annotated[float, db_type]
@@ -414,46 +468,35 @@ def Real() -> Any:
 # Constrained Numeric Types
 def Integer(
     *,
-    min_value: Optional[int] = None,
-    max_value: Optional[int] = None,
+    gt: Optional[int] = None,
+    ge: Optional[int] = None,
+    lt: Optional[int] = None,
+    le: Optional[int] = None,
     multiple_of: Optional[int] = None,
-    positive: bool = False,
-    negative: bool = False,
+    strict: bool = False,
+    **pydantic_kwargs: Any,
 ) -> Any:
-    """Integer with optional constraints.
-
-    When called without arguments, returns standard INTEGER.
-    With arguments, returns ConstrainedInteger.
+    """32-bit integer with optional constraints.
 
     Args:
-        min_value: Minimum allowed value
-        max_value: Maximum allowed value
+        gt: Value must be greater than this
+        ge: Value must be greater than or equal to this
+        lt: Value must be less than this
+        le: Value must be less than or equal to this
         multiple_of: Value must be divisible by this
-        positive: Shortcut for min_value=1
-        negative: Shortcut for max_value=-1
+        strict: In strict mode, types won't be coerced
+        **pydantic_kwargs: Additional Pydantic-specific arguments
 
     Example:
         class Product(BaseModel):
-            id: Integer(positive=True)  # Same as PositiveInteger()
-            quantity: Integer(min_value=0)  # Same as NonNegativeInteger()
-            discount: Integer(min_value=0, max_value=100)
-            bulk_size: Integer(multiple_of=12)
+            id: Integer(gt=0)  # Positive ID
+            quantity: Integer(ge=0)  # Non-negative quantity
+            discount: Integer(ge=0, le=100)  # Percentage 0-100
+            bulk_size: Integer(multiple_of=12)  # Dozen packs
     """
-    # If no constraints, return standard INTEGER
-    if (
-        all(x is None for x in [min_value, max_value, multiple_of])
-        and not positive
-        and not negative
-    ):
-        db_type = _INTEGER()
-    else:
-        db_type = _ConstrainedInteger(
-            min_value=min_value,
-            max_value=max_value,
-            multiple_of=multiple_of,
-            positive=positive,
-            negative=negative,
-        )
+    db_type = _INTEGER(
+        gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of, strict=strict, **pydantic_kwargs
+    )
 
     if _PYDANTIC_AVAILABLE:
         return Annotated[int, _get_validator(db_type), db_type]
@@ -462,37 +505,34 @@ def Integer(
 
 def BigInt(
     *,
-    min_value: Optional[int] = None,
-    max_value: Optional[int] = None,
+    gt: Optional[int] = None,
+    ge: Optional[int] = None,
+    lt: Optional[int] = None,
+    le: Optional[int] = None,
     multiple_of: Optional[int] = None,
-    positive: bool = False,
-    negative: bool = False,
+    strict: bool = False,
+    **pydantic_kwargs: Any,
 ) -> Any:
     """64-bit integer with optional constraints.
 
-    When called without arguments, returns standard BIGINT.
-    With arguments, returns ConstrainedBigInt.
+    Args:
+        gt: Value must be greater than this
+        ge: Value must be greater than or equal to this
+        lt: Value must be less than this
+        le: Value must be less than or equal to this
+        multiple_of: Value must be divisible by this
+        strict: In strict mode, types won't be coerced
+        **pydantic_kwargs: Additional Pydantic-specific arguments
 
     Example:
         class Transaction(BaseModel):
-            id: BigInt(positive=True)
-            amount_cents: BigInt(min_value=-1000000, max_value=1000000)
+            id: BigInt(gt=0)  # Positive ID
+            timestamp_ms: BigInt(ge=0)  # Unix timestamp in milliseconds
+            amount_cents: BigInt(ge=-1000000, le=1000000)
     """
-    # If no constraints, return standard BIGINT
-    if (
-        all(x is None for x in [min_value, max_value, multiple_of])
-        and not positive
-        and not negative
-    ):
-        db_type = _BIGINT()
-    else:
-        db_type = _ConstrainedBigInt(
-            min_value=min_value,
-            max_value=max_value,
-            multiple_of=multiple_of,
-            positive=positive,
-            negative=negative,
-        )
+    db_type = _BIGINT(
+        gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of, strict=strict, **pydantic_kwargs
+    )
 
     if _PYDANTIC_AVAILABLE:
         return Annotated[int, _get_validator(db_type), db_type]
@@ -501,37 +541,33 @@ def BigInt(
 
 def SmallInt(
     *,
-    min_value: Optional[int] = None,
-    max_value: Optional[int] = None,
+    gt: Optional[int] = None,
+    ge: Optional[int] = None,
+    lt: Optional[int] = None,
+    le: Optional[int] = None,
     multiple_of: Optional[int] = None,
-    positive: bool = False,
-    negative: bool = False,
+    strict: bool = False,
+    **pydantic_kwargs: Any,
 ) -> Any:
     """16-bit integer with optional constraints.
 
-    When called without arguments, returns standard SMALLINT.
-    With arguments, returns ConstrainedSmallInt.
+    Args:
+        gt: Value must be greater than this
+        ge: Value must be greater than or equal to this
+        lt: Value must be less than this
+        le: Value must be less than or equal to this
+        multiple_of: Value must be divisible by this
+        strict: In strict mode, types won't be coerced
+        **pydantic_kwargs: Additional Pydantic-specific arguments
 
     Example:
         class Settings(BaseModel):
-            retry_count: SmallInt(min_value=0, max_value=10)
-            priority: SmallInt(positive=True)
+            retry_count: SmallInt(ge=0, le=10)
+            priority: SmallInt(gt=0, le=5)
     """
-    # If no constraints, return standard SMALLINT
-    if (
-        all(x is None for x in [min_value, max_value, multiple_of])
-        and not positive
-        and not negative
-    ):
-        db_type = _SMALLINT()
-    else:
-        db_type = _ConstrainedSmallInt(
-            min_value=min_value,
-            max_value=max_value,
-            multiple_of=multiple_of,
-            positive=positive,
-            negative=negative,
-        )
+    db_type = _SMALLINT(
+        gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of, strict=strict, **pydantic_kwargs
+    )
 
     if _PYDANTIC_AVAILABLE:
         return Annotated[int, _get_validator(db_type), db_type]
@@ -546,10 +582,7 @@ def PositiveInteger() -> Any:
             id: PositiveInteger()
             age: PositiveInteger()
     """
-    db_type = _PositiveInteger()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
+    return Integer(gt=0)
 
 
 def NegativeInteger() -> Any:
@@ -559,10 +592,7 @@ def NegativeInteger() -> Any:
         class Account(BaseModel):
             overdraft_limit: NegativeInteger()
     """
-    db_type = _NegativeInteger()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
+    return Integer(lt=0)
 
 
 def NonNegativeInteger() -> Any:
@@ -573,10 +603,7 @@ def NonNegativeInteger() -> Any:
             quantity: NonNegativeInteger()
             views: NonNegativeInteger()
     """
-    db_type = _NonNegativeInteger()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
+    return Integer(ge=0)
 
 
 def NonPositiveInteger() -> Any:
@@ -587,45 +614,38 @@ def NonPositiveInteger() -> Any:
             penalty_points: NonPositiveInteger()
             debt: NonPositiveInteger()
     """
-    db_type = _NonPositiveInteger()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
+    return Integer(le=0)
 
 
 def TinyInt(
     *,
-    min_value: Optional[int] = None,
-    max_value: Optional[int] = None,
+    gt: Optional[int] = None,
+    ge: Optional[int] = None,
+    lt: Optional[int] = None,
+    le: Optional[int] = None,
     multiple_of: Optional[int] = None,
-    positive: bool = False,
-    negative: bool = False,
+    strict: bool = False,
+    **pydantic_kwargs: Any,
 ) -> Any:
     """8-bit integer with optional constraints.
 
-    When called without arguments, returns standard TINYINT.
-    With arguments, returns ConstrainedTinyInt.
+    Args:
+        gt: Value must be greater than this
+        ge: Value must be greater than or equal to this
+        lt: Value must be less than this
+        le: Value must be less than or equal to this
+        multiple_of: Value must be divisible by this
+        strict: In strict mode, types won't be coerced
+        **pydantic_kwargs: Additional Pydantic-specific arguments
 
     Example:
         class Config(BaseModel):
-            flag_bits: TinyInt(min_value=0, max_value=127)  # Only positive values
-            level: TinyInt(min_value=-10, max_value=10)
+            flag_bits: TinyInt(ge=0, le=127)  # Only positive values
+            level: TinyInt(ge=-10, le=10)
     """
-    # If no constraints, return standard TINYINT
-    if (
-        all(x is None for x in [min_value, max_value, multiple_of])
-        and not positive
-        and not negative
-    ):
-        db_type = _TINYINT()
-    else:
-        db_type = _ConstrainedTinyInt(
-            min_value=min_value,
-            max_value=max_value,
-            multiple_of=multiple_of,
-            positive=positive,
-            negative=negative,
-        )
+    db_type = _TINYINT(
+        gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of, strict=strict, **pydantic_kwargs
+    )
 
     if _PYDANTIC_AVAILABLE:
         return Annotated[int, _get_validator(db_type), db_type]

@@ -19,10 +19,13 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class InvalidConfig:
-            hour: SmallInt(min_value=0, max_value=23) = 24
+            hour: SmallInt(ge=0, le=23) = 24
 
         # But fails when trying to create an instance
-        with pytest.raises(ValueError, match="Input should be less than or equal to 23"):
+        # Accept both Pydantic and custom error messages
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be less than or equal to 23"
+        ):
             InvalidConfig()
 
     def test_invalid_default_integer_constraint(self):
@@ -31,9 +34,11 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class InvalidPercentage:
-            percentage: Integer(min_value=0, max_value=100) = 150
+            percentage: Integer(ge=0, le=100) = 150
 
-        with pytest.raises(ValueError, match="Input should be less than or equal to 100"):
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be less than or equal to 100"
+        ):
             InvalidPercentage()
 
     def test_invalid_default_below_minimum(self):
@@ -42,96 +47,106 @@ class TestDefaultValueValidation:
         @validate_dataclass
         @dataclass
         class InvalidNegative:
-            level: TinyInt(min_value=0, max_value=10) = -1
+            level: TinyInt(ge=0, le=10) = -1
 
-        with pytest.raises(ValueError, match="Input should be greater than or equal to 0"):
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be greater than or equal to 0"
+        ):
             InvalidNegative()
 
     def test_valid_defaults_work(self):
-        """Test that valid defaults work correctly."""
+        """Test that valid defaults work properly."""
 
         @validate_dataclass
         @dataclass
         class ValidConfig:
-            hour: SmallInt(min_value=0, max_value=23) = 12
-            percentage: Integer(min_value=0, max_value=100) = 75
-            level: TinyInt(min_value=0, max_value=5) = 3
+            hour: SmallInt(ge=0, le=23) = 12
+            percentage: Integer(ge=0, le=100) = 50
+            level: TinyInt(ge=0, le=10) = 5
 
-        # Should create instance successfully
+        # Should create without error
         config = ValidConfig()
         assert config.hour == 12
-        assert config.percentage == 75
-        assert config.level == 3
+        assert config.percentage == 50
+        assert config.level == 5
 
     def test_overriding_invalid_default_with_valid_value(self):
         """Test that we can override an invalid default with a valid value."""
 
         @validate_dataclass
         @dataclass
-        class ConfigWithBadDefault:
-            hour: SmallInt(min_value=0, max_value=23) = 24
+        class InvalidDefaultConfig:
+            value: Integer(ge=0, le=10) = 15  # Invalid default
 
-        # Can't create with default
+        # Creating without override should fail
         with pytest.raises(ValueError):
-            ConfigWithBadDefault()
+            InvalidDefaultConfig()
 
-        # But can create with valid override
-        config = ConfigWithBadDefault(hour=12)
-        assert config.hour == 12
+        # But we can override with a valid value
+        config = InvalidDefaultConfig(value=5)
+        assert config.value == 5
 
     def test_default_factory_validation(self):
-        """Test that default_factory values are validated when created."""
+        """Test that default_factory values are validated."""
 
         def invalid_factory():
-            return 150  # Invalid for 0-100 range
+            return 999  # Out of range
 
         @validate_dataclass
         @dataclass
-        class ConfigWithFactory:
-            # This will be validated when the factory is called
-            value: Integer(min_value=0, max_value=100) = field(default_factory=invalid_factory)
+        class FactoryConfig:
+            value: Integer(ge=0, le=100) = field(default_factory=invalid_factory)
 
-        with pytest.raises(ValueError, match="Input should be less than or equal to 100"):
-            ConfigWithFactory()
+        # Should fail when factory produces invalid value
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be less than or equal to 100"
+        ):
+            FactoryConfig()
 
     def test_none_default_with_nullable(self):
-        """Test that None defaults work with nullable fields."""
+        """Test that None defaults work with Optional types."""
 
         @validate_dataclass
         @dataclass
         class NullableConfig:
-            optional_hour: Optional[SmallInt(min_value=0, max_value=23)] = None
+            value: Optional[Integer(ge=0, le=100)] = None
 
+        # Should work fine
         config = NullableConfig()
-        assert config.optional_hour is None
+        assert config.value is None
+
+        # Can set valid value
+        config = NullableConfig(value=50)
+        assert config.value == 50
+
+        # Invalid value should fail
+        with pytest.raises(ValueError):
+            NullableConfig(value=150)
 
     def test_multiple_invalid_defaults(self):
-        """Test multiple fields with invalid defaults."""
+        """Test class with multiple invalid defaults."""
 
         @validate_dataclass
         @dataclass
         class MultipleInvalid:
-            hour: SmallInt(min_value=0, max_value=23) = 24
-            percentage: Integer(min_value=0, max_value=100) = 150
-            level: TinyInt(min_value=1, max_value=5) = 0
+            hour: SmallInt(ge=0, le=23) = 25  # Invalid
+            minute: SmallInt(ge=0, le=59) = 60  # Invalid
 
-        # Should fail on the first invalid field during instantiation
+        # Should fail on first invalid default
         with pytest.raises(ValueError):
             MultipleInvalid()
 
     def test_class_can_be_defined_with_invalid_defaults(self):
-        """Demonstrate that class definition succeeds even with invalid defaults."""
+        """Test that a class can be defined even with invalid defaults."""
 
-        # This succeeds - the class is created
+        # This should not raise - the class definition succeeds
         @validate_dataclass
         @dataclass
-        class BadDefaultsClass:
-            value: Integer(min_value=0, max_value=10) = 100
+        class InvalidButDefinable:
+            value: Integer(ge=0, le=10) = 100  # Invalid default
 
-        # We can even inspect the class
-        assert BadDefaultsClass.__name__ == "BadDefaultsClass"
-        assert hasattr(BadDefaultsClass, "__dataclass_fields__")
-
-        # But instantiation fails
-        with pytest.raises(ValueError, match="Input should be less than or equal to 10"):
-            BadDefaultsClass()
+        # But instantiation should fail
+        with pytest.raises(
+            ValueError, match="(Input should|Value must) be less than or equal to 10"
+        ):
+            InvalidButDefinable()
