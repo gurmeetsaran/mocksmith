@@ -91,7 +91,11 @@ class TestINTEGER:
             int_type.validate(-2147483649)  # too small
 
         with pytest.raises(
-            ValueError, match="Input should be a valid integer|got a number with a fractional part"
+            ValueError,
+            match=(
+                "(Input should be a valid integer|"
+                "got a number with a fractional part|Expected integer value)"
+            ),
         ):
             int_type.validate(10.5)  # non-integer float
 
@@ -280,7 +284,9 @@ class TestFLOAT:
         float_type.validate(float("nan"))
 
         float_type2 = FLOAT(allow_inf_nan=False)
-        with pytest.raises(ValueError, match="Input should be a finite number"):
+        with pytest.raises(
+            ValueError, match="(Input should be a finite number|Value must be finite)"
+        ):
             float_type2.validate(float("inf"))
 
     def test_serialize(self):

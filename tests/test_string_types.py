@@ -85,7 +85,7 @@ class TestVARCHAR:
         ):
             vchar.validate("too long string")
 
-        with pytest.raises(ValueError, match="Input should be a valid string"):
+        with pytest.raises(ValueError, match="(Input should be a valid string|Expected string)"):
             vchar.validate(123)
 
     def test_nullable_serialization(self):
