@@ -41,7 +41,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          poetry install --with dev --extras pydantic --extras mock
+          poetry install --with dev --extras pydantic
 
       - name: Lint with ruff
         run: |
