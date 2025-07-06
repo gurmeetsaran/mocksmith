@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 3.1.0 (2025-07-06)
+
+### Feat
+
+- add Literal type support for mock generation (#21)
+
 ## 3.0.3 (2025-07-04)
 
 ### Refactor
