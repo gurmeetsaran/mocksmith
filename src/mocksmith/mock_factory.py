@@ -3,7 +3,7 @@
 import enum
 import warnings
 from dataclasses import MISSING, fields, is_dataclass
-from typing import Any, TypeVar, Union, get_args, get_origin
+from typing import Any, Literal, TypeVar, Union, get_args, get_origin
 
 try:
     from typing import Annotated
@@ -666,6 +666,12 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
         # Get all enum values and pick one randomly
         enum_values = list(field_type)
         return _get_faker().random_element(enum_values)
+
+    # Handle Literal types
+    if origin is Literal:
+        # Get all literal values and pick one randomly
+        literal_values = list(get_args(field_type))
+        return _get_faker().random_element(literal_values)
 
     # Handle Pydantic built-in types (v2 uses Annotated)
     if hasattr(field_type, "__module__") and "pydantic" in field_type.__module__:
