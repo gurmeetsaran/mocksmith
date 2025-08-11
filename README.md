@@ -75,25 +75,29 @@ The standard installation includes Faker for mock data generation and custom val
 
 The library organizes types into two categories:
 
-### Core Database Types
-Core database types are available directly from the main package:
+### Core Database Types (V3 Pattern)
+Core database types are available through factory functions from the main package:
 
 ```python
 from mocksmith import (
-    # String types
-    VARCHAR, CHAR, TEXT, Varchar, Char, Text,
-    # Numeric types
-    INTEGER, DECIMAL, FLOAT, Integer, DecimalType, Float,
-    # Temporal types
-    DATE, TIME, TIMESTAMP, Date, Time, Timestamp,
-    # Other types
-    BOOLEAN, BINARY, Boolean, Binary,
+    # String types - Factory functions only
+    Varchar, Char, Text,
+    # Numeric types - Factory functions only
+    Integer, DecimalType, Float,
+    BigInt, SmallInt, TinyInt,
+    Double, Real, Numeric,
+    # Temporal types - Factory functions only
+    Date, Time, DateTime, Timestamp,
+    # Other types - Factory functions only
+    Boolean, Binary, VarBinary, Blob,
     # Constrained types
     PositiveInteger, NonNegativeInteger, NegativeInteger, NonPositiveInteger,
     Money, PositiveMoney, NonNegativeMoney, ConstrainedMoney,
     ConstrainedDecimal, ConstrainedFloat
 )
 ```
+
+**⚠️ Breaking Change in V3:** Direct class imports (VARCHAR, INTEGER, etc.) have been removed to prevent confusion. Use factory functions (Varchar, Integer, etc.) exclusively.
 
 ### Specialized Types
 Specialized types for common use cases are available from the `specialized` submodule:
@@ -120,7 +124,7 @@ This separation keeps the main namespace clean and makes it clear which types ar
 
 ## Quick Start
 
-### Clean Interface (Works with both Pydantic and Dataclasses!) ✨
+### Clean V3 Interface (Works with both Pydantic and Dataclasses!) ✨
 
 ```python
 from pydantic import BaseModel
@@ -128,7 +132,7 @@ from mocksmith import Varchar, Integer, Boolean, Money
 
 class User(BaseModel):
     id: Integer()
-    username: Varchar(50)
+    username: Varchar(50)  # Creates a type class with length 50
     email: Varchar(255)
     is_active: Boolean() = True
     balance: Money() = "0.00"
@@ -238,14 +242,42 @@ See mock examples:
 - [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Complete mock examples with dataclasses including enum support
 - [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Complete mock examples with Pydantic including enum support and built-in types
 
-## Type Usage Patterns
+## V3 Type Usage Patterns
 
-MockSmith types can be used in multiple ways with both Pydantic and dataclasses. Here are all the supported patterns:
+**Important:** MockSmith V3 uses factory functions exclusively. The old pattern of importing classes directly (VARCHAR, INTEGER, etc.) is no longer supported.
+
+### Correct V3 Pattern
+
+```python
+from mocksmith import Varchar, Integer, Boolean  # Factory functions
+
+# Factory functions create type classes for use in annotations
+UsernameType = Varchar(30, min_length=3)  # Returns a type class
+
+class User(BaseModel):
+    username: UsernameType  # Use the type class
+    # Or inline:
+    email: Varchar(100, to_lower=True)  # Factory function inline
+    age: Integer(gt=0, le=120)
+    active: Boolean()
+```
+
+### What Changed from V2
+
+```python
+# ❌ OLD PATTERN (NO LONGER WORKS - REMOVED IN V3)
+from mocksmith import VARCHAR  # This import fails now
+varchar_type = VARCHAR(30)  # Would create instance "30" - WRONG!
+
+# ✅ NEW V3 PATTERN (THE ONLY WAY)
+from mocksmith import Varchar  # Factory function
+UsernameType = Varchar(30)  # Creates type class - CORRECT!
+```
 
 ### With Pydantic (Full Validation)
 
 ```python
-from typing import Optional, Annotated
+from typing import Optional
 from pydantic import BaseModel
 from mocksmith import Integer, Varchar, Money, Boolean, PositiveInteger, NonNegativeInteger
 from decimal import Decimal
@@ -263,11 +295,11 @@ class ConstrainedModel(BaseModel):
     quantity: Integer(gt=0)      # Positive quantity
     discount: Integer(ge=0, le=100, multiple_of=5)  # 0-100%, multiples of 5
 
-# Pattern 3: Using Annotated (explicit type hints)
-class AnnotatedModel(BaseModel):
-    id: Annotated[int, Integer()]
-    name: Annotated[str, Varchar(50)]
-    price: Annotated[Decimal, Money()]
+# Pattern 3: Factory functions with constraints
+class ConstrainedProduct(BaseModel):
+    sku: Varchar(20, to_upper=True)  # Auto uppercase
+    name: Varchar(100, min_length=3)
+    price: DecimalType(10, 2, gt=0)  # precision=10, scale=2, >0
 
 # Pattern 4: Constrained types (common patterns)
 class UserAccount(BaseModel):
@@ -307,17 +339,19 @@ product = Product(
 )
 ```
 
-### Important Notes
+### Important V3 Notes
 
-✅ **DO USE:**
-- `field: Integer()` - Direct pattern for clean, simple code
-- `field: Optional[Type()] = None` - For nullable fields
+✅ **DO USE (V3 Pattern):**
+- `field: Varchar(50)` - Factory functions for type creation
+- `field: Integer(gt=0)` - Factory functions with constraints
+- `field: Optional[Varchar(50)] = None` - For nullable fields
 - Pydantic `BaseModel` when you need validation
 - Constrained types like `PositiveInteger()` for common patterns
 
-❌ **DON'T USE:**
+❌ **DON'T USE (Removed in V3):**
+- `from mocksmith import VARCHAR` - Direct class imports removed
+- `VARCHAR(30)` - Would create instance "30", not a type!
 - Plain dataclasses if you need validation (use Pydantic instead)
-- Complex nested Annotated types - keep it simple
 
 ### Type Validation Features
 
@@ -959,6 +993,64 @@ assert 0 <= mock_order.discount <= 50
 assert mock_order.tax >= 0
 assert 0 <= mock_order.discount_rate <= 0.3
 ```
+
+## Migration Guide from V2 to V3
+
+### Breaking Changes
+
+V3 introduces a critical breaking change to prevent confusion and subtle bugs:
+
+1. **Direct class imports are removed** - `from mocksmith import VARCHAR` no longer works
+2. **Only factory functions are available** - Use `Varchar()`, not `VARCHAR()`
+3. **DBTypeValidator is removed** - Types work directly with Pydantic
+
+### Why This Change?
+
+In V2, importing and using `VARCHAR(30)` would create a type class. In V3's simplified pattern, this would create a string instance with value "30" - highly confusing! To prevent this dangerous ambiguity, direct class access has been removed entirely.
+
+### Migration Steps
+
+```python
+# ❌ OLD V2 CODE (No longer works)
+from mocksmith import VARCHAR, INTEGER, BOOLEAN
+from mocksmith.pydantic_integration import DBTypeValidator
+from typing import Annotated
+
+class User(BaseModel):
+    username: Annotated[str, DBTypeValidator(VARCHAR(30))]
+    age: Annotated[int, DBTypeValidator(INTEGER())]
+    active: Annotated[bool, DBTypeValidator(BOOLEAN())]
+
+# ✅ NEW V3 CODE (Clean and simple)
+from mocksmith import Varchar, Integer, Boolean
+
+class User(BaseModel):
+    username: Varchar(30)  # Direct usage!
+    age: Integer()
+    active: Boolean()
+```
+
+### Common Migration Patterns
+
+| Old V2 Pattern | New V3 Pattern |
+|----------------|----------------|
+| `from mocksmith import VARCHAR` | `from mocksmith import Varchar` |
+| `from mocksmith.types.string import VARCHAR` | Not available - use factory functions |
+| `Annotated[str, DBTypeValidator(VARCHAR(30))]` | `Varchar(30)` |
+| `VARCHAR(30)` (creates type) | `Varchar(30)` (creates type) |
+| `INTEGER()` | `Integer()` |
+| `DECIMAL(10, 2)` | `DecimalType(10, 2)` |
+| `BOOLEAN()` | `Boolean()` |
+| `DATE()` | `Date()` |
+| `TIMESTAMP()` | `Timestamp()` |
+
+### Benefits of V3
+
+1. **Cleaner API** - No more `DBTypeValidator` or `Annotated` boilerplate
+2. **Type safety** - Factory functions always return type classes
+3. **No confusion** - Can't accidentally create instances when you mean types
+4. **Better IDE support** - Direct type usage improves autocomplete
+5. **Simpler codebase** - Less complexity, easier to maintain
 
 ## Development
 

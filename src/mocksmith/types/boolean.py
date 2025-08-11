@@ -14,8 +14,8 @@ except ImportError:
     PydanticCustomError = ValueError
 
 
-class BOOLEAN(int):  # bool inherits from int in Python
-    """Boolean type that validates at instantiation.
+class _BOOLEAN(int):  # bool inherits from int in Python
+    """Boolean type that validates at instantiation (internal use only).
 
     Accepts various boolean representations:
     - bool: True/False
@@ -25,10 +25,10 @@ class BOOLEAN(int):  # bool inherits from int in Python
 
     SQL_TYPE: ClassVar[str] = "BOOLEAN"
 
-    def __new__(cls, value: Any) -> "BOOLEAN":
+    def __new__(cls, value: Any) -> "_BOOLEAN":
         """Create new boolean with validation."""
         if value is None:
-            raise ValueError("BOOLEAN cannot be None")
+            raise ValueError("Value cannot be None")
 
         # Handle string conversion
         if isinstance(value, str):
@@ -132,7 +132,7 @@ def Boolean() -> type:  # noqa: N802
             is_active: Boolean()
             is_verified: Boolean()
     """
-    return BOOLEAN
+    return _BOOLEAN
 
 
 # Aliases

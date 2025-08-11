@@ -1,133 +1,64 @@
-"""Pydantic integration for database types."""
+"""Pydantic integration for database types.
+
+Note: With V3 pattern, all types extend native Python types and have their own
+__get_pydantic_core_schema__ methods, so DBTypeValidator is no longer needed.
+This file is kept for backward compatibility but most functionality is deprecated.
+"""
 
 # pyright: reportOptionalMemberAccess=false
 
-from typing import Any, Callable
+from typing import Any
 
 try:
     from pydantic import BaseModel  # type: ignore[import-not-found]
-    from pydantic_core import core_schema  # type: ignore[import-not-found]
 
     PYDANTIC_AVAILABLE = True
 except ImportError:
     PYDANTIC_AVAILABLE = False
     BaseModel = None
-    core_schema = None
 
-from mocksmith.types.base import DBType
 
-if PYDANTIC_AVAILABLE and core_schema is not None:
-    assert core_schema is not None  # Type assertion for pyright
-
-    class DBTypeAnnotation:
-        """Custom Pydantic annotation for database types."""
-
-        @classmethod
-        def __get_pydantic_core_schema__(
-            cls, source: type[Any], handler: Callable[[Any], core_schema.CoreSchema]
-        ) -> core_schema.CoreSchema:
-            """Generate Pydantic core schema for DBType validation."""
-            if hasattr(source, "__args__") and len(source.__args__) > 0:
-                db_type_instance = source.__args__[0]
-            else:
-                # Fallback for direct DBType instances
-                db_type_instance = source
-
-            def validate(value: Any) -> Any:
-                """Validate and deserialize value."""
-                return db_type_instance.deserialize(value)
-
-            def serialize(value: Any) -> Any:
-                """Serialize value."""
-                return db_type_instance.serialize(value)
-
-            return core_schema.no_info_after_validator_function(
-                validate,
-                core_schema.any_schema(),
-                serialization=core_schema.plain_serializer_function_ser_schema(
-                    serialize,
-                    return_schema=core_schema.any_schema(),
-                ),
-            )
-
-    class DBTypeValidator:
-        """Validator class for DBType fields in Pydantic models."""
-
-        def __init__(self, db_type: DBType):
-            self.db_type = db_type
-
-        def __get_pydantic_core_schema__(
-            self, source: type[Any], handler: Callable[[Any], core_schema.CoreSchema]
-        ) -> core_schema.CoreSchema:
-            """Generate Pydantic core schema."""
-
-            def validate(value: Any) -> Any:
-                return self.db_type.deserialize(value)
-
-            def serialize(value: Any) -> Any:
-                return self.db_type.serialize(value)
-
-            return core_schema.no_info_after_validator_function(
-                validate,
-                core_schema.any_schema(),
-                serialization=core_schema.plain_serializer_function_ser_schema(
-                    serialize,
-                    return_schema=core_schema.any_schema(),
-                ),
-            )
-
-    # Example base model with DB type support
+if PYDANTIC_AVAILABLE:
+    # DBModel base class for models using database types
     class DBModel(BaseModel):  # type: ignore
-        """Base Pydantic model with database type support."""
+        """Base Pydantic model with database type support.
+
+        Note: With V3 pattern, database types work directly with Pydantic
+        without needing special handling. This class is kept for backward
+        compatibility.
+        """
 
         class Config:
             arbitrary_types_allowed = True
             validate_assignment = True
 
-        @classmethod
-        def get_db_types(cls) -> dict[str, DBType]:
-            """Get all database type fields in the model.
-
-            Returns:
-                Dictionary mapping field names to DBType instances
-            """
-            db_types = {}
-            for field_name, field_info in cls.model_fields.items():
-                # Check if field has DBType annotation
-                if hasattr(field_info, "metadata"):
-                    for metadata in field_info.metadata:
-                        if isinstance(metadata, DBTypeValidator):
-                            db_types[field_name] = metadata.db_type
-                            break
-            return db_types
-
-        def to_sql_dict(self) -> dict[str, Any]:
-            """Convert model to dictionary with SQL-compatible values.
-
-            Returns:
-                Dictionary with serialized values
-            """
-            result = {}
-            db_types = self.get_db_types()
-
-            for field_name, value in self.model_dump().items():
-                if field_name in db_types:
-                    result[field_name] = db_types[field_name].serialize(value)
-                else:
-                    result[field_name] = value
-
-            return result
-
 else:
-    # Dummy implementations when Pydantic is not available
-    DBTypeAnnotation = None
-    DBTypeValidator = None
+    # Dummy implementation when Pydantic is not available
     DBModel = None
+
+
+# Deprecated classes - kept for backward compatibility but do nothing
+class DBTypeAnnotation:
+    """Deprecated: V3 types handle Pydantic integration directly."""
+
+    pass
+
+
+class DBTypeValidator:
+    """Deprecated: V3 types handle Pydantic integration directly.
+
+    This class is kept for backward compatibility but does nothing.
+    All V3 types have their own __get_pydantic_core_schema__ methods.
+    """
+
+    def __init__(self, db_type: Any):
+        # Silently ignore - V3 types don't need this
+        pass
 
 
 __all__ = [
     "PYDANTIC_AVAILABLE",
     "DBModel",
-    "DBTypeAnnotation",
-    "DBTypeValidator",
+    "DBTypeAnnotation",  # Deprecated
+    "DBTypeValidator",  # Deprecated
 ]

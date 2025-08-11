@@ -4,16 +4,16 @@ from decimal import Decimal
 
 import pytest
 
+from mocksmith.types.numeric import _BIGINT as BIGINT
+from mocksmith.types.numeric import _DECIMAL as DECIMAL
+from mocksmith.types.numeric import _DOUBLE as DOUBLE
+from mocksmith.types.numeric import _FLOAT as FLOAT
+from mocksmith.types.numeric import _INTEGER as INTEGER
+from mocksmith.types.numeric import _NUMERIC as NUMERIC
+from mocksmith.types.numeric import _REAL as REAL
+from mocksmith.types.numeric import _SMALLINT as SMALLINT
+from mocksmith.types.numeric import _TINYINT as TINYINT
 from mocksmith.types.numeric import (
-    BIGINT,
-    DECIMAL,
-    DOUBLE,
-    FLOAT,
-    INTEGER,
-    NUMERIC,
-    REAL,
-    SMALLINT,
-    TINYINT,
     DecimalType,
     Float,
     Integer,
@@ -36,7 +36,7 @@ class TestINTEGER:
 
     def test_factory_function(self):
         # Integer() returns a class for use as type annotation
-        IntType = Integer()  # noqa: N806
+        IntType = Integer()
         assert IntType == INTEGER
         assert IntType.SQL_TYPE == "INTEGER"
         assert IntType.SQL_MIN == -2147483648
@@ -44,11 +44,11 @@ class TestINTEGER:
 
     def test_factory_with_constraints(self):
         # Integer with constraints returns a different class
-        PositiveInt = Integer(gt=0)  # noqa: N806
+        PositiveInt = Integer(gt=0)
         assert PositiveInt != INTEGER
         assert PositiveInt._gt == 0
 
-        ConstrainedInt = Integer(ge=10, le=100, multiple_of=5)  # noqa: N806
+        ConstrainedInt = Integer(ge=10, le=100, multiple_of=5)
         assert ConstrainedInt._ge == 10
         assert ConstrainedInt._le == 100
         assert ConstrainedInt._multiple_of == 5
@@ -64,7 +64,7 @@ class TestINTEGER:
 
     def test_validation_with_constraints(self):
         # Test gt constraint
-        PositiveInt = Integer(gt=0)  # noqa: N806
+        PositiveInt = Integer(gt=0)
         assert PositiveInt(1) == 1
         assert PositiveInt(100) == 100
 
@@ -74,7 +74,7 @@ class TestINTEGER:
             PositiveInt(-1)
 
         # Test ge constraint
-        NonNegInt = Integer(ge=0)  # noqa: N806
+        NonNegInt = Integer(ge=0)
         assert NonNegInt(0) == 0
         assert NonNegInt(100) == 100
 
@@ -82,7 +82,7 @@ class TestINTEGER:
             NonNegInt(-1)
 
         # Test lt constraint
-        SmallInt = Integer(lt=100)  # noqa: N806
+        SmallInt = Integer(lt=100)
         assert SmallInt(99) == 99
         assert SmallInt(0) == 0
 
@@ -90,7 +90,7 @@ class TestINTEGER:
             SmallInt(100)
 
         # Test le constraint
-        MaxInt = Integer(le=100)  # noqa: N806
+        MaxInt = Integer(le=100)
         assert MaxInt(100) == 100
         assert MaxInt(0) == 0
 
@@ -98,7 +98,7 @@ class TestINTEGER:
             MaxInt(101)
 
         # Test multiple_of constraint
-        EvenInt = Integer(multiple_of=2)  # noqa: N806
+        EvenInt = Integer(multiple_of=2)
         assert EvenInt(2) == 2
         assert EvenInt(100) == 100
 
@@ -199,20 +199,20 @@ class TestDECIMAL:
 
     def test_factory_function(self):
         # DecimalType returns a class with specific precision/scale
-        Money = DecimalType(10, 2)  # noqa: N806
+        Money = DecimalType(10, 2)
         assert Money._precision == 10
         assert Money._scale == 2
 
     def test_creation_with_constraints(self):
-        PositiveMoney = DecimalType(10, 2, gt=0)  # noqa: N806
+        PositiveMoney = DecimalType(10, 2, gt=0)
         assert PositiveMoney._gt == Decimal("0")
 
-        BoundedMoney = DecimalType(10, 2, ge=10, le=1000)  # noqa: N806
+        BoundedMoney = DecimalType(10, 2, ge=10, le=1000)
         assert BoundedMoney._ge == Decimal("10")
         assert BoundedMoney._le == Decimal("1000")
 
     def test_validation_success(self):
-        MoneyType = DecimalType(10, 2)  # noqa: N806
+        MoneyType = DecimalType(10, 2)
 
         value = MoneyType("123.45")
         assert value == Decimal("123.45")
@@ -224,7 +224,7 @@ class TestDECIMAL:
         assert value == Decimal("0.5")
 
     def test_validation_with_constraints(self):
-        PositiveMoney = DecimalType(10, 2, gt=0)  # noqa: N806
+        PositiveMoney = DecimalType(10, 2, gt=0)
 
         value = PositiveMoney("10.50")
         assert value == Decimal("10.50")
@@ -236,7 +236,7 @@ class TestDECIMAL:
             PositiveMoney("-10")
 
     def test_validation_precision(self):
-        SmallDecimal = DecimalType(5, 2)  # max 999.99  # noqa: N806
+        SmallDecimal = DecimalType(5, 2)  # max 999.99
 
         value = SmallDecimal("999.99")
         assert value == Decimal("999.99")
@@ -245,7 +245,7 @@ class TestDECIMAL:
             SmallDecimal("1000.00")  # too many integer digits
 
     def test_validation_scale(self):
-        TwoDecimals = DecimalType(10, 2)  # noqa: N806
+        TwoDecimals = DecimalType(10, 2)
 
         # Should round to 2 decimal places
         value = TwoDecimals("123.456")
@@ -278,22 +278,22 @@ class TestFLOAT:
         assert isinstance(value, float)
 
     def test_factory_function(self):
-        FloatType = Float()  # noqa: N806
+        FloatType = Float()
         assert FloatType == FLOAT
 
-        PositiveFloat = Float(gt=0)  # noqa: N806
+        PositiveFloat = Float(gt=0)
         assert PositiveFloat != FLOAT
         assert PositiveFloat._gt == 0
 
     def test_with_precision(self):
         # FLOAT doesn't have precision parameter in V3
         # It uses constraints instead
-        BoundedFloat = Float(ge=-100.0, le=100.0)  # noqa: N806
+        BoundedFloat = Float(ge=-100.0, le=100.0)
         value = BoundedFloat(50.5)
         assert value == 50.5
 
     def test_creation_with_constraints(self):
-        PositiveFloat = Float(gt=0)  # noqa: N806
+        PositiveFloat = Float(gt=0)
         value = PositiveFloat(10.5)
         assert value == 10.5
 
@@ -304,7 +304,7 @@ class TestFLOAT:
             PositiveFloat(-10.5)
 
     def test_validation_with_constraints(self):
-        BoundedFloat = Float(ge=-100, le=100)  # noqa: N806
+        BoundedFloat = Float(ge=-100, le=100)
 
         assert BoundedFloat(0) == 0
         assert BoundedFloat(100) == 100
@@ -339,7 +339,7 @@ class TestDOUBLE:
 
 class TestSpecializedTypes:
     def test_positive_integer(self):
-        PosInt = PositiveInteger()  # noqa: N806
+        PosInt = PositiveInteger()
         value = PosInt(10)
         assert value == 10
 
@@ -347,7 +347,7 @@ class TestSpecializedTypes:
             PosInt(0)
 
     def test_non_negative_integer(self):
-        NonNegInt = NonNegativeInteger()  # noqa: N806
+        NonNegInt = NonNegativeInteger()
         value = NonNegInt(0)
         assert value == 0
 
@@ -359,12 +359,12 @@ class TestSpecializedTypes:
 
     def test_money_types(self):
         # Money type has 19,4 precision/scale
-        MoneyType = Money()  # noqa: N806
+        MoneyType = Money()
         value = MoneyType("12345.6789")
         assert value == Decimal("12345.6789")
 
         # PositiveMoney must be > 0
-        PosMoney = PositiveMoney()  # noqa: N806
+        PosMoney = PositiveMoney()
         value = PosMoney("100.50")
         assert value == Decimal("100.50")
 
@@ -372,7 +372,7 @@ class TestSpecializedTypes:
             PosMoney("0")
 
         # NonNegativeMoney must be >= 0
-        NonNegMoney = NonNegativeMoney()  # noqa: N806
+        NonNegMoney = NonNegativeMoney()
         value = NonNegMoney("0")
         assert value == Decimal("0")
 
@@ -382,31 +382,31 @@ class TestSpecializedTypes:
 
 class TestMockGeneration:
     def test_integer_mock(self):
-        IntType = Integer()  # noqa: N806
+        IntType = Integer()
         value = IntType.mock()
         assert isinstance(value, int)
         assert IntType.SQL_MIN <= value <= IntType.SQL_MAX
 
     def test_constrained_mock(self):
-        SmallPosInt = Integer(gt=0, le=100)  # noqa: N806
+        SmallPosInt = Integer(gt=0, le=100)
         for _ in range(10):
             value = SmallPosInt.mock()
             assert 1 <= value <= 100
 
     def test_tinyint_mock(self):
-        TinyType = TinyInt()  # noqa: N806
+        TinyType = TinyInt()
         for _ in range(10):
             value = TinyType.mock()
             assert -128 <= value <= 127
 
     def test_decimal_mock(self):
-        MoneyType = DecimalType(10, 2)  # noqa: N806
+        MoneyType = DecimalType(10, 2)
         value = MoneyType.mock()
         assert isinstance(value, Decimal)
         # Check it has at most 2 decimal places
         assert value.as_tuple().exponent >= -2
 
     def test_float_mock(self):
-        FloatType = Float()  # noqa: N806
+        FloatType = Float()
         value = FloatType.mock()
         assert isinstance(value, float)
