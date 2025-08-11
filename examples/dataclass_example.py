@@ -39,14 +39,15 @@ from mocksmith import (
     VarBinary,
     Varchar,
 )
-from mocksmith.dataclass_integration import validate_dataclass
+
+# Note: validate_dataclass has been removed.
+# Use Pydantic BaseModel for validation, or plain dataclasses without validation.
 
 # ============================================================================
 # EXAMPLE 1: Comprehensive Employee Model
 # ============================================================================
 
 
-@validate_dataclass
 @dataclass
 class Employee:
     """Demonstrates all basic data types and features."""
@@ -104,7 +105,6 @@ class Employee:
 # ============================================================================
 
 
-@validate_dataclass
 @dataclass
 class ProductInventory:
     """Demonstrates constrained numeric types."""
@@ -134,7 +134,6 @@ class ProductInventory:
 # ============================================================================
 
 
-@validate_dataclass
 @dataclass
 class GameCharacter:
     """Demonstrates complex constraint scenarios."""
@@ -174,7 +173,6 @@ class GameCharacter:
 # ============================================================================
 
 
-@validate_dataclass
 @dataclass
 class SystemConfig:
     """Demonstrates TINYINT usage for small bounded values."""
@@ -206,7 +204,6 @@ class SystemConfig:
 # ============================================================================
 
 
-@validate_dataclass
 @dataclass
 class ScientificMeasurement:
     """Demonstrates floating-point types and precision."""
@@ -602,7 +599,7 @@ def demonstrate_pydantic_types_limitations():
         print("\nRECOMMENDATION:")
         print("• For validation with Pydantic types, use Pydantic's BaseModel")
         print("• For dataclasses, use mocksmith's types: Varchar(50), Integer(), etc.")
-        print("• mocksmith types provide validation via @validate_dataclass")
+        print("• Use Pydantic BaseModel for validation with mocksmith types")
 
     except ImportError:
         print("(Pydantic not installed - skipping this demonstration)")

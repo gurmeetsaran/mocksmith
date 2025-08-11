@@ -31,6 +31,11 @@ jobs:
             ci
             chore
             revert
+            feat!
+            fix!
+            refactor!
+            perf!
+            build!
 
           # Configure allowed scopes (optional)
           scopes: |
@@ -64,6 +69,7 @@ jobs:
             https://www.conventionalcommits.org/
 
             Format: <type>(<scope>): <subject>
+            Breaking changes: <type>!(<scope>): <subject>
 
             Examples:
               ✅ feat: add support for PostgreSQL arrays
@@ -71,6 +77,8 @@ jobs:
               ✅ docs: update README with new examples
               ✅ refactor(types): simplify base type implementation
               ✅ test: add integration tests for dataclasses
+              ✅ feat!: remove deprecated validation methods
+              ✅ fix!(core): change API return types
 
               ❌ Feature: Add new type
               ❌ FEAT: add new type

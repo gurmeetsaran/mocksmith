@@ -1,838 +1,724 @@
-"""Numeric database types."""
+"""Numeric types with SQL-compliant validation and mock generation.
+
+This module provides numeric types that:
+1. Validate at instantiation to prevent invalid data
+2. Respect SQL type bounds (TINYINT, SMALLINT, INTEGER, BIGINT)
+3. Generate correct mock data within constraints
+4. Work seamlessly with both Pydantic models and dataclasses
+"""
 
 from decimal import Decimal
-from math import isfinite
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, ClassVar, Optional, Union
 
-from mocksmith.types.base import PYDANTIC_AVAILABLE, DBType
+try:
+    from pydantic import GetCoreSchemaHandler  # type: ignore
+    from pydantic_core import PydanticCustomError, core_schema  # type: ignore
 
-if PYDANTIC_AVAILABLE:
-    from pydantic import condecimal, confloat, conint  # type: ignore[import-not-found]
+    PYDANTIC_AVAILABLE = True
+except ImportError:
+    PYDANTIC_AVAILABLE = False
+    # Fallback for when Pydantic is not available
+    GetCoreSchemaHandler = Any
+    core_schema = None
+    PydanticCustomError = ValueError
 
-T = TypeVar("T", Decimal, float)
 
+class _BaseInteger(int):
+    """Base class for all integer types with SQL bounds and constraints."""
 
-class _BaseInteger(DBType[int]):
-    """Base class for all integer types with constraint support.
+    # To be defined by subclasses
+    SQL_MIN: ClassVar[int]
+    SQL_MAX: ClassVar[int]
+    SQL_TYPE: ClassVar[str]
 
-    This provides common functionality for all integer types (TINYINT, SMALLINT, INTEGER, BIGINT).
-    Subclasses only need to define MIN_VALUE, MAX_VALUE, and sql_type.
-    """
+    # Instance constraints (set via factory functions)
+    _gt: Optional[int] = None
+    _ge: Optional[int] = None
+    _lt: Optional[int] = None
+    _le: Optional[int] = None
+    _multiple_of: Optional[int] = None
+    _strict: bool = False
 
-    MIN_VALUE: int  # To be defined by subclasses
-    MAX_VALUE: int  # To be defined by subclasses
-    SQL_TYPE: str  # To be defined by subclasses
+    def __new__(cls, value: Any):
+        """Create new integer with validation."""
+        # Handle string conversion
+        if isinstance(value, str):
+            try:
+                value = int(value)
+            except (ValueError, TypeError):
+                raise ValueError(
+                    f"{cls.SQL_TYPE} requires numeric value, got string '{value}'"
+                ) from None
 
-    def __init__(
-        self,
-        *,
-        gt: Optional[int] = None,
-        ge: Optional[int] = None,
-        lt: Optional[int] = None,
-        le: Optional[int] = None,
-        multiple_of: Optional[int] = None,
-        strict: bool = False,
-        **pydantic_kwargs: Any,
-    ):
-        super().__init__()
-        # Validate bounds against type limits
-        type_name = self.__class__.__name__
-        if ge is not None and ge < self.MIN_VALUE:
-            raise ValueError(f"ge={ge} is below {type_name} minimum {self.MIN_VALUE}")
-        if le is not None and le > self.MAX_VALUE:
-            raise ValueError(f"le={le} exceeds {type_name} maximum {self.MAX_VALUE}")
-        if gt is not None and gt >= self.MAX_VALUE:
-            raise ValueError(f"gt={gt} leaves no valid {type_name} values")
-        if lt is not None and lt <= self.MIN_VALUE:
-            raise ValueError(f"lt={lt} leaves no valid {type_name} values")
+        # Handle float conversion
+        if isinstance(value, float):
+            if not value.is_integer():
+                raise ValueError(f"{cls.SQL_TYPE} requires integer value, got float {value}")
+            value = int(value)
 
-        self.gt = gt
-        self.ge = ge
-        self.lt = lt
-        self.le = le
-        self.multiple_of = multiple_of
-        self.strict = strict
-        self.pydantic_kwargs = pydantic_kwargs
+        if not isinstance(value, int):
+            raise ValueError(f"{cls.SQL_TYPE} requires integer value, got {type(value).__name__}")
 
-    @property
-    def python_type(self) -> type[int]:
-        return int
+        # Check SQL bounds
+        if value < cls.SQL_MIN or value > cls.SQL_MAX:
+            raise ValueError(
+                f"Value {value} out of {cls.SQL_TYPE} range ({cls.SQL_MIN} to {cls.SQL_MAX})"
+            )
 
-    def get_pydantic_type(self) -> Optional[Any]:
-        """Return Pydantic conint type if available."""
-        if PYDANTIC_AVAILABLE:
-            # Apply INTEGER bounds and user constraints
-            kwargs = {"strict": self.strict, **self.pydantic_kwargs}
+        # Check custom constraints if they exist
+        if cls._gt is not None and value <= cls._gt:
+            raise ValueError(f"Value must be greater than {cls._gt}, got {value}")
+        if cls._ge is not None and value < cls._ge:
+            raise ValueError(f"Value must be greater than or equal to {cls._ge}, got {value}")
+        if cls._lt is not None and value >= cls._lt:
+            raise ValueError(f"Value must be less than {cls._lt}, got {value}")
+        if cls._le is not None and value > cls._le:
+            raise ValueError(f"Value must be less than or equal to {cls._le}, got {value}")
+        if cls._multiple_of is not None and value % cls._multiple_of != 0:
+            raise ValueError(f"Value must be a multiple of {cls._multiple_of}, got {value}")
 
-            # Set bounds - user constraints take precedence
-            if self.gt is not None:
-                kwargs["gt"] = self.gt
-            elif self.ge is not None:
-                kwargs["ge"] = max(self.ge, self.MIN_VALUE)
-            else:
-                kwargs["ge"] = self.MIN_VALUE
+        return super().__new__(cls, value)
 
-            if self.lt is not None:
-                kwargs["lt"] = self.lt
-            elif self.le is not None:
-                kwargs["le"] = min(self.le, self.MAX_VALUE)
-            else:
-                kwargs["le"] = self.MAX_VALUE
+    @classmethod
+    def validate(cls, value: Any) -> int:
+        """Validate a value without creating an instance."""
+        # This method is for compatibility with V1 API
+        instance = cls(value)
+        return int(instance)
 
-            if self.multiple_of is not None:
-                kwargs["multiple_of"] = self.multiple_of
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: GetCoreSchemaHandler) -> Any:
+        """Define Pydantic validation schema."""
+        if not PYDANTIC_AVAILABLE:
+            return None
 
-            return conint(**kwargs)
-        return None
+        def validate_integer(value: Any) -> int:
+            """Validate value meets SQL and custom constraints."""
+            # Use the __new__ validation logic
+            try:
+                instance = cls(value)
+                return int(instance)
+            except ValueError as e:
+                raise PydanticCustomError(f"{cls.SQL_TYPE.lower()}_type", str(e)) from e
 
-    def _validate_custom(self, value: Any) -> None:
-        """Fallback validation when Pydantic is not available."""
-        if self.strict and not isinstance(value, int):
-            raise ValueError(f"Expected int, got {type(value).__name__}")
+        return core_schema.no_info_after_validator_function(  # type: ignore
+            validate_integer, core_schema.int_schema()  # type: ignore
+        )
 
-        if not isinstance(value, (int, float)):
-            raise ValueError(f"Expected numeric value, got {type(value).__name__}")
+    @classmethod
+    def mock(cls) -> int:
+        """Generate mock value respecting all constraints."""
+        try:
+            from faker import Faker  # type: ignore
 
-        if isinstance(value, float) and not value.is_integer():
-            raise ValueError(f"Expected integer value, got float {value}")
+            fake = Faker()
+        except ImportError:
+            raise ImportError("faker library is required for mock generation") from None
 
-        int_value = int(value)
+        # Calculate effective bounds
+        min_val = cls.SQL_MIN
+        max_val = cls.SQL_MAX
 
-        # Check type bounds
-        if int_value < self.MIN_VALUE or int_value > self.MAX_VALUE:
-            raise ValueError(f"Value {int_value} out of range for {self.__class__.__name__}")
+        if cls._gt is not None:
+            min_val = max(min_val, cls._gt + 1)
+        elif cls._ge is not None:
+            min_val = max(min_val, cls._ge)
 
-        # Check user constraints
-        if self.gt is not None and int_value <= self.gt:
-            raise ValueError(f"Value must be greater than {self.gt}")
-        if self.ge is not None and int_value < self.ge:
-            raise ValueError(f"Value must be greater than or equal to {self.ge}")
-        if self.lt is not None and int_value >= self.lt:
-            raise ValueError(f"Value must be less than {self.lt}")
-        if self.le is not None and int_value > self.le:
-            raise ValueError(f"Value must be less than or equal to {self.le}")
-        if self.multiple_of is not None and int_value % self.multiple_of != 0:
-            raise ValueError(f"Value must be a multiple of {self.multiple_of}")
-
-    def _serialize(self, value: Union[int, float]) -> int:
-        return int(value)
-
-    def _deserialize(self, value: Any) -> int:
-        return int(value)
-
-    @property
-    def sql_type(self) -> str:
-        """Return SQL type name."""
-        return self.SQL_TYPE
-
-    def __repr__(self) -> str:
-        parts = [f"{self.__class__.__name__}("]
-        params = []
-        if self.gt is not None:
-            params.append(f"gt={self.gt}")
-        if self.ge is not None:
-            params.append(f"ge={self.ge}")
-        if self.lt is not None:
-            params.append(f"lt={self.lt}")
-        if self.le is not None:
-            params.append(f"le={self.le}")
-        if self.multiple_of is not None:
-            params.append(f"multiple_of={self.multiple_of}")
-        if self.strict:
-            params.append("strict=True")
-        if self.pydantic_kwargs:
-            params.extend(f"{k}={v!r}" for k, v in self.pydantic_kwargs.items())
-
-        return parts[0] + ", ".join(params) + ")"
-
-    def _generate_mock(self, fake: Any) -> int:
-        """Generate mock integer data respecting constraints."""
-        # Determine effective bounds
-        min_val = self.MIN_VALUE
-        max_val = self.MAX_VALUE
-
-        if self.gt is not None:
-            min_val = max(min_val, self.gt + 1)
-        elif self.ge is not None:
-            min_val = max(min_val, self.ge)
-
-        if self.lt is not None:
-            max_val = min(max_val, self.lt - 1)
-        elif self.le is not None:
-            max_val = min(max_val, self.le)
+        if cls._lt is not None:
+            max_val = min(max_val, cls._lt - 1)
+        elif cls._le is not None:
+            max_val = min(max_val, cls._le)
 
         if min_val > max_val:
             raise ValueError("No valid values exist with given constraints")
 
-        # For very large ranges, limit to reasonable values for faker
-        # Faker can handle up to ~10^15 reliably
-        faker_min = int(max(min_val, -1e15) if min_val < -1e15 else min_val)
-        faker_max = int(min(max_val, 1e15) if max_val > 1e15 else max_val)
+        # Use full range - faker can handle large integers
+        faker_min = min_val
+        faker_max = max_val
 
-        if self.multiple_of is not None:
+        if cls._multiple_of is not None:
             # Adjust min to be a valid multiple
-            if faker_min % self.multiple_of != 0:
-                faker_min = faker_min + (self.multiple_of - faker_min % self.multiple_of)
+            if faker_min % cls._multiple_of != 0:
+                faker_min = faker_min + (cls._multiple_of - faker_min % cls._multiple_of)
 
             if faker_min > faker_max:
-                raise ValueError(f"No valid multiples of {self.multiple_of} in range")
+                raise ValueError(f"No valid multiples of {cls._multiple_of} in range")
 
-            # Use faker's step parameter for multiple_of
-            return fake.random_int(min=faker_min, max=faker_max, step=self.multiple_of)
+            return fake.random_int(min=faker_min, max=faker_max, step=cls._multiple_of)
         else:
             return fake.random_int(min=faker_min, max=faker_max)
 
+    @property
+    def sql_type(self) -> str:
+        """Return SQL type for compatibility with V1."""
+        return self.SQL_TYPE
 
-class _BaseNumeric(DBType[T]):
-    """Base class for numeric types with constraint support.
+    def serialize(self) -> int:
+        """Serialize to int for SQL."""
+        return int(self)
 
-    This provides common functionality for DECIMAL and FLOAT types.
-    Subclasses need to implement specific validation and bounds calculation.
-    """
+    def __repr__(self):
+        return f"{self.__class__.__name__}({int(self)})"
 
-    def __init__(
-        self,
-        *,
-        gt: Optional[T] = None,
-        ge: Optional[T] = None,
-        lt: Optional[T] = None,
-        le: Optional[T] = None,
-        multiple_of: Optional[T] = None,
-        strict: bool = False,
-        **pydantic_kwargs: Any,
-    ):
-        super().__init__()
-        self.gt = gt
-        self.ge = ge
-        self.lt = lt
-        self.le = le
-        self.multiple_of = multiple_of
-        self.strict = strict
-        self.pydantic_kwargs = pydantic_kwargs
 
-    def _check_constraints(self, value: T, type_name: str) -> None:
-        """Check user-defined constraints."""
-        if self.gt is not None and value <= self.gt:
-            raise ValueError(f"Value must be greater than {self.gt}")
-        if self.ge is not None and value < self.ge:
-            raise ValueError(f"Value must be greater than or equal to {self.ge}")
-        if self.lt is not None and value >= self.lt:
-            raise ValueError(f"Value must be less than {self.lt}")
-        if self.le is not None and value > self.le:
-            raise ValueError(f"Value must be less than or equal to {self.le}")
+class TINYINT(_BaseInteger):
+    """8-bit integer (-128 to 127)."""
 
-    def _get_effective_bounds(self, type_min: T, type_max: T) -> tuple[T, T]:
-        """Calculate effective bounds based on type limits and user constraints."""
-        min_val = type_min
-        max_val = type_max
+    SQL_MIN = -128
+    SQL_MAX = 127
+    SQL_TYPE = "TINYINT"
 
-        if self.gt is not None:
-            min_val = max(min_val, self._get_next_value(self.gt, True))
-        elif self.ge is not None:
-            min_val = max(min_val, self.ge)
 
-        if self.lt is not None:
-            max_val = min(max_val, self._get_next_value(self.lt, False))
-        elif self.le is not None:
-            max_val = min(max_val, self.le)
+class SMALLINT(_BaseInteger):
+    """16-bit integer (-32768 to 32767)."""
 
-        if min_val > max_val:
-            raise ValueError("No valid values exist with given constraints")
-
-        return min_val, max_val
-
-    def _get_next_value(self, value: T, increment: bool) -> T:
-        """Get next representable value. Subclasses should override for type-specific logic."""
-        raise NotImplementedError
-
-    def __repr__(self) -> str:
-        """Generate string representation with constraints."""
-        class_name = self.__class__.__name__
-        params = self._get_repr_params()
-
-        constraint_params = []
-        if self.gt is not None:
-            constraint_params.append(f"gt={self.gt}")
-        if self.ge is not None:
-            constraint_params.append(f"ge={self.ge}")
-        if self.lt is not None:
-            constraint_params.append(f"lt={self.lt}")
-        if self.le is not None:
-            constraint_params.append(f"le={self.le}")
-        if self.multiple_of is not None:
-            constraint_params.append(f"multiple_of={self.multiple_of}")
-        if self.strict:
-            constraint_params.append("strict=True")
-        if self.pydantic_kwargs:
-            constraint_params.extend(f"{k}={v!r}" for k, v in self.pydantic_kwargs.items())
-
-        all_params = params + constraint_params
-        if all_params:
-            return f"{class_name}({', '.join(all_params)})"
-        return f"{class_name}()"
-
-    def _get_repr_params(self) -> list[str]:
-        """Get type-specific parameters for repr. Override in subclasses."""
-        return []
+    SQL_MIN = -32768
+    SQL_MAX = 32767
+    SQL_TYPE = "SMALLINT"
 
 
 class INTEGER(_BaseInteger):
-    """32-bit integer type with optional constraints.
+    """32-bit integer (-2147483648 to 2147483647)."""
 
-    Args:
-        gt: Value must be greater than this
-        ge: Value must be greater than or equal to this
-        lt: Value must be less than this
-        le: Value must be less than or equal to this
-        multiple_of: Value must be a multiple of this
-        strict: In strict mode, types won't be coerced
-        **pydantic_kwargs: Additional Pydantic-specific arguments
-
-    Examples:
-        # Basic usage
-        user_id: Integer()
-
-        # With constraints
-        positive_id: Integer(gt=0)
-        small_count: Integer(ge=0, le=1000)
-    """
-
-    MIN_VALUE = -2147483648
-    MAX_VALUE = 2147483647
+    SQL_MIN = -2147483648
+    SQL_MAX = 2147483647
     SQL_TYPE = "INTEGER"
 
 
 class BIGINT(_BaseInteger):
-    """64-bit integer type with optional constraints.
+    """64-bit integer."""
 
-    Args:
-        gt: Value must be greater than this
-        ge: Value must be greater than or equal to this
-        lt: Value must be less than this
-        le: Value must be less than or equal to this
-        multiple_of: Value must be a multiple of this
-        strict: In strict mode, types won't be coerced
-        **pydantic_kwargs: Additional Pydantic-specific arguments
-
-    Examples:
-        # Basic usage
-        user_id: BigInt()
-
-        # With constraints
-        timestamp_ms: BigInt(gt=0)
-        sequence_num: BigInt(ge=1, le=1000000)
-    """
-
-    MIN_VALUE = -9223372036854775808
-    MAX_VALUE = 9223372036854775807
+    SQL_MIN = -9223372036854775808
+    SQL_MAX = 9223372036854775807
     SQL_TYPE = "BIGINT"
 
 
-class SMALLINT(_BaseInteger):
-    """16-bit integer type with optional constraints.
-
-    Args:
-        gt: Value must be greater than this
-        ge: Value must be greater than or equal to this
-        lt: Value must be less than this
-        le: Value must be less than or equal to this
-        multiple_of: Value must be a multiple of this
-        strict: In strict mode, types won't be coerced
-        **pydantic_kwargs: Additional Pydantic-specific arguments
-
-    Examples:
-        # Basic usage
-        status_code: SmallInt()
-
-        # With constraints
-        priority: SmallInt(ge=1, le=10)
-        level: SmallInt(gt=0, lt=100)
-    """
-
-    MIN_VALUE = -32768
-    MAX_VALUE = 32767
-    SQL_TYPE = "SMALLINT"
-
-
-class TINYINT(_BaseInteger):
-    """8-bit integer type with optional constraints.
-
-    Args:
-        gt: Value must be greater than this
-        ge: Value must be greater than or equal to this
-        lt: Value must be less than this
-        le: Value must be less than or equal to this
-        multiple_of: Value must be a multiple of this
-        strict: In strict mode, types won't be coerced
-        **pydantic_kwargs: Additional Pydantic-specific arguments
-
-    Examples:
-        # Basic usage
-        flag: TinyInt()
-
-        # With constraints
-        percentage: TinyInt(ge=0, le=100)
-        small_count: TinyInt(ge=0, lt=50)
-    """
-
-    MIN_VALUE = -128
-    MAX_VALUE = 127
-    SQL_TYPE = "TINYINT"
-
-
-class DECIMAL(_BaseNumeric[Decimal]):
-    """Fixed-point decimal type with optional constraints.
-
-    Args:
-        precision: Total number of digits
-        scale: Number of digits after decimal point
-        gt: Value must be greater than this
-        ge: Value must be greater than or equal to this
-        lt: Value must be less than this
-        le: Value must be less than or equal to this
-        multiple_of: Value must be a multiple of this
-        strict: In strict mode, types won't be coerced
-        **pydantic_kwargs: Additional Pydantic-specific arguments
-
-    Examples:
-        # Basic usage
-        price: DecimalType(10, 2)  # Up to 99999999.99
-
-        # With constraints
-        percentage: DecimalType(5, 2, ge=0, le=100)  # 0.00 to 100.00
-        positive_amount: DecimalType(19, 4, gt=0)  # Positive money
-    """
-
-    def __init__(
-        self,
-        precision: int,
-        scale: int,
-        *,
-        gt: Optional[Union[int, float, Decimal]] = None,
-        ge: Optional[Union[int, float, Decimal]] = None,
-        lt: Optional[Union[int, float, Decimal]] = None,
-        le: Optional[Union[int, float, Decimal]] = None,
-        multiple_of: Optional[Union[int, float, Decimal]] = None,
-        strict: bool = False,
-        **pydantic_kwargs: Any,
+# Factory functions for creating constrained types
+def TinyInt(  # noqa: N802
+    *,
+    gt: Optional[int] = None,
+    ge: Optional[int] = None,
+    lt: Optional[int] = None,
+    le: Optional[int] = None,
+    multiple_of: Optional[int] = None,
+    strict: bool = False,
+    **kwargs,  # Accept but ignore extra kwargs for compatibility
+) -> type:
+    """Create a constrained TINYINT type."""
+    if not any(
+        [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
     ):
-        if precision <= 0:
-            raise ValueError("Precision must be positive")
-        if scale < 0:
-            raise ValueError("Scale cannot be negative")
-        if scale > precision:
-            raise ValueError("Scale cannot exceed precision")
+        return TINYINT
 
-        self.precision = precision
-        self.scale = scale
+    class ConstrainedTinyInt(TINYINT):
+        _gt = gt
+        _ge = ge
+        _lt = lt
+        _le = le
+        _multiple_of = multiple_of
+        _strict = strict
 
-        # Convert to Decimal type
-        super().__init__(
-            gt=Decimal(str(gt)) if gt is not None else None,
-            ge=Decimal(str(ge)) if ge is not None else None,
-            lt=Decimal(str(lt)) if lt is not None else None,
-            le=Decimal(str(le)) if le is not None else None,
-            multiple_of=Decimal(str(multiple_of)) if multiple_of is not None else None,
-            strict=strict,
-            **pydantic_kwargs,
-        )
+    return ConstrainedTinyInt
 
-    @property
-    def sql_type(self) -> str:
-        return f"DECIMAL({self.precision},{self.scale})"
 
-    @property
-    def python_type(self) -> type[Decimal]:
-        return Decimal
+def SmallInt(  # noqa: N802
+    *,
+    gt: Optional[int] = None,
+    ge: Optional[int] = None,
+    lt: Optional[int] = None,
+    le: Optional[int] = None,
+    multiple_of: Optional[int] = None,
+    strict: bool = False,
+    **kwargs,
+) -> type:
+    """Create a constrained SMALLINT type."""
+    if not any(
+        [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
+    ):
+        return SMALLINT
 
-    def get_pydantic_type(self) -> Optional[Any]:
-        """Return Pydantic condecimal type if available."""
-        if PYDANTIC_AVAILABLE:
-            kwargs = {
-                "max_digits": self.precision,
-                "decimal_places": self.scale,
-                "strict": self.strict,
-                **self.pydantic_kwargs,
-            }
+    class ConstrainedSmallInt(SMALLINT):
+        _gt = gt
+        _ge = ge
+        _lt = lt
+        _le = le
+        _multiple_of = multiple_of
+        _strict = strict
 
-            # Calculate max value based on precision and scale
-            max_digits = self.precision - self.scale
-            if max_digits > 0:
-                max_value = Decimal("9" * max_digits + "." + "9" * self.scale)
-            else:
-                max_value = Decimal("0." + "9" * self.scale)
-            min_value = -max_value
+    return ConstrainedSmallInt
 
-            # Apply user constraints or type limits
-            if self.gt is not None:
-                kwargs["gt"] = self.gt
-            elif self.ge is not None:
-                kwargs["ge"] = max(self.ge, min_value)
-            else:
-                kwargs["ge"] = min_value
 
-            if self.lt is not None:
-                kwargs["lt"] = self.lt
-            elif self.le is not None:
-                kwargs["le"] = min(self.le, max_value)
-            else:
-                kwargs["le"] = max_value
+def Integer(  # noqa: N802
+    *,
+    gt: Optional[int] = None,
+    ge: Optional[int] = None,
+    lt: Optional[int] = None,
+    le: Optional[int] = None,
+    multiple_of: Optional[int] = None,
+    strict: bool = False,
+    **kwargs,
+) -> type:
+    """Create a constrained INTEGER type."""
+    if not any(
+        [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
+    ):
+        return INTEGER
 
-            if self.multiple_of is not None:
-                kwargs["multiple_of"] = self.multiple_of
+    class ConstrainedInteger(INTEGER):
+        _gt = gt
+        _ge = ge
+        _lt = lt
+        _le = le
+        _multiple_of = multiple_of
+        _strict = strict
 
-            return condecimal(**kwargs)
-        return None
+    return ConstrainedInteger
 
-    def _validate_custom(self, value: Any) -> None:
-        """Fallback validation when Pydantic is not available."""
-        if self.strict and not isinstance(value, Decimal):
-            raise ValueError(f"Expected Decimal, got {type(value).__name__}")
 
-        if not isinstance(value, (int, float, Decimal, str)):
-            raise ValueError(f"Expected numeric value, got {type(value).__name__}")
+def BigInt(  # noqa: N802
+    *,
+    gt: Optional[int] = None,
+    ge: Optional[int] = None,
+    lt: Optional[int] = None,
+    le: Optional[int] = None,
+    multiple_of: Optional[int] = None,
+    strict: bool = False,
+    **kwargs,
+) -> type:
+    """Create a constrained BIGINT type."""
+    if not any(
+        [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
+    ):
+        return BIGINT
 
-        try:
+    class ConstrainedBigInt(BIGINT):
+        _gt = gt
+        _ge = ge
+        _lt = lt
+        _le = le
+        _multiple_of = multiple_of
+        _strict = strict
+
+    return ConstrainedBigInt
+
+
+# Specialized constraint types for common patterns
+def PositiveInteger() -> type:  # noqa: N802
+    """Integer that must be positive (> 0)."""
+    return Integer(gt=0)
+
+
+def NonNegativeInteger() -> type:  # noqa: N802
+    """Integer that must be non-negative (>= 0)."""
+    return Integer(ge=0)
+
+
+def NegativeInteger() -> type:  # noqa: N802
+    """Integer that must be negative (< 0)."""
+    return Integer(lt=0)
+
+
+def NonPositiveInteger() -> type:  # noqa: N802
+    """Integer that must be non-positive (<= 0)."""
+    return Integer(le=0)
+
+
+# Decimal/Float types
+class DECIMAL(Decimal):
+    """Fixed-point decimal type with precision and scale."""
+
+    # Default precision and scale
+    _precision: ClassVar[int] = 10
+    _scale: ClassVar[int] = 2
+    _gt: Optional[Decimal] = None
+    _ge: Optional[Decimal] = None
+    _lt: Optional[Decimal] = None
+    _le: Optional[Decimal] = None
+    _multiple_of: Optional[Decimal] = None
+
+    def __new__(cls, value: Any):
+        """Create new Decimal with validation."""
+        # Convert to Decimal
+        if value is None:
+            value = 0
+
+        if isinstance(value, str):
+            try:
+                dec_value = Decimal(value)
+            except Exception:
+                raise ValueError(f"Invalid decimal value: {value}") from None
+        elif isinstance(value, (int, float)):
             dec_value = Decimal(str(value))
-        except Exception as e:
-            raise ValueError(f"Cannot convert {value} to Decimal") from e
-
-        # Check if value has too many digits
-        _, digits, exponent = dec_value.as_tuple()
-
-        # Handle special values (Infinity, NaN)
-        if isinstance(exponent, str):
-            # Special values like 'F' (Infinity), 'n' (NaN)
-            raise ValueError(f"Special value not allowed: {dec_value}")
-
-        # Calculate total digits and decimal places
-        if exponent >= 0:
-            # No decimal places
-            total_digits = len(digits) + exponent
-            decimal_places = 0
+        elif isinstance(value, Decimal):
+            dec_value = value
         else:
-            # Has decimal places
-            total_digits = max(len(digits), -exponent)
-            decimal_places = -exponent
+            raise ValueError(f"DECIMAL requires numeric value, got {type(value).__name__}")
 
-        if total_digits - decimal_places > self.precision - self.scale:
-            raise ValueError(f"Value {value} has too many digits before decimal point")
+        # Check precision/scale
+        # Note: as_tuple() returns sign, digits, exponent but we only need to validate
+        # the string representation for counting digits
 
-        if decimal_places > self.scale:
+        # Get string representation to count digits properly
+        str_val = str(abs(dec_value))
+        if "." in str_val:
+            integer_part, decimal_part = str_val.split(".")
+            integer_digits = len(integer_part)
+            decimal_places = len(decimal_part)
+        else:
+            integer_digits = len(str_val)
+            decimal_places = 0
+
+        if integer_digits > (cls._precision - cls._scale):
             raise ValueError(
-                f"Value {value} has too many decimal places ({decimal_places} > {self.scale})"
+                f"Too many integer digits. Maximum is {cls._precision - cls._scale}, "
+                f"got {integer_digits}"
             )
 
-        # Check user constraints
-        self._check_constraints(dec_value, "DECIMAL")
-        if self.multiple_of is not None and dec_value % self.multiple_of != 0:
-            raise ValueError(f"Value must be a multiple of {self.multiple_of}")
+        if decimal_places > cls._scale:
+            # Round to scale
+            quantizer = Decimal("0.1") ** cls._scale
+            dec_value = dec_value.quantize(quantizer)
 
-    def _serialize(self, value: Union[int, float, Decimal]) -> str:
-        return str(Decimal(str(value)))
+        # Check constraints
+        if cls._gt is not None and dec_value <= cls._gt:
+            raise ValueError(f"Value must be greater than {cls._gt}, got {dec_value}")
+        if cls._ge is not None and dec_value < cls._ge:
+            raise ValueError(f"Value must be greater than or equal to {cls._ge}, got {dec_value}")
+        if cls._lt is not None and dec_value >= cls._lt:
+            raise ValueError(f"Value must be less than {cls._lt}, got {dec_value}")
+        if cls._le is not None and dec_value > cls._le:
+            raise ValueError(f"Value must be less than or equal to {cls._le}, got {dec_value}")
+        if cls._multiple_of is not None and dec_value % cls._multiple_of != 0:
+            raise ValueError(f"Value must be a multiple of {cls._multiple_of}, got {dec_value}")
 
-    def _deserialize(self, value: Any) -> Decimal:
-        return Decimal(str(value))
+        return super().__new__(cls, dec_value)
 
-    def _get_repr_params(self) -> list[str]:
-        """Get DECIMAL-specific parameters for repr."""
-        return [str(self.precision), str(self.scale)]
+    @classmethod
+    def validate(cls, value: Any) -> Decimal:
+        """Validate a value without creating an instance."""
+        instance = cls(value)
+        return Decimal(instance)
 
-    def _get_next_value(self, value: Decimal, increment: bool) -> Decimal:
-        """Get next representable Decimal value based on scale."""
-        epsilon = Decimal(f"0.{'0' * (self.scale - 1)}1") if self.scale > 0 else Decimal("1")
-        return value + epsilon if increment else value - epsilon
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: GetCoreSchemaHandler) -> Any:
+        """Define Pydantic validation schema."""
+        if not PYDANTIC_AVAILABLE:
+            return None
 
-    def _generate_mock(self, fake: Any) -> Decimal:
-        """Generate mock DECIMAL data respecting constraints."""
-        # Calculate type bounds
-        max_int_digits = self.precision - self.scale
+        def validate_decimal(value: Any) -> Decimal:
+            """Validate value meets precision/scale and constraints."""
+            try:
+                instance = cls(value)
+                return Decimal(instance)
+            except ValueError as e:
+                raise PydanticCustomError("decimal_type", str(e)) from e
+
+        return core_schema.no_info_after_validator_function(  # type: ignore
+            validate_decimal, core_schema.decimal_schema()  # type: ignore
+        )
+
+    @classmethod
+    def mock(cls) -> Decimal:
+        """Generate mock decimal value."""
+        try:
+            from faker import Faker  # type: ignore
+
+            fake = Faker()
+        except ImportError:
+            raise ImportError("faker library is required for mock generation") from None
+
+        # Calculate bounds based on precision/scale
+        max_int_digits = cls._precision - cls._scale
         if max_int_digits > 0:
-            type_max = Decimal("9" * max_int_digits + "." + "9" * self.scale)
+            type_max = Decimal("9" * max_int_digits + "." + "9" * cls._scale)
         else:
-            type_max = Decimal("0." + "9" * self.scale)
+            type_max = Decimal("0." + "9" * cls._scale)
         type_min = -type_max
 
-        # Use base class to get effective bounds
-        min_val, max_val = self._get_effective_bounds(type_min, type_max)
+        # Apply constraints
+        min_val = type_min
+        max_val = type_max
 
-        if self.multiple_of is not None:
+        if cls._gt is not None:
+            min_val = max(min_val, cls._gt + Decimal("0.0001"))
+        elif cls._ge is not None:
+            min_val = max(min_val, cls._ge)
+
+        if cls._lt is not None:
+            max_val = min(max_val, cls._lt - Decimal("0.0001"))
+        elif cls._le is not None:
+            max_val = min(max_val, cls._le)
+
+        if cls._multiple_of is not None:
             # Find valid multiples in range
-            start_mult = int(min_val / self.multiple_of)
-            if min_val > start_mult * self.multiple_of:
+            start_mult = int(min_val / cls._multiple_of)
+            if min_val > start_mult * cls._multiple_of:
                 start_mult += 1
 
-            end_mult = int(max_val / self.multiple_of)
-            if max_val < end_mult * self.multiple_of:
+            end_mult = int(max_val / cls._multiple_of)
+            if max_val < end_mult * cls._multiple_of:
                 end_mult -= 1
 
             if start_mult > end_mult:
-                raise ValueError(f"No valid multiples of {self.multiple_of} in range")
+                raise ValueError(f"No valid multiples of {cls._multiple_of} in range")
 
             mult = fake.random_int(min=start_mult, max=end_mult)
-            return self.multiple_of * mult
+            return cls._multiple_of * mult
         else:
-            # Use faker's pydecimal with min/max values
             value = fake.pydecimal(
                 left_digits=max_int_digits if max_int_digits > 0 else None,
-                right_digits=self.scale,
-                positive=False,  # We handle sign via min_value/max_value
+                right_digits=cls._scale,
+                positive=False,
                 min_value=float(min_val),
                 max_value=float(max_val),
             )
-            return value
+            return Decimal(str(value))
+
+    @property
+    def sql_type(self) -> str:
+        """Return SQL type for compatibility."""
+        return f"DECIMAL({self._precision},{self._scale})"
+
+    def serialize(self) -> Decimal:
+        """Serialize for SQL."""
+        return Decimal(self)
 
 
+# Alias
 class NUMERIC(DECIMAL):
     """Alias for DECIMAL."""
 
-    @property
-    def sql_type(self) -> str:
-        return f"NUMERIC({self.precision},{self.scale})"
+    pass
 
 
-class FLOAT(_BaseNumeric[float]):
-    """Double-precision floating-point type with optional constraints.
+class FLOAT(float):
+    """Floating-point type."""
 
-    Args:
-        precision: SQL precision (optional)
-        gt: Value must be greater than this
-        ge: Value must be greater than or equal to this
-        lt: Value must be less than this
-        le: Value must be less than or equal to this
-        multiple_of: Value must be a multiple of this
-        allow_inf_nan: Whether to allow inf/-inf/nan values (default: False)
-        strict: In strict mode, types won't be coerced
-        **pydantic_kwargs: Additional Pydantic-specific arguments
+    _gt: Optional[float] = None
+    _ge: Optional[float] = None
+    _lt: Optional[float] = None
+    _le: Optional[float] = None
+    _multiple_of: Optional[float] = None
 
-    Examples:
-        # Basic usage
-        temperature: Float()
+    def __new__(cls, value: Any):
+        """Create new float with validation."""
+        if isinstance(value, str):
+            try:
+                float_value = float(value)
+            except Exception:
+                raise ValueError(f"Invalid float value: {value}") from None
+        elif isinstance(value, (int, float, Decimal)):
+            float_value = float(value)
+        else:
+            raise ValueError(f"FLOAT requires numeric value, got {type(value).__name__}")
 
-        # With constraints
-        percentage: Float(ge=0.0, le=100.0)
-        probability: Float(ge=0.0, le=1.0)
-        positive_value: Float(gt=0.0)
-    """
+        # Check for special values
+        if not (-3.4e38 <= float_value <= 3.4e38):
+            raise ValueError(f"Float value {float_value} out of range")
 
-    def __init__(
-        self,
-        precision: Optional[int] = None,
-        *,
-        gt: Optional[float] = None,
-        ge: Optional[float] = None,
-        lt: Optional[float] = None,
-        le: Optional[float] = None,
-        multiple_of: Optional[float] = None,
-        allow_inf_nan: bool = False,
-        strict: bool = False,
-        **pydantic_kwargs: Any,
-    ):
-        self.precision = precision
-        self.allow_inf_nan = allow_inf_nan
-        super().__init__(
-            gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of, strict=strict, **pydantic_kwargs
+        # Check constraints
+        if cls._gt is not None and float_value <= cls._gt:
+            raise ValueError(f"Value must be greater than {cls._gt}, got {float_value}")
+        if cls._ge is not None and float_value < cls._ge:
+            raise ValueError(f"Value must be greater than or equal to {cls._ge}, got {float_value}")
+        if cls._lt is not None and float_value >= cls._lt:
+            raise ValueError(f"Value must be less than {cls._lt}, got {float_value}")
+        if cls._le is not None and float_value > cls._le:
+            raise ValueError(f"Value must be less than or equal to {cls._le}, got {float_value}")
+        if cls._multiple_of is not None and float_value % cls._multiple_of != 0:
+            raise ValueError(f"Value must be a multiple of {cls._multiple_of}, got {float_value}")
+
+        return super().__new__(cls, float_value)
+
+    @classmethod
+    def validate(cls, value: Any) -> float:
+        """Validate a value."""
+        instance = cls(value)
+        return float(instance)
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source_type: Any, handler: GetCoreSchemaHandler) -> Any:
+        """Define Pydantic validation schema."""
+        if not PYDANTIC_AVAILABLE:
+            return None
+
+        def validate_float(value: Any) -> float:
+            """Validate float value."""
+            try:
+                instance = cls(value)
+                return float(instance)
+            except ValueError as e:
+                raise PydanticCustomError("float_type", str(e)) from e
+
+        return core_schema.no_info_after_validator_function(  # type: ignore
+            validate_float, core_schema.float_schema()  # type: ignore
         )
 
-    @property
-    def sql_type(self) -> str:
-        if self.precision:
-            return f"FLOAT({self.precision})"
-        return "FLOAT"
+    @classmethod
+    def mock(cls) -> float:
+        """Generate mock float value."""
+        try:
+            from faker import Faker  # type: ignore
 
-    @property
-    def python_type(self) -> type[float]:
-        return float
+            fake = Faker()
+        except ImportError:
+            raise ImportError("faker library is required for mock generation") from None
 
-    def get_pydantic_type(self) -> Optional[Any]:
-        """Return Pydantic confloat type if available."""
-        if PYDANTIC_AVAILABLE:
-            kwargs = {
-                "strict": self.strict,
-                "allow_inf_nan": self.allow_inf_nan,
-                **self.pydantic_kwargs,
-            }
+        min_val = -10000.0
+        max_val = 10000.0
 
-            if self.gt is not None:
-                kwargs["gt"] = self.gt
-            if self.ge is not None:
-                kwargs["ge"] = self.ge
-            if self.lt is not None:
-                kwargs["lt"] = self.lt
-            if self.le is not None:
-                kwargs["le"] = self.le
-            if self.multiple_of is not None:
-                kwargs["multiple_of"] = self.multiple_of
+        if cls._gt is not None:
+            min_val = max(min_val, cls._gt + 0.01)
+        elif cls._ge is not None:
+            min_val = max(min_val, cls._ge)
 
-            return confloat(**kwargs)
-        return None
+        if cls._lt is not None:
+            max_val = min(max_val, cls._lt - 0.01)
+        elif cls._le is not None:
+            max_val = min(max_val, cls._le)
 
-    def _validate_custom(self, value: Any) -> None:
-        """Fallback validation when Pydantic is not available."""
-        if self.strict and not isinstance(value, float):
-            raise ValueError(f"Expected float, got {type(value).__name__}")
-
-        if not isinstance(value, (int, float)):
-            raise ValueError(f"Expected numeric value, got {type(value).__name__}")
-
-        float_value = float(value)
-
-        if not self.allow_inf_nan and not isfinite(float_value):
-            raise ValueError(f"Value must be finite, got {float_value}")
-
-        if isfinite(float_value):  # Only check constraints for finite values
-            self._check_constraints(float_value, "FLOAT")
-            if self.multiple_of is not None:
-                # For floats, check if value/multiple_of is close to an integer
-                quotient = float_value / self.multiple_of
-                if not abs(quotient - round(quotient)) < 1e-9:
-                    raise ValueError(f"Value must be a multiple of {self.multiple_of}")
-
-    def _serialize(self, value: Union[int, float]) -> float:
-        return float(value)
-
-    def _deserialize(self, value: Any) -> float:
-        return float(value)
-
-    def _get_repr_params(self) -> list[str]:
-        """Get FLOAT-specific parameters for repr."""
-        params = []
-        if self.precision is not None:
-            params.append(str(self.precision))
-        if self.allow_inf_nan:
-            # Add to constraint params instead
-            if not hasattr(self, "_extra_params"):
-                self._extra_params = []
-            self._extra_params.append("allow_inf_nan=True")
-        return params
-
-    def __repr__(self) -> str:
-        """Override to include allow_inf_nan."""
-        class_name = self.__class__.__name__
-        params = self._get_repr_params()
-
-        constraint_params = []
-        if self.gt is not None:
-            constraint_params.append(f"gt={self.gt}")
-        if self.ge is not None:
-            constraint_params.append(f"ge={self.ge}")
-        if self.lt is not None:
-            constraint_params.append(f"lt={self.lt}")
-        if self.le is not None:
-            constraint_params.append(f"le={self.le}")
-        if self.multiple_of is not None:
-            constraint_params.append(f"multiple_of={self.multiple_of}")
-        if self.allow_inf_nan:
-            constraint_params.append("allow_inf_nan=True")
-        if self.strict:
-            constraint_params.append("strict=True")
-        if self.pydantic_kwargs:
-            constraint_params.extend(f"{k}={v!r}" for k, v in self.pydantic_kwargs.items())
-
-        all_params = params + constraint_params
-        if all_params:
-            return f"{class_name}({', '.join(all_params)})"
-        return f"{class_name}()"
-
-    def _get_next_value(self, value: float, increment: bool) -> float:
-        """Get next representable float value."""
-        import math
-
-        return math.nextafter(value, float("inf") if increment else float("-inf"))
-
-    def _generate_mock(self, fake: Any) -> float:
-        """Generate mock FLOAT data respecting constraints."""
-        # Use base class to get effective bounds
-        min_val, max_val = self._get_effective_bounds(float("-inf"), float("inf"))
-
-        # Handle infinity cases - faker needs finite bounds
-        if min_val == float("-inf"):
-            min_val = -1e10
-        if max_val == float("inf"):
-            max_val = 1e10
-
-        if self.multiple_of is not None:
+        if cls._multiple_of is not None:
             # For floats with multiple_of, generate integer multiples
-            min_mult = int(min_val / self.multiple_of)
-            max_mult = int(max_val / self.multiple_of)
+            min_mult = int(min_val / cls._multiple_of)
+            max_mult = int(max_val / cls._multiple_of)
 
-            # Adjust bounds to ensure we're within range
-            if min_mult * self.multiple_of < min_val:
+            if min_mult * cls._multiple_of < min_val:
                 min_mult += 1
-            if max_mult * self.multiple_of > max_val:
+            if max_mult * cls._multiple_of > max_val:
                 max_mult -= 1
 
             if min_mult > max_mult:
-                raise ValueError(f"No valid multiples of {self.multiple_of} in range")
+                raise ValueError(f"No valid multiples of {cls._multiple_of} in range")
 
             mult = fake.random_int(min=min_mult, max=max_mult)
-            return float(mult * self.multiple_of)
+            return float(mult * cls._multiple_of)
         else:
-            # Use faker's pyfloat with min/max values
             return fake.pyfloat(min_value=min_val, max_value=max_val)
-
-
-class DOUBLE(FLOAT):
-    """Alias for FLOAT (double-precision)."""
 
     @property
     def sql_type(self) -> str:
-        return "DOUBLE PRECISION"
+        """Return SQL type."""
+        return "FLOAT"
 
 
-class REAL(DBType[float]):
-    """Single-precision floating-point type."""
+# Alias
+class DOUBLE(FLOAT):
+    """Alias for FLOAT (double precision)."""
 
-    # Single precision float range (approximate)
-    MIN_VALUE = -3.4028235e38
-    MAX_VALUE = 3.4028235e38
-    MIN_POSITIVE = 1.175494e-38
+    @property
+    def sql_type(self) -> str:
+        return "DOUBLE"
+
+
+class REAL(FLOAT):
+    """Single precision float."""
 
     @property
     def sql_type(self) -> str:
         return "REAL"
 
-    @property
-    def python_type(self) -> type[float]:
-        return float
 
-    def get_pydantic_type(self) -> Optional[Any]:
-        """Return None to force custom validation for REAL."""
-        # We need custom validation to handle MIN_POSITIVE and special error messages
-        return None
+# Factory functions for Decimal types
+def DecimalType(  # noqa: N802
+    precision: int = 10,
+    scale: int = 2,
+    *,
+    gt: Optional[Union[Decimal, float, int, str]] = None,
+    ge: Optional[Union[Decimal, float, int, str]] = None,
+    lt: Optional[Union[Decimal, float, int, str]] = None,
+    le: Optional[Union[Decimal, float, int, str]] = None,
+    multiple_of: Optional[Union[Decimal, float, int]] = None,
+    **kwargs,
+) -> type:
+    """Create a DECIMAL type with specific precision and scale."""
 
-    def validate(self, value: Any) -> None:
-        """Override validate to always use custom validation."""
-        if value is None:
-            return
-        self._validate_custom(value)
+    class ConstrainedDecimal(DECIMAL):
+        _precision = precision
+        _scale = scale
+        _gt = Decimal(str(gt)) if gt is not None else None
+        _ge = Decimal(str(ge)) if ge is not None else None
+        _lt = Decimal(str(lt)) if lt is not None else None
+        _le = Decimal(str(le)) if le is not None else None
+        _multiple_of = Decimal(str(multiple_of)) if multiple_of is not None else None
 
-    def _validate_custom(self, value: Any) -> None:
-        """Custom validation for REAL type."""
-        if not isinstance(value, (int, float)):
-            raise ValueError(f"Expected numeric value, got {type(value).__name__}")
+    return ConstrainedDecimal
 
-        float_value = float(value)
 
-        # Handle special float values
-        if not isfinite(float_value):
-            # Allow inf, -inf, and nan as they can be represented in single precision
-            return
+def Numeric(precision: int = 10, scale: int = 2, **kwargs) -> type:  # noqa: N802
+    """Alias for DecimalType."""
+    return DecimalType(precision, scale, **kwargs)
 
-        if float_value != 0:  # Skip zero check
-            abs_value = abs(float_value)
-            if abs_value > self.MAX_VALUE:
-                raise ValueError(
-                    f"Value {value} exceeds REAL precision range " f"(max ±{self.MAX_VALUE:.2e})"
-                )
-            if abs_value < self.MIN_POSITIVE:
-                raise ValueError(
-                    f"Value {value} is too small for REAL precision "
-                    f"(min positive {self.MIN_POSITIVE:.2e})"
-                )
 
-    def _serialize(self, value: Union[int, float]) -> float:
-        return float(value)
+def Money(**kwargs) -> type:  # noqa: N802
+    """Money type: DECIMAL(19,4)."""
+    return DecimalType(19, 4, **kwargs)
 
-    def _deserialize(self, value: Any) -> float:
-        return float(value)
+
+def PositiveMoney(**kwargs) -> type:  # noqa: N802
+    """Positive money: DECIMAL(19,4) with gt=0."""
+    return DecimalType(19, 4, gt=0, **kwargs)
+
+
+def NonNegativeMoney(**kwargs) -> type:  # noqa: N802
+    """Non-negative money: DECIMAL(19,4) with ge=0."""
+    return DecimalType(19, 4, ge=0, **kwargs)
+
+
+def ConstrainedMoney(**kwargs) -> type:  # noqa: N802
+    """Constrained money type."""
+    return DecimalType(19, 4, **kwargs)
+
+
+def ConstrainedDecimal(precision: int = 10, scale: int = 2, **kwargs) -> type:  # noqa: N802
+    """Constrained decimal type."""
+    return DecimalType(precision, scale, **kwargs)
+
+
+def Float(  # noqa: N802
+    *,
+    gt: Optional[float] = None,
+    ge: Optional[float] = None,
+    lt: Optional[float] = None,
+    le: Optional[float] = None,
+    multiple_of: Optional[float] = None,
+    **kwargs,
+) -> type:
+    """Create a constrained FLOAT type."""
+    if not any(
+        [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
+    ):
+        return FLOAT
+
+    class ConstrainedFloat(FLOAT):
+        _gt = gt
+        _ge = ge
+        _lt = lt
+        _le = le
+        _multiple_of = multiple_of
+
+    return ConstrainedFloat
+
+
+def Double(**kwargs) -> type:  # noqa: N802
+    """Create a DOUBLE type."""
+    return Float(**kwargs)
+
+
+def Real(**kwargs) -> type:  # noqa: N802
+    """Create a REAL type."""
+    if not any(kwargs.get(k) for k in ["gt", "ge", "lt", "le", "multiple_of"]):
+        return REAL
+
+    class ConstrainedReal(REAL):
+        _gt = kwargs.get("gt")
+        _ge = kwargs.get("ge")
+        _lt = kwargs.get("lt")
+        _le = kwargs.get("le")
+        _multiple_of = kwargs.get("multiple_of")
+
+    return ConstrainedReal
+
+
+def ConstrainedFloat(**kwargs) -> type:  # noqa: N802
+    """Constrained float type."""
+    return Float(**kwargs)

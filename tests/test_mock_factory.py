@@ -408,16 +408,16 @@ class TestDefaultMockImplementation:
 
     def test_numeric_types_default_mock(self):
         """Test that numeric types use default mock implementation."""
-        from mocksmith import DECIMAL, FLOAT, INTEGER
+        from mocksmith import DecimalType, Float, Integer
 
         # These should all work with default implementation
-        int_mock = INTEGER().mock()
+        int_mock = Integer().mock()
         assert isinstance(int_mock, int)
 
-        float_mock = FLOAT().mock()
+        float_mock = Float().mock()
         assert isinstance(float_mock, float)
 
-        decimal_mock = DECIMAL(10, 2).mock()
+        decimal_mock = DecimalType(10, 2).mock()
         assert isinstance(decimal_mock, Decimal)
 
     def test_temporal_types_default_mock(self):

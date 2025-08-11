@@ -1,4 +1,4 @@
-"""Tests for numeric database types."""
+"""Tests for numeric database types V3 implementation."""
 
 from decimal import Decimal
 
@@ -14,364 +14,399 @@ from mocksmith.types.numeric import (
     REAL,
     SMALLINT,
     TINYINT,
+    DecimalType,
+    Float,
+    Integer,
+    Money,
+    NonNegativeInteger,
+    NonNegativeMoney,
+    PositiveInteger,
+    PositiveMoney,
+    TinyInt,
 )
 
 
 class TestINTEGER:
     def test_creation(self):
-        int_type = INTEGER()
-        assert int_type.sql_type == "INTEGER"
-        assert int_type.python_type is int
+        # INTEGER is a class that extends int
+        value = INTEGER(42)
+        assert value == 42
+        assert isinstance(value, int)
+        assert value.sql_type == "INTEGER"
 
-    def test_creation_with_constraints(self):
-        # Test with various constraints
-        int_type = INTEGER(gt=0, le=100)
-        assert int_type.gt == 0
-        assert int_type.le == 100
+    def test_factory_function(self):
+        # Integer() returns a class for use as type annotation
+        IntType = Integer()  # noqa: N806
+        assert IntType == INTEGER
+        assert IntType.SQL_TYPE == "INTEGER"
+        assert IntType.SQL_MIN == -2147483648
+        assert IntType.SQL_MAX == 2147483647
 
-        int_type2 = INTEGER(ge=10, lt=20, multiple_of=2)
-        assert int_type2.ge == 10
-        assert int_type2.lt == 20
-        assert int_type2.multiple_of == 2
+    def test_factory_with_constraints(self):
+        # Integer with constraints returns a different class
+        PositiveInt = Integer(gt=0)  # noqa: N806
+        assert PositiveInt != INTEGER
+        assert PositiveInt._gt == 0
+
+        ConstrainedInt = Integer(ge=10, le=100, multiple_of=5)  # noqa: N806
+        assert ConstrainedInt._ge == 10
+        assert ConstrainedInt._le == 100
+        assert ConstrainedInt._multiple_of == 5
 
     def test_validation_success(self):
-        int_type = INTEGER()
-        int_type.validate(0)
-        int_type.validate(100)
-        int_type.validate(-100)
-        int_type.validate(2147483647)  # max value
-        int_type.validate(-2147483648)  # min value
-        int_type.validate(100.0)  # float with no decimal
+        # Creating instances validates the value
+        assert INTEGER(0) == 0
+        assert INTEGER(100) == 100
+        assert INTEGER(-100) == -100
+        assert INTEGER(2147483647) == 2147483647  # max value
+        assert INTEGER(-2147483648) == -2147483648  # min value
+        assert INTEGER(100.0) == 100  # float with no decimal
 
     def test_validation_with_constraints(self):
         # Test gt constraint
-        int_type = INTEGER(gt=0)
-        int_type.validate(1)
-        int_type.validate(100)
-        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
-            int_type.validate(0)
-        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
-            int_type.validate(-1)
+        PositiveInt = Integer(gt=0)  # noqa: N806
+        assert PositiveInt(1) == 1
+        assert PositiveInt(100) == 100
 
-        # Test ge/le constraints
-        int_type = INTEGER(ge=10, le=20)
-        int_type.validate(10)
-        int_type.validate(15)
-        int_type.validate(20)
-        with pytest.raises(
-            ValueError, match="(Input should|Value must) be greater than or equal to 10"
-        ):
-            int_type.validate(9)
-        with pytest.raises(
-            ValueError, match="(Input should|Value must) be less than or equal to 20"
-        ):
-            int_type.validate(21)
+        with pytest.raises(ValueError, match="greater than 0"):
+            PositiveInt(0)
+        with pytest.raises(ValueError, match="greater than 0"):
+            PositiveInt(-1)
+
+        # Test ge constraint
+        NonNegInt = Integer(ge=0)  # noqa: N806
+        assert NonNegInt(0) == 0
+        assert NonNegInt(100) == 100
+
+        with pytest.raises(ValueError, match="greater than or equal to 0"):
+            NonNegInt(-1)
+
+        # Test lt constraint
+        SmallInt = Integer(lt=100)  # noqa: N806
+        assert SmallInt(99) == 99
+        assert SmallInt(0) == 0
+
+        with pytest.raises(ValueError, match="less than 100"):
+            SmallInt(100)
+
+        # Test le constraint
+        MaxInt = Integer(le=100)  # noqa: N806
+        assert MaxInt(100) == 100
+        assert MaxInt(0) == 0
+
+        with pytest.raises(ValueError, match="less than or equal to 100"):
+            MaxInt(101)
 
         # Test multiple_of constraint
-        int_type = INTEGER(multiple_of=5)
-        int_type.validate(0)
-        int_type.validate(10)
-        int_type.validate(-15)
-        with pytest.raises(ValueError, match="(Input should|Value must) be a multiple of 5"):
-            int_type.validate(3)
+        EvenInt = Integer(multiple_of=2)  # noqa: N806
+        assert EvenInt(2) == 2
+        assert EvenInt(100) == 100
+
+        with pytest.raises(ValueError, match="multiple of 2"):
+            EvenInt(3)
 
     def test_validation_failure(self):
-        int_type = INTEGER()
+        # Out of range
+        with pytest.raises(ValueError, match="out of INTEGER range"):
+            INTEGER(2147483648)  # max + 1
+        with pytest.raises(ValueError, match="out of INTEGER range"):
+            INTEGER(-2147483649)  # min - 1
 
-        with pytest.raises(
-            ValueError,
-            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
-        ):
-            int_type.validate(2147483648)  # too large
-
-        with pytest.raises(
-            ValueError,
-            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
-        ):
-            int_type.validate(-2147483649)  # too small
-
-        with pytest.raises(
-            ValueError,
-            match=(
-                "(Input should be a valid integer|"
-                "got a number with a fractional part|Expected integer value)"
-            ),
-        ):
-            int_type.validate(10.5)  # non-integer float
-
-        with pytest.raises(ValueError, match="Expected numeric|Input should be a valid integer"):
-            int_type.validate("not a number")
+        # Invalid types
+        with pytest.raises(ValueError):
+            INTEGER("not a number")
+        with pytest.raises(ValueError):
+            INTEGER([1, 2, 3])
+        with pytest.raises(ValueError):
+            INTEGER(None)
 
     def test_serialize(self):
-        int_type = INTEGER()
-        assert int_type.serialize(100) == 100
-        assert int_type.serialize(100.0) == 100
-        assert int_type.serialize(None) is None
+        value = INTEGER(100)
+        assert value.serialize() == 100
+        assert int(value) == 100
 
 
 class TestBIGINT:
     def test_range(self):
-        bigint = BIGINT()
-        bigint.validate(9223372036854775807)  # max
-        bigint.validate(-9223372036854775808)  # min
+        # Test BIGINT specific range
+        value = BIGINT(9223372036854775807)  # max
+        assert value == 9223372036854775807
 
-        with pytest.raises(
-            ValueError,
-            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
-        ):
-            bigint.validate(9223372036854775808)
+        value = BIGINT(-9223372036854775808)  # min
+        assert value == -9223372036854775808
+
+        with pytest.raises(ValueError):
+            BIGINT(9223372036854775808)  # overflow
 
 
 class TestSMALLINT:
     def test_range(self):
-        smallint = SMALLINT()
-        smallint.validate(32767)  # max
-        smallint.validate(-32768)  # min
+        # Test SMALLINT specific range
+        value = SMALLINT(32767)  # max
+        assert value == 32767
 
-        with pytest.raises(
-            ValueError,
-            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
-        ):
-            smallint.validate(32768)
+        value = SMALLINT(-32768)  # min
+        assert value == -32768
+
+        with pytest.raises(ValueError, match="out of SMALLINT range"):
+            SMALLINT(32768)  # overflow
+
+
+class TestTINYINT:
+    def test_range(self):
+        # Test TINYINT specific range
+        value = TINYINT(127)  # max
+        assert value == 127
+
+        value = TINYINT(-128)  # min
+        assert value == -128
+
+        with pytest.raises(ValueError, match="out of TINYINT range"):
+            TINYINT(128)  # overflow
+
+    def test_sql_type(self):
+        value = TINYINT(10)
+        assert value.sql_type == "TINYINT"
+
+    def test_python_type(self):
+        value = TINYINT(10)
+        assert isinstance(value, int)
+
+    def test_float_conversion(self):
+        # Should accept floats that are whole numbers
+        value = TINYINT(10.0)
+        assert value == 10
+
+        with pytest.raises(ValueError, match="requires integer value"):
+            TINYINT(10.5)
+
+    def test_serialization(self):
+        value = TINYINT(10)
+        assert value.serialize() == 10
+
+    def test_deserialization(self):
+        # The class itself acts as deserializer
+        value = TINYINT("10")
+        assert value == 10
+        assert isinstance(value, int)
 
 
 class TestDECIMAL:
     def test_creation(self):
-        dec = DECIMAL(10, 2)
-        assert dec.precision == 10
-        assert dec.scale == 2
-        assert dec.sql_type == "DECIMAL(10,2)"
-        assert dec.python_type == Decimal
+        value = DECIMAL("123.45")
+        assert value == Decimal("123.45")
+        assert isinstance(value, Decimal)
+
+    def test_factory_function(self):
+        # DecimalType returns a class with specific precision/scale
+        Money = DecimalType(10, 2)  # noqa: N806
+        assert Money._precision == 10
+        assert Money._scale == 2
 
     def test_creation_with_constraints(self):
-        # Test with various constraints
-        dec = DECIMAL(10, 2, gt=0, le=1000)
-        assert dec.gt == Decimal("0")
-        assert dec.le == Decimal("1000")
+        PositiveMoney = DecimalType(10, 2, gt=0)  # noqa: N806
+        assert PositiveMoney._gt == Decimal("0")
 
-        dec2 = DECIMAL(5, 2, ge=Decimal("10.5"), multiple_of=Decimal("0.25"))
-        assert dec2.ge == Decimal("10.5")
-        assert dec2.multiple_of == Decimal("0.25")
+        BoundedMoney = DecimalType(10, 2, ge=10, le=1000)  # noqa: N806
+        assert BoundedMoney._ge == Decimal("10")
+        assert BoundedMoney._le == Decimal("1000")
 
     def test_validation_success(self):
-        dec = DECIMAL(5, 2)
-        dec.validate("123.45")
-        dec.validate(123.45)
-        dec.validate(Decimal("123.45"))
-        dec.validate(123)  # integer is ok
+        MoneyType = DecimalType(10, 2)  # noqa: N806
+
+        value = MoneyType("123.45")
+        assert value == Decimal("123.45")
+
+        value = MoneyType(100)
+        assert value == Decimal("100")
+
+        value = MoneyType(0.5)
+        assert value == Decimal("0.5")
 
     def test_validation_with_constraints(self):
-        # Test gt constraint
-        dec = DECIMAL(10, 2, gt=0)
-        dec.validate(Decimal("0.01"))
-        dec.validate(100)
-        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
-            dec.validate(0)
-        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
-            dec.validate(Decimal("-10"))
+        PositiveMoney = DecimalType(10, 2, gt=0)  # noqa: N806
 
-        # Test ge/le constraints
-        dec = DECIMAL(5, 2, ge=10, le=100)
-        dec.validate(10)
-        dec.validate(50.5)
-        dec.validate(100)
-        with pytest.raises(
-            ValueError, match="(Input should|Value must) be greater than or equal to 10"
-        ):
-            dec.validate(9.99)
-        with pytest.raises(
-            ValueError, match="(Input should|Value must) be less than or equal to 100"
-        ):
-            dec.validate(100.01)
+        value = PositiveMoney("10.50")
+        assert value == Decimal("10.50")
 
-        # Test multiple_of constraint
-        dec = DECIMAL(5, 2, multiple_of=Decimal("0.25"))
-        dec.validate(Decimal("10.25"))
-        dec.validate(Decimal("10.50"))
-        dec.validate(Decimal("10.75"))
-        with pytest.raises(ValueError, match="(Input should|Value must) be a multiple of 0.25"):
-            dec.validate(Decimal("10.30"))
+        with pytest.raises(ValueError, match="greater than 0"):
+            PositiveMoney("0")
+
+        with pytest.raises(ValueError, match="greater than 0"):
+            PositiveMoney("-10")
 
     def test_validation_precision(self):
-        dec = DECIMAL(5, 2)
+        SmallDecimal = DecimalType(5, 2)  # max 999.99  # noqa: N806
 
-        with pytest.raises(
-            ValueError,
-            match="(Decimal input should have no more than .* digits|Value.*has too many digits)",
-        ):
-            dec.validate("12345.67")  # too many total digits
+        value = SmallDecimal("999.99")
+        assert value == Decimal("999.99")
+
+        with pytest.raises(ValueError, match="Too many integer digits"):
+            SmallDecimal("1000.00")  # too many integer digits
 
     def test_validation_scale(self):
-        dec = DECIMAL(5, 2)
+        TwoDecimals = DecimalType(10, 2)  # noqa: N806
 
-        with pytest.raises(
-            ValueError,
-            match=(
-                "(Decimal input should have no more than .* decimal places|"
-                "Value.*has too many decimal places)"
-            ),
-        ):
-            dec.validate("12.456")  # too many decimal places
+        # Should round to 2 decimal places
+        value = TwoDecimals("123.456")
+        assert value == Decimal("123.46")  # rounded
+
+        value = TwoDecimals("123.45")
+        assert value == Decimal("123.45")
 
     def test_serialize(self):
-        dec = DECIMAL(5, 2)
-        assert dec.serialize(123.45) == "123.45"
-        assert dec.serialize(Decimal("123.45")) == "123.45"
+        value = DECIMAL("123.45")
+        assert value.serialize() == Decimal("123.45")
 
     def test_deserialize(self):
-        dec = DECIMAL(5, 2)
-        result = dec.deserialize("123.45")
-        assert isinstance(result, Decimal)
-        assert result == Decimal("123.45")
+        value = DECIMAL("123.45")
+        assert value == Decimal("123.45")
 
 
 class TestNUMERIC:
     def test_alias(self):
-        num = NUMERIC(10, 2)
-        assert num.sql_type == "NUMERIC(10,2)"
-        assert isinstance(num, DECIMAL)
+        # NUMERIC is an alias for DECIMAL
+        value = NUMERIC("123.45")
+        assert isinstance(value, DECIMAL)
+        assert value == Decimal("123.45")
 
 
 class TestFLOAT:
     def test_creation(self):
-        float_type = FLOAT()
-        assert float_type.sql_type == "FLOAT"
-        assert float_type.python_type is float
+        value = FLOAT(123.45)
+        assert value == 123.45
+        assert isinstance(value, float)
+
+    def test_factory_function(self):
+        FloatType = Float()  # noqa: N806
+        assert FloatType == FLOAT
+
+        PositiveFloat = Float(gt=0)  # noqa: N806
+        assert PositiveFloat != FLOAT
+        assert PositiveFloat._gt == 0
 
     def test_with_precision(self):
-        float_type = FLOAT(24)
-        assert float_type.sql_type == "FLOAT(24)"
+        # FLOAT doesn't have precision parameter in V3
+        # It uses constraints instead
+        BoundedFloat = Float(ge=-100.0, le=100.0)  # noqa: N806
+        value = BoundedFloat(50.5)
+        assert value == 50.5
 
     def test_creation_with_constraints(self):
-        # Test with various constraints
-        float_type = FLOAT(gt=0.0, le=100.0)
-        assert float_type.gt == 0.0
-        assert float_type.le == 100.0
+        PositiveFloat = Float(gt=0)  # noqa: N806
+        value = PositiveFloat(10.5)
+        assert value == 10.5
 
-        float_type2 = FLOAT(ge=0.0, lt=1.0, multiple_of=0.1)
-        assert float_type2.ge == 0.0
-        assert float_type2.lt == 1.0
-        assert float_type2.multiple_of == 0.1
+        with pytest.raises(ValueError, match="greater than 0"):
+            PositiveFloat(0)
+
+        with pytest.raises(ValueError, match="greater than 0"):
+            PositiveFloat(-10.5)
 
     def test_validation_with_constraints(self):
-        # Test gt constraint
-        float_type = FLOAT(gt=0.0)
-        float_type.validate(0.1)
-        float_type.validate(100.5)
-        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
-            float_type.validate(0.0)
-        with pytest.raises(ValueError, match="(Input should|Value must) be greater than 0"):
-            float_type.validate(-1.0)
+        BoundedFloat = Float(ge=-100, le=100)  # noqa: N806
 
-        # Test ge/le constraints
-        float_type = FLOAT(ge=0.0, le=1.0)
-        float_type.validate(0.0)
-        float_type.validate(0.5)
-        float_type.validate(1.0)
-        with pytest.raises(
-            ValueError, match="(Input should|Value must) be greater than or equal to 0"
-        ):
-            float_type.validate(-0.1)
-        with pytest.raises(
-            ValueError, match="(Input should|Value must) be less than or equal to 1"
-        ):
-            float_type.validate(1.1)
+        assert BoundedFloat(0) == 0
+        assert BoundedFloat(100) == 100
+        assert BoundedFloat(-100) == -100
 
-        # Test allow_inf_nan
-        float_type = FLOAT(allow_inf_nan=True)
-        float_type.validate(float("inf"))
-        float_type.validate(float("-inf"))
-        float_type.validate(float("nan"))
-
-        float_type2 = FLOAT(allow_inf_nan=False)
-        with pytest.raises(
-            ValueError, match="(Input should be a finite number|Value must be finite)"
-        ):
-            float_type2.validate(float("inf"))
+        with pytest.raises(ValueError):
+            BoundedFloat(101)
+        with pytest.raises(ValueError):
+            BoundedFloat(-101)
 
     def test_serialize(self):
-        float_type = FLOAT()
-        assert float_type.serialize(123.45) == 123.45
-        assert float_type.serialize(100) == 100.0
+        value = FLOAT(123.45)
+        assert value == 123.45
+        assert float(value) == 123.45
 
 
 class TestREAL:
     def test_creation(self):
-        real = REAL()
-        assert real.sql_type == "REAL"
-        assert real.python_type is float
+        value = REAL(123.45)
+        assert value == 123.45
+        assert isinstance(value, float)
+        assert value.sql_type == "REAL"
 
 
 class TestDOUBLE:
     def test_creation(self):
-        double = DOUBLE()
-        assert double.sql_type == "DOUBLE PRECISION"
-        assert double.python_type is float
+        value = DOUBLE(123.45)
+        assert value == 123.45
+        assert isinstance(value, float)
+        assert value.sql_type == "DOUBLE"
 
 
-class TestTINYINT:
-    """Test TINYINT type validation and conversion."""
+class TestSpecializedTypes:
+    def test_positive_integer(self):
+        PosInt = PositiveInteger()  # noqa: N806
+        value = PosInt(10)
+        assert value == 10
 
-    def test_range(self):
-        """Test TINYINT accepts values within range."""
-        tinyint = TINYINT()
+        with pytest.raises(ValueError, match="greater than 0"):
+            PosInt(0)
 
-        # Valid values
-        tinyint.validate(0)
-        tinyint.validate(127)  # Max
-        tinyint.validate(-128)  # Min
-        tinyint.validate(50)
-        tinyint.validate(-50)
+    def test_non_negative_integer(self):
+        NonNegInt = NonNegativeInteger()  # noqa: N806
+        value = NonNegInt(0)
+        assert value == 0
 
-        # Edge cases
-        with pytest.raises(
-            ValueError,
-            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
-        ):
-            tinyint.validate(128)  # Too large
+        value = NonNegInt(10)
+        assert value == 10
 
-        with pytest.raises(
-            ValueError,
-            match="(Input should be (less|greater) than or equal to|Value.*out of range)",
-        ):
-            tinyint.validate(-129)  # Too small
+        with pytest.raises(ValueError, match="greater than or equal to 0"):
+            NonNegInt(-1)
 
-    def test_sql_type(self):
-        """Test TINYINT SQL type generation."""
-        tinyint = TINYINT()
-        assert tinyint.sql_type == "TINYINT"
+    def test_money_types(self):
+        # Money type has 19,4 precision/scale
+        MoneyType = Money()  # noqa: N806
+        value = MoneyType("12345.6789")
+        assert value == Decimal("12345.6789")
 
-    def test_python_type(self):
-        """Test TINYINT Python type."""
-        tinyint = TINYINT()
-        assert tinyint.python_type is int
+        # PositiveMoney must be > 0
+        PosMoney = PositiveMoney()  # noqa: N806
+        value = PosMoney("100.50")
+        assert value == Decimal("100.50")
 
-    def test_float_conversion(self):
-        """Test TINYINT handles float values correctly."""
-        tinyint = TINYINT()
+        with pytest.raises(ValueError, match="greater than 0"):
+            PosMoney("0")
 
-        # Valid integer floats
-        tinyint.validate(10.0)
-        tinyint.validate(-10.0)
+        # NonNegativeMoney must be >= 0
+        NonNegMoney = NonNegativeMoney()  # noqa: N806
+        value = NonNegMoney("0")
+        assert value == Decimal("0")
 
-        # Invalid non-integer floats
-        with pytest.raises(
-            ValueError, match="Input should be a valid integer|Expected integer value"
-        ):
-            tinyint.validate(10.5)
+        with pytest.raises(ValueError, match="greater than or equal to 0"):
+            NonNegMoney("-10")
 
-    def test_serialization(self):
-        """Test TINYINT serialization."""
-        tinyint = TINYINT()
 
-        assert tinyint.serialize(100) == 100
-        assert tinyint.serialize(100.0) == 100
-        assert tinyint.serialize(-50) == -50
+class TestMockGeneration:
+    def test_integer_mock(self):
+        IntType = Integer()  # noqa: N806
+        value = IntType.mock()
+        assert isinstance(value, int)
+        assert IntType.SQL_MIN <= value <= IntType.SQL_MAX
 
-    def test_deserialization(self):
-        """Test TINYINT deserialization."""
-        tinyint = TINYINT()
+    def test_constrained_mock(self):
+        SmallPosInt = Integer(gt=0, le=100)  # noqa: N806
+        for _ in range(10):
+            value = SmallPosInt.mock()
+            assert 1 <= value <= 100
 
-        assert tinyint.deserialize(100) == 100
-        assert tinyint.deserialize("100") == 100
-        assert tinyint.deserialize(-50) == -50
+    def test_tinyint_mock(self):
+        TinyType = TinyInt()  # noqa: N806
+        for _ in range(10):
+            value = TinyType.mock()
+            assert -128 <= value <= 127
+
+    def test_decimal_mock(self):
+        MoneyType = DecimalType(10, 2)  # noqa: N806
+        value = MoneyType.mock()
+        assert isinstance(value, Decimal)
+        # Check it has at most 2 decimal places
+        assert value.as_tuple().exponent >= -2
+
+    def test_float_mock(self):
+        FloatType = Float()  # noqa: N806
+        value = FloatType.mock()
+        assert isinstance(value, float)
