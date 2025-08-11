@@ -83,10 +83,10 @@ class TestPydanticIntegration:
 
         user = User(name="Alice", joined=date(2023, 1, 1), active=True)
 
-        # Pydantic serialization - our DBTypeValidator serializes dates to strings
+        # Pydantic serialization - V3 types return native Python types
         data = user.model_dump()
         assert data["name"] == "Alice"
-        assert data["joined"] == "2023-01-01"  # DBTypeValidator serializes to ISO string
+        assert data["joined"] == date(2023, 1, 1)  # V3 types return native date objects
         assert data["active"] is True
 
     def test_db_model_base(self):

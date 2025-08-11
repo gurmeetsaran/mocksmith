@@ -4,7 +4,6 @@ This module provides clean, easy-to-use type annotations for both
 Pydantic models and Python dataclasses.
 """
 
-from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Annotated, Any, Optional, Union
 
@@ -31,9 +30,10 @@ from mocksmith.types.numeric import TinyInt as TinyIntImpl
 from mocksmith.types.string import CHAR as _CHAR
 from mocksmith.types.string import TEXT as _TEXT
 from mocksmith.types.string import VARCHAR as _VARCHAR
-from mocksmith.types.temporal import DATE as _DATE
-from mocksmith.types.temporal import TIME as _TIME
-from mocksmith.types.temporal import TIMESTAMP as _TIMESTAMP
+from mocksmith.types.temporal import Date as DateImpl
+from mocksmith.types.temporal import DateTime as DateTimeImpl
+from mocksmith.types.temporal import Time as TimeImpl
+from mocksmith.types.temporal import Timestamp as TimestampImpl
 
 # For Pydantic models - check if Pydantic is available
 try:
@@ -627,10 +627,8 @@ def Date() -> Any:
             birth_date: Date()
             hire_date: Date()
     """
-    db_type = _DATE()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[date, _get_validator(db_type), db_type]
-    return Annotated[date, db_type]
+    # Use V3 Date type directly
+    return DateImpl()
 
 
 def Time(*, precision: int = 6) -> Any:
@@ -641,10 +639,8 @@ def Time(*, precision: int = 6) -> Any:
             start_time: Time()
             end_time: Time(precision=0)  # No fractional seconds
     """
-    db_type = _TIME(precision=precision)
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[time, _get_validator(db_type), db_type]
-    return Annotated[time, db_type]
+    # Use V3 Time type directly
+    return TimeImpl(precision=precision)
 
 
 def Timestamp(*, precision: int = 6, with_timezone: bool = True) -> Any:
@@ -656,10 +652,8 @@ def Timestamp(*, precision: int = 6, with_timezone: bool = True) -> Any:
             updated_at: Timestamp(with_timezone=False)
             processed_at: Timestamp(precision=3)  # Milliseconds
     """
-    db_type = _TIMESTAMP(precision=precision, with_timezone=with_timezone)
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[datetime, _get_validator(db_type), db_type]
-    return Annotated[datetime, db_type]
+    # Use V3 Timestamp type directly
+    return TimestampImpl(precision=precision, with_timezone=with_timezone)
 
 
 def DateTime(*, precision: int = 6) -> Any:
@@ -670,7 +664,8 @@ def DateTime(*, precision: int = 6) -> Any:
             timestamp: DateTime()
             processed: DateTime(precision=0)
     """
-    return Timestamp(precision=precision, with_timezone=False)
+    # Use V3 DateTime type directly
+    return DateTimeImpl(precision=precision)
 
 
 # Boolean Type

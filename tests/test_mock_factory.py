@@ -424,15 +424,18 @@ class TestDefaultMockImplementation:
         """Test that temporal types use default mock implementation."""
         from datetime import time
 
-        from mocksmith import DATE, TIME, TIMESTAMP
+        from mocksmith import Date, Time, Timestamp
 
-        date_mock = DATE().mock()
+        DateType = Date()  # noqa: N806
+        date_mock = DateType.mock()
         assert isinstance(date_mock, date)
 
-        time_mock = TIME().mock()
+        TimeType = Time()  # noqa: N806
+        time_mock = TimeType.mock()
         assert isinstance(time_mock, time)
 
-        timestamp_mock = TIMESTAMP().mock()
+        TimestampType = Timestamp()  # noqa: N806
+        timestamp_mock = TimestampType.mock()
         assert isinstance(timestamp_mock, datetime)
 
     def test_binary_types_default_mock(self):

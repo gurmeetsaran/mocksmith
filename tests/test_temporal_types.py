@@ -1,115 +1,298 @@
-"""Tests for temporal database types."""
+"""Tests for V3 temporal database types."""
 
 from datetime import date, datetime, time, timezone
 
 import pytest
 
-from mocksmith.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
+from mocksmith.types.temporal import (
+    DATE,
+    DATETIME,
+    TIME,
+    TIMESTAMP,
+    Date,
+    DateTime,
+    Time,
+    Timestamp,
+)
 
 
 class TestDATE:
-    def test_creation(self):
-        date_type = DATE()
-        assert date_type.sql_type == "DATE"
-        assert date_type.python_type == date
+    def test_direct_instantiation(self):
+        # Test with components
+        d1 = DATE(2024, 3, 15)
+        assert d1.year == 2024
+        assert d1.month == 3
+        assert d1.day == 15
+        assert str(d1) == "2024-03-15"
 
-    def test_validation_success(self):
-        date_type = DATE()
-        date_type.validate(date(2023, 1, 1))
-        date_type.validate(datetime(2023, 1, 1, 12, 0))  # noqa: DTZ001
-        date_type.validate("2023-01-01")
+        # Test with string
+        d2 = DATE("2024-03-15")
+        assert d2 == d1
+
+        # Test with date object
+        d3 = DATE(date(2024, 3, 15))
+        assert d3 == d1
+
+        # Test with datetime object
+        d4 = DATE(datetime(2024, 3, 15, 14, 30, 45))  # noqa: DTZ001
+        assert d4 == d1
+
+    def test_factory_function(self):
+        DateType = Date()  # noqa: N806
+        assert DateType == DATE
+
+        # Can use the returned class
+        d = DateType(2024, 3, 15)
+        assert d.year == 2024
 
     def test_validation_failure(self):
-        date_type = DATE()
+        with pytest.raises(ValueError, match="DATE cannot be None"):
+            DATE(None)
 
-        with pytest.raises(ValueError, match="Expected date"):
-            date_type.validate(123)
+        with pytest.raises(ValueError, match="Invalid date string"):
+            DATE("not a date")
 
-        with pytest.raises(ValueError, match="Invalid date"):
-            date_type.validate("not a date")
+        with pytest.raises(ValueError, match="Invalid date components"):
+            DATE(2024, 13, 1)  # Invalid month
 
     def test_serialize(self):
-        date_type = DATE()
-        assert date_type.serialize(date(2023, 1, 1)) == "2023-01-01"
-        assert date_type.serialize(datetime(2023, 1, 1, 12, 0)) == "2023-01-01"  # noqa: DTZ001
-        assert date_type.serialize("2023-01-01") == "2023-01-01"
+        d = DATE(2024, 3, 15)
+        assert d.serialize() == "2024-03-15"
 
-    def test_deserialize(self):
-        date_type = DATE()
-        result = date_type.deserialize("2023-01-01")
+    def test_sql_type(self):
+        d = DATE(2024, 1, 1)
+        assert d.sql_type == "DATE"
+
+    def test_validate_class_method(self):
+        result = DATE.validate("2024-03-15")
         assert isinstance(result, date)
-        assert result == date(2023, 1, 1)
+        assert result == date(2024, 3, 15)
 
-        # From datetime
-        result = date_type.deserialize(datetime(2023, 1, 1, 12, 0))  # noqa: DTZ001
-        assert result == date(2023, 1, 1)
+    def test_mock_generation(self):
+        mocked = DATE.mock()
+        assert isinstance(mocked, date)
 
 
 class TestTIME:
-    def test_creation(self):
-        time_type = TIME()
-        assert time_type.sql_type == "TIME"
-        assert time_type.precision == 6
+    def test_direct_instantiation(self):
+        # Test with components
+        t1 = TIME(14, 30, 45)
+        assert t1.hour == 14
+        assert t1.minute == 30
+        assert t1.second == 45
 
-    def test_with_precision(self):
-        time_type = TIME(precision=3)
-        assert time_type.sql_type == "TIME(3)"
+        # Test with string
+        t2 = TIME("14:30:45")
+        assert t2 == t1
 
-    def test_validation(self):
-        time_type = TIME()
-        time_type.validate(time(12, 30, 45))
-        time_type.validate("12:30:45")
-        time_type.validate(datetime.now(timezone.utc))
+        # Test with time object
+        t3 = TIME(time(14, 30, 45))
+        assert t3 == t1
+
+        # Test with datetime object
+        t4 = TIME(datetime(2024, 3, 15, 14, 30, 45))  # noqa: DTZ001
+        assert t4.hour == 14
+        assert t4.minute == 30
+
+    def test_factory_function(self):
+        # Default precision
+        TimeType = Time()  # noqa: N806
+        t = TimeType(14, 30, 45, 123456)
+        assert t.microsecond == 123456
+
+        # With precision
+        TimeType2 = Time(precision=3)  # noqa: N806
+        t2 = TimeType2(14, 30, 45, 123456)
+        assert t2.microsecond == 123000  # Truncated to milliseconds
 
     def test_precision_truncation(self):
-        time_type = TIME(precision=0)
-        result = time_type.serialize(time(12, 30, 45, 123456))
-        assert result == "12:30:45"  # microseconds truncated
+        TimeType = Time(precision=0)  # noqa: N806
+        t = TimeType(14, 30, 45, 123456)
+        assert t.microsecond == 0
 
-        time_type = TIME(precision=3)
-        result = time_type.serialize(time(12, 30, 45, 123456))
-        assert result == "12:30:45.123000"  # truncated to milliseconds
+        TimeType2 = Time(precision=3)  # noqa: N806
+        t2 = TimeType2("14:30:45.123456")
+        assert t2.microsecond == 123000
 
+    def test_sql_type(self):
+        TimeType = Time(precision=3)  # noqa: N806
+        t = TimeType(14, 30, 45)
+        assert t.sql_type == "TIME(3)"
 
-class TestTIMESTAMP:
-    def test_creation(self):
-        ts = TIMESTAMP()
-        assert ts.sql_type == "TIMESTAMP WITH TIME ZONE"
-        assert ts.with_timezone is True
-        assert ts.precision == 6
+        TimeType2 = Time()  # noqa: N806
+        t2 = TimeType2(14, 30, 45)
+        assert t2.sql_type == "TIME"
 
-    def test_without_timezone(self):
-        ts = TIMESTAMP(with_timezone=False)
-        assert ts.sql_type == "TIMESTAMP"
-
-    def test_timezone_validation(self):
-        ts = TIMESTAMP(with_timezone=True)
-
-        # Should fail with naive datetime
-        with pytest.raises(ValueError, match="timezone-aware"):
-            ts.validate(datetime(2023, 1, 1, 12, 0))  # noqa: DTZ001
-
-        # Should succeed with aware datetime
-        ts.validate(datetime(2023, 1, 1, 12, 0, tzinfo=timezone.utc))
-
-    def test_serialize(self):
-        ts = TIMESTAMP(with_timezone=False)
-        dt = datetime(2023, 1, 1, 12, 30, 45, 123456)  # noqa: DTZ001
-        assert ts.serialize(dt) == "2023-01-01T12:30:45.123456"
-
-        # From date
-        assert ts.serialize(date(2023, 1, 1)) == "2023-01-01T00:00:00"
-
-    def test_precision(self):
-        ts = TIMESTAMP(precision=2, with_timezone=False)
-        dt = datetime(2023, 1, 1, 12, 30, 45, 123456)  # noqa: DTZ001
-        result = ts.serialize(dt)
-        assert result == "2023-01-01T12:30:45.120000"
+    def test_mock_generation(self):
+        TimeType = Time()  # noqa: N806
+        mocked = TimeType.mock()
+        assert isinstance(mocked, time)
 
 
 class TestDATETIME:
-    def test_alias(self):
-        dt = DATETIME()
-        assert dt.sql_type == "DATETIME"
-        assert dt.with_timezone is False
-        assert isinstance(dt, TIMESTAMP)
+    def test_direct_instantiation(self):
+        # Test with components
+        dt1 = DATETIME(2024, 3, 15, 14, 30, 45)
+        assert dt1.year == 2024
+        assert dt1.hour == 14
+        assert dt1.tzinfo is None  # DATETIME has no timezone
+
+        # Test with string
+        dt2 = DATETIME("2024-03-15T14:30:45")
+        assert dt2 == dt1
+
+        # Test with datetime object
+        dt3 = DATETIME(datetime(2024, 3, 15, 14, 30, 45))  # noqa: DTZ001
+        assert dt3 == dt1
+
+        # Test with date object (time defaults to 00:00:00)
+        dt4 = DATETIME(date(2024, 3, 15))
+        assert dt4.date() == date(2024, 3, 15)
+        assert dt4.time() == time(0, 0, 0)
+
+    def test_factory_function(self):
+        DateTimeType = DateTime()  # noqa: N806
+        dt = DateTimeType(2024, 3, 15, 14, 30, 45)
+        assert dt.year == 2024
+
+        # With precision
+        DateTimeType2 = DateTime(precision=3)  # noqa: N806
+        dt2 = DateTimeType2(2024, 3, 15, 14, 30, 45, 123456)
+        assert dt2.microsecond == 123000
+
+    def test_no_timezone_allowed(self):
+        # DATETIME should reject timezone
+        with pytest.raises(ValueError, match="DATETIME type does not support timezone"):
+            DATETIME(2024, 3, 15, 14, 30, 45, tzinfo=timezone.utc)
+
+    def test_sql_type(self):
+        DateTimeType = DateTime(precision=3)  # noqa: N806
+        dt = DateTimeType(2024, 3, 15)
+        assert dt.sql_type == "DATETIME(3)"
+
+    def test_mock_generation(self):
+        DateTimeType = DateTime()  # noqa: N806
+        mocked = DateTimeType.mock()
+        assert isinstance(mocked, datetime)
+        assert mocked.tzinfo is None  # Should not have timezone
+
+
+class TestTIMESTAMP:
+    def test_direct_instantiation(self):
+        # Test with components (defaults to UTC)
+        ts1 = TIMESTAMP(2024, 3, 15, 14, 30, 45)
+        assert ts1.year == 2024
+        assert ts1.tzinfo == timezone.utc  # Default timezone
+
+        # Test with string
+        ts2 = TIMESTAMP("2024-03-15T14:30:45+00:00")
+        assert ts2.tzinfo is not None
+
+        # Test with datetime object
+        dt_with_tz = datetime(2024, 3, 15, 14, 30, 45, tzinfo=timezone.utc)
+        ts3 = TIMESTAMP(dt_with_tz)
+        assert ts3.tzinfo == timezone.utc
+
+    def test_factory_function(self):
+        # With timezone (default)
+        TimestampType = Timestamp()  # noqa: N806
+        ts = TimestampType(2024, 3, 15)
+        assert ts.tzinfo == timezone.utc
+
+        # Without timezone
+        TimestampType2 = Timestamp(with_timezone=False)  # noqa: N806
+        ts2 = TimestampType2(2024, 3, 15)
+        assert ts2.tzinfo is None
+
+        # With precision
+        TimestampType3 = Timestamp(precision=3)  # noqa: N806
+        ts3 = TimestampType3(2024, 3, 15, 14, 30, 45, 123456)
+        assert ts3.microsecond == 123000
+
+    def test_timezone_handling(self):
+        # With timezone
+        TimestampType = Timestamp(with_timezone=True)  # noqa: N806
+        ts = TimestampType(2024, 3, 15)
+        assert ts.tzinfo == timezone.utc
+
+        # Without timezone
+        TimestampType2 = Timestamp(with_timezone=False)  # noqa: N806
+        ts2 = TimestampType2(2024, 3, 15)
+        assert ts2.tzinfo is None
+
+    def test_sql_type(self):
+        TimestampType = Timestamp(precision=3, with_timezone=True)  # noqa: N806
+        ts = TimestampType(2024, 3, 15)
+        assert ts.sql_type == "TIMESTAMP(3) WITH TIME ZONE"
+
+        TimestampType2 = Timestamp(with_timezone=False)  # noqa: N806
+        ts2 = TimestampType2(2024, 3, 15)
+        assert ts2.sql_type == "TIMESTAMP"
+
+    def test_mock_generation(self):
+        # With timezone
+        TimestampType = Timestamp(with_timezone=True)  # noqa: N806
+        mocked = TimestampType.mock()
+        assert isinstance(mocked, datetime)
+        assert mocked.tzinfo is not None
+
+        # Without timezone
+        TimestampType2 = Timestamp(with_timezone=False)  # noqa: N806
+        mocked2 = TimestampType2.mock()
+        assert isinstance(mocked2, datetime)
+        assert mocked2.tzinfo is None
+
+
+class TestPydanticIntegration:
+    """Test integration with Pydantic models."""
+
+    def test_temporal_types_with_pydantic(self):
+        try:
+            from pydantic import BaseModel
+        except ImportError:
+            pytest.skip("Pydantic not available")
+
+        DateType = Date()  # noqa: N806
+        TimeType = Time()  # noqa: N806
+        DateTimeType = DateTime()  # noqa: N806
+        TimestampType = Timestamp()  # noqa: N806
+
+        class Event(BaseModel):
+            event_date: DateType
+            start_time: TimeType
+            created_at: DateTimeType
+            updated_at: TimestampType
+
+        # Test with various inputs
+        event = Event(
+            event_date="2024-03-15",
+            start_time="14:30:00",
+            created_at="2024-03-15T14:30:00",
+            updated_at="2024-03-15T14:30:00Z",
+        )
+
+        assert event.event_date == date(2024, 3, 15)
+        assert event.start_time == time(14, 30, 0)
+        assert event.created_at == datetime(2024, 3, 15, 14, 30, 0)  # noqa: DTZ001
+        assert event.updated_at.tzinfo is not None
+
+    def test_temporal_precision_with_pydantic(self):
+        try:
+            from pydantic import BaseModel
+        except ImportError:
+            pytest.skip("Pydantic not available")
+
+        TimeType = Time(precision=0)  # noqa: N806
+        DateTimeType = DateTime(precision=3)  # noqa: N806
+
+        class Schedule(BaseModel):
+            meeting_time: TimeType
+            deadline: DateTimeType
+
+        schedule = Schedule(
+            meeting_time="14:30:45.123456",  # Will be truncated
+            deadline="2024-03-15T14:30:45.123456",  # Will be truncated to milliseconds
+        )
+
+        assert schedule.meeting_time.microsecond == 0
+        assert schedule.deadline.microsecond == 123000
