@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## 4.0.0 (2025-08-11)
+
+### BREAKING CHANGE
+
+- Remove validate_dataclass decorator. Dataclasses no longer
+  validate mocksmith types. Use Pydantic BaseModel for validation instead.
+
+### Feat
+
+- replace validate_dataclass with Pydantic-only validation (#22)
+
 ## 3.1.0 (2025-07-06)
 
 ### Feat
