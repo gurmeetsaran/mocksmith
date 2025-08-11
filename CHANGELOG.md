@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## 5.0.0 (2025-08-11)
+
+### BREAKING CHANGE
+
+- Boolean and Binary types now extend native Python types directly
+
+### Feat
+
+- migrate boolean and binary types to V3 pattern (#23)
+
 ## 4.0.0 (2025-08-11)
 
 ### BREAKING CHANGE
