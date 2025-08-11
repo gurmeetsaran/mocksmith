@@ -29,7 +29,9 @@ from mocksmith import (
     TinyInt,
     mock_factory,
 )
-from mocksmith.types.numeric import INTEGER, SMALLINT, TINYINT
+from mocksmith.types.numeric import _INTEGER as INTEGER
+from mocksmith.types.numeric import _SMALLINT as SMALLINT
+from mocksmith.types.numeric import _TINYINT as TINYINT
 
 
 class TestCriticalBugFix:

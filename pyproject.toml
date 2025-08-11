@@ -76,6 +76,7 @@ known-first-party = ["mocksmith"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/mocksmith/annotations.py" = ["N802"]  # Allow PascalCase function names for clean API
+"tests/*.py" = ["N806"]  # Allow uppercase variable names in tests for type classes
 
 [tool.pyright]
 pythonVersion = "3.9"

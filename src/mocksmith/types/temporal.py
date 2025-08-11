@@ -15,7 +15,7 @@ except ImportError:
     PydanticCustomError = ValueError
 
 
-class DATE(date):
+class _DATE(date):
     """Date type that validates at instantiation."""
 
     SQL_TYPE: ClassVar[str] = "DATE"
@@ -34,7 +34,7 @@ class DATE(date):
             value = year
 
             if value is None:  # type: ignore[comparison-overlap]
-                raise ValueError("DATE cannot be None")
+                raise ValueError("Value cannot be None")
 
             # Handle existing date/datetime
             if isinstance(value, datetime):
@@ -111,7 +111,7 @@ class DATE(date):
             raise ImportError("faker library is required for mock generation") from None
 
 
-class TIME(time):
+class _TIME(time):
     """Time type that validates at instantiation."""
 
     SQL_TYPE: ClassVar[str] = "TIME"
@@ -145,7 +145,7 @@ class TIME(time):
             value = hour
 
             if value is None:  # type: ignore[comparison-overlap]
-                raise ValueError("TIME cannot be None")
+                raise ValueError("Value cannot be None")
 
             # Handle existing time/datetime
             if isinstance(value, datetime):
@@ -249,7 +249,7 @@ class TIME(time):
             raise ImportError("faker library is required for mock generation") from None
 
 
-class DATETIME(datetime):
+class _DATETIME(datetime):
     """DateTime type that validates at instantiation (no timezone)."""
 
     SQL_TYPE: ClassVar[str] = "DATETIME"
@@ -281,7 +281,7 @@ class DATETIME(datetime):
             value = year
 
             if value is None:  # type: ignore[comparison-overlap]
-                raise ValueError("DATETIME cannot be None")
+                raise ValueError("Value cannot be None")
 
             # Handle existing datetime
             if isinstance(value, datetime):
@@ -416,7 +416,7 @@ class DATETIME(datetime):
             raise ImportError("faker library is required for mock generation") from None
 
 
-class TIMESTAMP(datetime):
+class _TIMESTAMP(datetime):
     """Timestamp type with timezone support."""
 
     SQL_TYPE: ClassVar[str] = "TIMESTAMP"
@@ -449,7 +449,7 @@ class TIMESTAMP(datetime):
             value = year
 
             if value is None:  # type: ignore[comparison-overlap]
-                raise ValueError("TIMESTAMP cannot be None")
+                raise ValueError("Value cannot be None")
 
             # Handle existing datetime
             if isinstance(value, datetime):
@@ -602,7 +602,7 @@ def Date() -> type:  # noqa: N802
             birth_date: Date()
             hire_date: Date()
     """
-    return DATE
+    return _DATE
 
 
 def Time(precision: int = 6) -> type:  # noqa: N802
@@ -619,7 +619,7 @@ def Time(precision: int = 6) -> type:  # noqa: N802
     if precision < 0 or precision > 6:
         raise ValueError("Time precision must be between 0 and 6")
 
-    class ConstrainedTime(TIME):
+    class ConstrainedTime(_TIME):
         _precision = precision
         SQL_TYPE = "TIME"
 
@@ -640,7 +640,7 @@ def DateTime(precision: int = 6) -> type:  # noqa: N802
     if precision < 0 or precision > 6:
         raise ValueError("DateTime precision must be between 0 and 6")
 
-    class ConstrainedDateTime(DATETIME):
+    class ConstrainedDateTime(_DATETIME):
         _precision = precision
         SQL_TYPE = "DATETIME"
 
@@ -663,7 +663,7 @@ def Timestamp(precision: int = 6, with_timezone: bool = True) -> type:  # noqa: 
     if precision < 0 or precision > 6:
         raise ValueError("Timestamp precision must be between 0 and 6")
 
-    class ConstrainedTimestamp(TIMESTAMP):
+    class ConstrainedTimestamp(_TIMESTAMP):
         _precision = precision
         _with_timezone = with_timezone
         SQL_TYPE = "TIMESTAMP"

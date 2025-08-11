@@ -1,69 +1,110 @@
-"""Geographic specialized types."""
+"""Geographic specialized types using V3 pattern."""
 
-from typing import Any
-
-from mocksmith.types.string import CHAR, VARCHAR
+from mocksmith.types.string import Char, Varchar
 
 
-class CountryCode(CHAR):
-    """ISO 3166-1 alpha-2 country code (2 characters)."""
+def CountryCode() -> type:  # noqa: N802
+    """ISO 3166-1 alpha-2 country code (2 characters).
 
-    def __init__(self):
-        super().__init__(2)
+    Example:
+        class Address(BaseModel):
+            country: CountryCode()
+    """
+    CharType = Char(2, to_upper=True)  # noqa: N806
 
-    def _generate_mock(self, fake: Any) -> str:
-        """Generate a country code."""
-        return fake.country_code()
+    class CountryCodeType(CharType):
+        @classmethod
+        def mock(cls) -> str:
+            """Generate a country code."""
+            try:
+                from faker import Faker  # type: ignore
 
-    def __repr__(self) -> str:
-        return "CountryCode()"
+                fake = Faker()
+                return fake.country_code().upper()
+            except ImportError:
+                raise ImportError("faker library is required for mock generation") from None
 
-
-class State(VARCHAR):
-    """State or province name."""
-
-    def __init__(self, length: int = 50):
-        super().__init__(length)
-
-    def _generate_mock(self, fake: Any) -> str:
-        """Generate a state/province name."""
-        # Try to get state name, fallback to generic word if not available
-        try:
-            state = fake.state()
-            return state[: self.length]
-        except AttributeError:
-            # Fallback for locales without states
-            return fake.city()[: self.length]
-
-    def __repr__(self) -> str:
-        return f"State(length={self.length})"
+    return CountryCodeType
 
 
-class City(VARCHAR):
-    """City name."""
+def State(length: int = 50) -> type:  # noqa: N802
+    """State or province name.
 
-    def __init__(self, length: int = 100):
-        super().__init__(length)
+    Example:
+        class Address(BaseModel):
+            state: State()
+            province: State(100)
+    """
+    VarcharType = Varchar(length)  # noqa: N806
 
-    def _generate_mock(self, fake: Any) -> str:
-        """Generate a city name."""
-        city = fake.city()
-        return city[: self.length]
+    class StateType(VarcharType):
+        @classmethod
+        def mock(cls) -> str:
+            """Generate a state/province name."""
+            try:
+                from faker import Faker  # type: ignore
 
-    def __repr__(self) -> str:
-        return f"City(length={self.length})"
+                fake = Faker()
+                # Try to get state name, fallback to generic word if not available
+                try:
+                    state = fake.state()
+                    return state[: cls._length]
+                except AttributeError:
+                    # Fallback for locales without states
+                    return fake.city()[: cls._length]
+            except ImportError:
+                raise ImportError("faker library is required for mock generation") from None
+
+    return StateType
 
 
-class ZipCode(VARCHAR):
-    """Postal/ZIP code."""
+def City(length: int = 100) -> type:  # noqa: N802
+    """City name.
 
-    def __init__(self, length: int = 10):
-        super().__init__(length)
+    Example:
+        class Address(BaseModel):
+            city: City()
+            hometown: City(50)
+    """
+    VarcharType = Varchar(length)  # noqa: N806
 
-    def _generate_mock(self, fake: Any) -> str:
-        """Generate a postal code."""
-        postcode = fake.postcode()
-        return postcode[: self.length]
+    class CityType(VarcharType):
+        @classmethod
+        def mock(cls) -> str:
+            """Generate a city name."""
+            try:
+                from faker import Faker  # type: ignore
 
-    def __repr__(self) -> str:
-        return f"ZipCode(length={self.length})"
+                fake = Faker()
+                city = fake.city()
+                return city[: cls._length]
+            except ImportError:
+                raise ImportError("faker library is required for mock generation") from None
+
+    return CityType
+
+
+def ZipCode(length: int = 10) -> type:  # noqa: N802
+    """Postal/ZIP code.
+
+    Example:
+        class Address(BaseModel):
+            zip_code: ZipCode()
+            postal_code: ZipCode(6)
+    """
+    VarcharType = Varchar(length)  # noqa: N806
+
+    class ZipCodeType(VarcharType):
+        @classmethod
+        def mock(cls) -> str:
+            """Generate a postal code."""
+            try:
+                from faker import Faker  # type: ignore
+
+                fake = Faker()
+                postcode = fake.postcode()
+                return postcode[: cls._length]
+            except ImportError:
+                raise ImportError("faker library is required for mock generation") from None
+
+    return ZipCodeType

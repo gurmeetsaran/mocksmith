@@ -161,7 +161,7 @@ class _BaseInteger(int):
         return f"{self.__class__.__name__}({int(self)})"
 
 
-class TINYINT(_BaseInteger):
+class _TINYINT(_BaseInteger):
     """8-bit integer (-128 to 127)."""
 
     SQL_MIN = -128
@@ -169,7 +169,7 @@ class TINYINT(_BaseInteger):
     SQL_TYPE = "TINYINT"
 
 
-class SMALLINT(_BaseInteger):
+class _SMALLINT(_BaseInteger):
     """16-bit integer (-32768 to 32767)."""
 
     SQL_MIN = -32768
@@ -177,7 +177,7 @@ class SMALLINT(_BaseInteger):
     SQL_TYPE = "SMALLINT"
 
 
-class INTEGER(_BaseInteger):
+class _INTEGER(_BaseInteger):
     """32-bit integer (-2147483648 to 2147483647)."""
 
     SQL_MIN = -2147483648
@@ -185,7 +185,7 @@ class INTEGER(_BaseInteger):
     SQL_TYPE = "INTEGER"
 
 
-class BIGINT(_BaseInteger):
+class _BIGINT(_BaseInteger):
     """64-bit integer."""
 
     SQL_MIN = -9223372036854775808
@@ -208,9 +208,9 @@ def TinyInt(  # noqa: N802
     if not any(
         [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
     ):
-        return TINYINT
+        return _TINYINT
 
-    class ConstrainedTinyInt(TINYINT):
+    class ConstrainedTinyInt(_TINYINT):
         _gt = gt
         _ge = ge
         _lt = lt
@@ -235,9 +235,9 @@ def SmallInt(  # noqa: N802
     if not any(
         [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
     ):
-        return SMALLINT
+        return _SMALLINT
 
-    class ConstrainedSmallInt(SMALLINT):
+    class ConstrainedSmallInt(_SMALLINT):
         _gt = gt
         _ge = ge
         _lt = lt
@@ -262,9 +262,9 @@ def Integer(  # noqa: N802
     if not any(
         [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
     ):
-        return INTEGER
+        return _INTEGER
 
-    class ConstrainedInteger(INTEGER):
+    class ConstrainedInteger(_INTEGER):
         _gt = gt
         _ge = ge
         _lt = lt
@@ -289,9 +289,9 @@ def BigInt(  # noqa: N802
     if not any(
         [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
     ):
-        return BIGINT
+        return _BIGINT
 
-    class ConstrainedBigInt(BIGINT):
+    class ConstrainedBigInt(_BIGINT):
         _gt = gt
         _ge = ge
         _lt = lt
@@ -324,7 +324,7 @@ def NonPositiveInteger() -> type:  # noqa: N802
 
 
 # Decimal/Float types
-class DECIMAL(Decimal):
+class _DECIMAL(Decimal):
     """Fixed-point decimal type with precision and scale."""
 
     # Default precision and scale
@@ -485,13 +485,13 @@ class DECIMAL(Decimal):
 
 
 # Alias
-class NUMERIC(DECIMAL):
+class _NUMERIC(_DECIMAL):  # pyright: ignore[reportUnusedClass]
     """Alias for DECIMAL."""
 
     pass
 
 
-class FLOAT(float):
+class _FLOAT(float):
     """Floating-point type."""
 
     _gt: Optional[float] = None
@@ -602,7 +602,7 @@ class FLOAT(float):
 
 
 # Alias
-class DOUBLE(FLOAT):
+class _DOUBLE(_FLOAT):  # pyright: ignore[reportUnusedClass]
     """Alias for FLOAT (double precision)."""
 
     @property
@@ -610,7 +610,7 @@ class DOUBLE(FLOAT):
         return "DOUBLE"
 
 
-class REAL(FLOAT):
+class _REAL(_FLOAT):
     """Single precision float."""
 
     @property
@@ -632,7 +632,7 @@ def DecimalType(  # noqa: N802
 ) -> type:
     """Create a DECIMAL type with specific precision and scale."""
 
-    class ConstrainedDecimal(DECIMAL):
+    class ConstrainedDecimal(_DECIMAL):
         _precision = precision
         _scale = scale
         _gt = Decimal(str(gt)) if gt is not None else None
@@ -687,9 +687,9 @@ def Float(  # noqa: N802
     if not any(
         [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
     ):
-        return FLOAT
+        return _FLOAT
 
-    class ConstrainedFloat(FLOAT):
+    class ConstrainedFloat(_FLOAT):
         _gt = gt
         _ge = ge
         _lt = lt
@@ -699,17 +699,37 @@ def Float(  # noqa: N802
     return ConstrainedFloat
 
 
-def Double(**kwargs) -> type:  # noqa: N802
+def Double(  # noqa: N802
+    *,
+    gt: Optional[float] = None,
+    ge: Optional[float] = None,
+    lt: Optional[float] = None,
+    le: Optional[float] = None,
+    multiple_of: Optional[float] = None,
+    **kwargs,
+) -> type:
     """Create a DOUBLE type."""
-    return Float(**kwargs)
+    if not any(
+        [gt is not None, ge is not None, lt is not None, le is not None, multiple_of is not None]
+    ):
+        return _DOUBLE
+
+    class ConstrainedDouble(_DOUBLE):
+        _gt = gt
+        _ge = ge
+        _lt = lt
+        _le = le
+        _multiple_of = multiple_of
+
+    return ConstrainedDouble
 
 
 def Real(**kwargs) -> type:  # noqa: N802
     """Create a REAL type."""
     if not any(kwargs.get(k) for k in ["gt", "ge", "lt", "le", "multiple_of"]):
-        return REAL
+        return _REAL
 
-    class ConstrainedReal(REAL):
+    class ConstrainedReal(_REAL):
         _gt = kwargs.get("gt")
         _ge = kwargs.get("ge")
         _lt = kwargs.get("lt")

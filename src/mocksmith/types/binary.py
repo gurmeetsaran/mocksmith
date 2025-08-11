@@ -25,7 +25,7 @@ class _BaseBinary(bytes):
     def __new__(cls, value: Any) -> "_BaseBinary":
         """Create new binary with validation."""
         if value is None:
-            raise ValueError(f"{cls.SQL_TYPE} cannot be None")
+            raise ValueError("Value cannot be None")
 
         # Convert to bytes
         if isinstance(value, bytes):
@@ -144,7 +144,7 @@ class _BaseBinary(bytes):
             raise ImportError("faker library is required for mock generation") from None
 
 
-class BINARY(_BaseBinary):
+class _BINARY(_BaseBinary):
     """Fixed-length binary type."""
 
     SQL_TYPE = "BINARY"
@@ -157,7 +157,7 @@ class BINARY(_BaseBinary):
         return super().__new__(cls, value)
 
 
-class VARBINARY(_BaseBinary):
+class _VARBINARY(_BaseBinary):
     """Variable-length binary type."""
 
     SQL_TYPE = "VARBINARY"
@@ -170,7 +170,7 @@ class VARBINARY(_BaseBinary):
         return super().__new__(cls, value)
 
 
-class BLOB(_BaseBinary):
+class _BLOB(_BaseBinary):
     """Binary Large Object type."""
 
     SQL_TYPE = "BLOB"
@@ -196,14 +196,14 @@ def Binary(length: int) -> type:  # noqa: N802
             signature: Binary(64)
     """
     if length <= 0:
-        raise ValueError("BINARY length must be positive")
+        raise ValueError("Length must be positive")
 
-    class ConstrainedBinary(BINARY):
+    class ConstrainedBinary(_BINARY):
         _length = length
         SQL_TYPE = "BINARY"
 
     # Use the special _create_type flag to return the class
-    return BINARY(ConstrainedBinary, _create_type=True)  # type: ignore
+    return _BINARY(ConstrainedBinary, _create_type=True)  # type: ignore
 
 
 def VarBinary(max_length: int) -> type:  # noqa: N802
@@ -218,13 +218,13 @@ def VarBinary(max_length: int) -> type:  # noqa: N802
             preview: VarBinary(10240)
     """
     if max_length <= 0:
-        raise ValueError("VARBINARY max_length must be positive")
+        raise ValueError("max_length must be positive")
 
-    class ConstrainedVarBinary(VARBINARY):
+    class ConstrainedVarBinary(_VARBINARY):
         _max_length = max_length
         SQL_TYPE = "VARBINARY"
 
-    return VARBINARY(ConstrainedVarBinary, _create_type=True)  # type: ignore
+    return _VARBINARY(ConstrainedVarBinary, _create_type=True)  # type: ignore
 
 
 def Blob(max_length: Optional[int] = None) -> type:  # noqa: N802
@@ -239,10 +239,10 @@ def Blob(max_length: Optional[int] = None) -> type:  # noqa: N802
             thumbnail: Blob(max_length=65536)  # 64KB max
     """
     if max_length is not None and max_length <= 0:
-        raise ValueError("BLOB max_length must be positive if specified")
+        raise ValueError("max_length must be positive if specified")
 
-    class ConstrainedBlob(BLOB):
+    class ConstrainedBlob(_BLOB):
         _max_length = max_length
         SQL_TYPE = "BLOB"
 
-    return BLOB(ConstrainedBlob, _create_type=True)  # type: ignore
+    return _BLOB(ConstrainedBlob, _create_type=True)  # type: ignore

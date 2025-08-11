@@ -7,7 +7,7 @@ from typing import Annotated, Optional
 
 import pytest
 
-from mocksmith import VARCHAR, mock_factory, mockable
+from mocksmith import Varchar, mock_factory, mockable
 from mocksmith.specialized import City, CountryCode, PhoneNumber
 
 # Import Pydantic if available
@@ -40,17 +40,17 @@ class TestMockFactory:
         assert isinstance(mock.active, bool)
 
     def test_mock_dataclass_with_db_types(self):
-        """Test mocking a dataclass with db_types."""
-        # Define instances for use in annotations
-        _username = VARCHAR(30)
-        _phone = PhoneNumber()
-        _city = City()
+        """Test mocking a dataclass with db_types using V3 pattern."""
+        # With V3, use factory functions to create type classes
+        UsernameType = Varchar(30)
+        PhoneType = PhoneNumber()
+        CityType = City()
 
         @dataclass
         class UserModel:
-            username: Annotated[str, _username]
-            phone: Annotated[str, _phone]
-            city: Annotated[str, _city]
+            username: UsernameType
+            phone: PhoneType
+            city: CityType
 
         mock = mock_factory(UserModel)
 
@@ -292,16 +292,17 @@ class TestPydanticMocking:
         assert isinstance(mock.active, bool)
 
     def test_mock_pydantic_with_specialized_types(self):
-        """Test mocking Pydantic model with specialized types."""
-        _phone = PhoneNumber()
-        _country = CountryCode()
-        _city = City()
+        """Test mocking Pydantic model with specialized types using V3 pattern."""
+        # With V3, use factory functions directly
+        PhoneType = PhoneNumber()
+        CountryType = CountryCode()
+        CityType = City()
 
         class Customer(BaseModel):
             name: str
-            phone: Annotated[str, DBTypeValidator(_phone)]
-            country: Annotated[str, DBTypeValidator(_country)]
-            city: Annotated[str, DBTypeValidator(_city)]
+            phone: PhoneType
+            country: CountryType
+            city: CityType
 
         mock = mock_factory(Customer)
 
@@ -426,15 +427,15 @@ class TestDefaultMockImplementation:
 
         from mocksmith import Date, Time, Timestamp
 
-        DateType = Date()  # noqa: N806
+        DateType = Date()
         date_mock = DateType.mock()
         assert isinstance(date_mock, date)
 
-        TimeType = Time()  # noqa: N806
+        TimeType = Time()
         time_mock = TimeType.mock()
         assert isinstance(time_mock, time)
 
-        TimestampType = Timestamp()  # noqa: N806
+        TimestampType = Timestamp()
         timestamp_mock = TimestampType.mock()
         assert isinstance(timestamp_mock, datetime)
 
@@ -442,12 +443,12 @@ class TestDefaultMockImplementation:
         """Test that binary types use default mock implementation."""
         from mocksmith import Binary, VarBinary
 
-        BinaryType = Binary(32)  # noqa: N806
+        BinaryType = Binary(32)
         binary_mock = BinaryType.mock()
         assert isinstance(binary_mock, bytes)
         assert len(binary_mock) == 32
 
-        VarBinaryType = VarBinary(64)  # noqa: N806
+        VarBinaryType = VarBinary(64)
         varbinary_mock = VarBinaryType.mock()
         assert isinstance(varbinary_mock, bytes)
         assert len(varbinary_mock) <= 64

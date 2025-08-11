@@ -34,22 +34,11 @@ from mocksmith.annotations import (
     VarBinary,
     Varchar,
 )
-from mocksmith.types.base import DBType
-from mocksmith.types.binary import BINARY, BLOB, VARBINARY
-from mocksmith.types.boolean import BOOLEAN
-from mocksmith.types.numeric import (
-    BIGINT,
-    DECIMAL,
-    DOUBLE,
-    FLOAT,
-    INTEGER,
-    NUMERIC,
-    REAL,
-    SMALLINT,
-    TINYINT,
-)
-from mocksmith.types.string import CHAR, TEXT, VARCHAR
-from mocksmith.types.temporal import DATE, DATETIME, TIME, TIMESTAMP
+
+# V3 Pattern: Direct class imports are removed to prevent misuse
+# Users MUST use factory functions (Varchar, Integer, etc.) from annotations
+# The old pattern VARCHAR(30) would create an instance "30", not a type!
+# This breaking change prevents subtle bugs and confusion.
 
 # Import mock utilities
 try:
@@ -64,28 +53,9 @@ except ImportError:
     MockBuilder = None  # type: ignore
     mock_factory = None  # type: ignore
 
-# Core exports
+# Core exports - Factory functions only (V3 pattern)
 __all__ = [
-    "BIGINT",
-    "BINARY",
-    "BLOB",
-    "BOOLEAN",
-    "CHAR",
-    "DATE",
-    "DATETIME",
-    "DECIMAL",
-    "DOUBLE",
-    "FLOAT",
-    "INTEGER",
-    "NUMERIC",
-    "REAL",
-    "SMALLINT",
-    "TEXT",
-    "TIME",
-    "TIMESTAMP",
-    "TINYINT",
-    "VARBINARY",
-    "VARCHAR",
+    # Factory functions (recommended)
     "BigInt",
     "Binary",
     "Blob",
@@ -94,7 +64,6 @@ __all__ = [
     "ConstrainedDecimal",
     "ConstrainedFloat",
     "ConstrainedMoney",
-    "DBType",
     "Date",
     "DateTime",
     "DecimalType",

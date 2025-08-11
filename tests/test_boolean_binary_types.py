@@ -2,8 +2,11 @@
 
 import pytest
 
-from mocksmith.types.binary import BINARY, BLOB, VARBINARY, Binary, Blob, VarBinary
-from mocksmith.types.boolean import BOOLEAN, Boolean
+from mocksmith import Binary, Blob, Boolean, VarBinary
+from mocksmith.types.binary import _BINARY as BINARY
+from mocksmith.types.binary import _BLOB as BLOB
+from mocksmith.types.binary import _VARBINARY as VARBINARY
+from mocksmith.types.boolean import _BOOLEAN as BOOLEAN
 
 
 class TestBOOLEAN:
@@ -21,7 +24,7 @@ class TestBOOLEAN:
 
     def test_factory_function(self):
         # Test factory function returns the class
-        BoolType = Boolean()  # noqa: N806
+        BoolType = Boolean()
         assert BoolType == BOOLEAN
 
         # Can use the returned class to create instances
@@ -48,7 +51,7 @@ class TestBOOLEAN:
         assert bool(BOOLEAN("off")) is False
 
     def test_validation_failure(self):
-        with pytest.raises(ValueError, match="BOOLEAN cannot be None"):
+        with pytest.raises(ValueError, match="Value cannot be None"):
             BOOLEAN(None)
 
         with pytest.raises(ValueError, match="Invalid boolean string"):
@@ -100,7 +103,7 @@ class TestBINARY:
 
     def test_factory_function(self):
         # Test factory function
-        BinaryType = Binary(10)  # noqa: N806
+        BinaryType = Binary(10)
 
         # Create instance with the type
         val = BinaryType(b"test")
@@ -108,7 +111,7 @@ class TestBINARY:
         assert len(val) == 10
 
     def test_length_validation(self):
-        BinaryType = Binary(5)  # noqa: N806
+        BinaryType = Binary(5)
 
         # Valid lengths
         val = BinaryType(b"hi")
@@ -119,21 +122,21 @@ class TestBINARY:
             BinaryType(b"too long")
 
     def test_serialize(self):
-        BinaryType = Binary(5)  # noqa: N806
+        BinaryType = Binary(5)
         val = BinaryType(b"hi")
         assert val.serialize() == b"hi\x00\x00\x00"
 
     def test_string_encoding(self):
-        BinaryType = Binary(10)  # noqa: N806
+        BinaryType = Binary(10)
         val = BinaryType("hello")
         assert val == b"hello\x00\x00\x00\x00\x00"
 
     def test_repr(self):
         val = BINARY(b"test")
-        assert repr(val) == "BINARY(0x74657374)"
+        assert repr(val) == "_BINARY(0x74657374)"  # Internal class name
 
     def test_mock_generation(self):
-        BinaryType = Binary(10)  # noqa: N806
+        BinaryType = Binary(10)
         mocked = BinaryType.mock()
         assert isinstance(mocked, bytes)
         assert len(mocked) == 10
@@ -146,13 +149,13 @@ class TestVARBINARY:
         assert isinstance(varbinary, bytes)
 
     def test_factory_function(self):
-        VarBinaryType = VarBinary(100)  # noqa: N806
+        VarBinaryType = VarBinary(100)
 
         val = VarBinaryType(b"test")
         assert val == b"test"  # No padding for VARBINARY
 
     def test_max_length_validation(self):
-        VarBinaryType = VarBinary(10)  # noqa: N806
+        VarBinaryType = VarBinary(10)
 
         # Valid length
         val = VarBinaryType(b"hello")
@@ -163,7 +166,7 @@ class TestVARBINARY:
             VarBinaryType(b"this is too long")
 
     def test_no_padding(self):
-        VarBinaryType = VarBinary(10)  # noqa: N806
+        VarBinaryType = VarBinary(10)
         val = VarBinaryType(b"hi")
         assert val == b"hi"  # No padding
 
@@ -172,7 +175,7 @@ class TestVARBINARY:
         assert val == b"Hello"
 
     def test_mock_generation(self):
-        VarBinaryType = VarBinary(100)  # noqa: N806
+        VarBinaryType = VarBinary(100)
         mocked = VarBinaryType.mock()
         assert isinstance(mocked, bytes)
         assert 1 <= len(mocked) <= 100
@@ -185,7 +188,7 @@ class TestBLOB:
         assert isinstance(blob, bytes)
 
     def test_factory_function_no_limit(self):
-        BlobType = Blob()  # noqa: N806
+        BlobType = Blob()
 
         # Can handle large data
         large_data = b"x" * 100000
@@ -193,7 +196,7 @@ class TestBLOB:
         assert val == large_data
 
     def test_factory_function_with_limit(self):
-        BlobType = Blob(max_length=1000)  # noqa: N806
+        BlobType = Blob(max_length=1000)
 
         # Valid size
         val = BlobType(b"x" * 1000)
@@ -210,13 +213,13 @@ class TestBLOB:
 
     def test_mock_generation(self):
         # Without max_length
-        BlobType = Blob()  # noqa: N806
+        BlobType = Blob()
         mocked = BlobType.mock()
         assert isinstance(mocked, bytes)
         assert 100 <= len(mocked) <= 1000  # Default range
 
         # With max_length
-        BlobType2 = Blob(max_length=500)  # noqa: N806
+        BlobType2 = Blob(max_length=500)
         mocked2 = BlobType2.mock()
         assert isinstance(mocked2, bytes)
         assert 1 <= len(mocked2) <= 100  # Limited range
@@ -231,7 +234,7 @@ class TestPydanticIntegration:
         except ImportError:
             pytest.skip("Pydantic not available")
 
-        BoolType = Boolean()  # noqa: N806
+        BoolType = Boolean()
 
         class User(BaseModel):
             is_active: BoolType
@@ -252,8 +255,8 @@ class TestPydanticIntegration:
         except ImportError:
             pytest.skip("Pydantic not available")
 
-        BinaryType = Binary(32)  # noqa: N806
-        VarBinaryType = VarBinary(100)  # noqa: N806
+        BinaryType = Binary(32)
+        VarBinaryType = VarBinary(100)
 
         class Document(BaseModel):
             hash: BinaryType  # Fixed 32 bytes

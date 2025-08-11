@@ -5,7 +5,7 @@ Pydantic models and Python dataclasses.
 """
 
 from decimal import Decimal
-from typing import Annotated, Any, Optional, Union
+from typing import Any, Optional, Union
 
 from mocksmith.types.binary import Binary as BinaryImpl
 from mocksmith.types.binary import Blob as BlobImpl
@@ -27,31 +27,15 @@ from mocksmith.types.numeric import NonPositiveInteger as NonPositiveIntegerImpl
 from mocksmith.types.numeric import PositiveInteger as PositiveIntegerImpl
 from mocksmith.types.numeric import SmallInt as SmallIntImpl
 from mocksmith.types.numeric import TinyInt as TinyIntImpl
-from mocksmith.types.string import CHAR as _CHAR
-from mocksmith.types.string import TEXT as _TEXT
-from mocksmith.types.string import VARCHAR as _VARCHAR
+from mocksmith.types.string import Char as CharImpl
+from mocksmith.types.string import Text as TextImpl
+from mocksmith.types.string import Varchar as VarcharImpl
 from mocksmith.types.temporal import Date as DateImpl
 from mocksmith.types.temporal import DateTime as DateTimeImpl
 from mocksmith.types.temporal import Time as TimeImpl
 from mocksmith.types.temporal import Timestamp as TimestampImpl
 
-# For Pydantic models - check if Pydantic is available
-try:
-    from mocksmith.pydantic_integration import DBTypeValidator as _DBTypeValidator
-
-    _PYDANTIC_AVAILABLE = True
-
-    def _get_validator(db_type: Any) -> Any:
-        if _DBTypeValidator is not None:
-            return _DBTypeValidator(db_type)
-        return None
-
-except ImportError:
-    _PYDANTIC_AVAILABLE = False
-    _DBTypeValidator = None  # type: ignore
-
-    def _get_validator(db_type: Any) -> Any:  # type: ignore
-        return None
+# No longer need DBTypeValidator since all types use V3 pattern
 
 
 # String Types
@@ -85,7 +69,8 @@ def Varchar(
             username: Varchar(30, min_length=3, to_lower=True)
             order_id: Varchar(20, startswith='ORD-')
     """
-    db_type = _VARCHAR(
+    # Use V3 factory function directly
+    return VarcharImpl(
         length,
         min_length=min_length,
         startswith=startswith,
@@ -93,12 +78,7 @@ def Varchar(
         strip_whitespace=strip_whitespace,
         to_lower=to_lower,
         to_upper=to_upper,
-        **pydantic_kwargs,
     )
-    if _PYDANTIC_AVAILABLE:
-        # Include both DBTypeValidator for Pydantic and the raw db_type for dataclasses
-        return Annotated[str, _get_validator(db_type), db_type]
-    return Annotated[str, db_type]
 
 
 def Char(
@@ -128,18 +108,15 @@ def Char(
             country: Char(2, to_upper=True)
             product_code: Char(8, startswith='PRD-')
     """
-    db_type = _CHAR(
+    # Use V3 factory function directly
+    return CharImpl(
         length,
         startswith=startswith,
         endswith=endswith,
         strip_whitespace=strip_whitespace,
         to_lower=to_lower,
         to_upper=to_upper,
-        **pydantic_kwargs,
     )
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[str, _get_validator(db_type), db_type]
-    return Annotated[str, db_type]
 
 
 def Text(
@@ -172,7 +149,8 @@ def Text(
             description: Text(strip_whitespace=True)
             review: Text(min_length=50, startswith='Review: ')
     """
-    db_type = _TEXT(
+    # Use V3 factory function directly
+    return TextImpl(
         max_length=max_length,
         min_length=min_length,
         startswith=startswith,
@@ -180,11 +158,7 @@ def Text(
         strip_whitespace=strip_whitespace,
         to_lower=to_lower,
         to_upper=to_upper,
-        **pydantic_kwargs,
     )
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[str, _get_validator(db_type), db_type]
-    return Annotated[str, db_type]
 
 
 # Numeric Types
