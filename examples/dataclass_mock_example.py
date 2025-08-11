@@ -14,7 +14,8 @@ from mocksmith import (  # Basic types with clean syntax; For mocking
     Varchar,
     mockable,
 )
-from mocksmith.dataclass_integration import validate_dataclass
+
+# Note: validate_dataclass removed - use Pydantic for validation
 
 
 # Example 1: Basic dataclass with db_types
@@ -33,7 +34,6 @@ class User:
 
 # Example 2: Dataclass with specialized types
 @mockable
-@validate_dataclass
 @dataclass
 class Customer:
     """Customer model with specialized types."""
@@ -113,23 +113,22 @@ def demo_specialized_types():
     print(f"  City: {us_customer.city}")
     print(f"  Postal Code: {us_customer.postal_code}")
 
-    # Validation example
-    print("\nValidation with @validate_dataclass:")
-    try:
-        # This will fail - email too long
-        Customer(
-            id=1,
-            name="Test",
-            email="x" * 300,  # Too long for Varchar(255)!
-            phone="555-1234",
-            country="US",
-            city="Boston",
-            postal_code="02101",
-            credit_limit=Decimal("1000.00"),
-            registered=datetime.now(timezone.utc).date(),
-        )
-    except ValueError as e:
-        print(f"  ✅ Validation correctly failed: {e}")
+    # Note about validation
+    print("\nNote: Plain dataclasses don't validate.")
+    # Creating a customer with invalid data will succeed:
+    Customer(
+        id=1,
+        name="Test",
+        email="x" * 300,  # Too long for Varchar(255) but accepted!
+        phone="555-1234",
+        country="US",
+        city="Boston",
+        postal_code="02101",
+        credit_limit=Decimal("1000.00"),
+        registered=datetime.now(timezone.utc).date(),
+    )
+    print("  ⚠️ Dataclass accepted email with 300 chars (no validation)")
+    print("  → Use Pydantic BaseModel for validation")
 
 
 # Example 3: Enums for mock generation
@@ -238,7 +237,7 @@ def show_dataclass_notes():
     print("   • Enums are automatically supported - random selection from values")
 
     print("\n4. VALIDATION:")
-    print("   • @validate_dataclass adds automatic validation")
+    print("   • Use Pydantic BaseModel for automatic validation")
     print("   • Each db_type has .validate() method")
     print("   • Types enforce their constraints (length, precision, etc.)")
 

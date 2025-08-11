@@ -11,12 +11,14 @@ Type-safe data validation with automatic mock generation for Python dataclasses 
 ## Features
 
 - **Type-safe database columns**: Define database columns with proper validation
+- **SQL-compliant validation**: All numeric types strictly enforce SQL bounds (TINYINT: -128 to 127, etc.)
+- **Instantiation validation**: Types validate at creation time, preventing invalid data from being created
 - **Serialization/Deserialization**: Automatic conversion between Python and SQL types
 - **Dataclass Integration**: Full support for Python dataclasses with validation
 - **Pydantic Integration**: First-class Pydantic support with automatic validation
 - **Clean API**: Simple, intuitive interface for both Pydantic AND dataclasses - just `name: Varchar(50)`
 - **Comprehensive Types**: STRING (VARCHAR, CHAR, TEXT), NUMERIC (INTEGER, DECIMAL, FLOAT), TEMPORAL (DATE, TIME, TIMESTAMP), and more
-- **Mock Data Generation**: Built-in mock/fake data generation for testing with `@mockable` decorator
+- **Mock Data Generation**: Built-in mock/fake data generation that respects all SQL bounds and constraints
 - **Constrained Types**: Support for min/max constraints on numeric types - `price: PositiveMoney()`, `age: Integer(ge=0, le=120)`
 
 ## Why mocksmith?
@@ -192,18 +194,27 @@ from mocksmith.specialized import PhoneNumber, CountryCode
 
 @mockable
 @dataclass
+class Address:
+    street: Varchar(100)
+    city: Varchar(50)
+    zip_code: Integer(ge=10000, le=99999)
+
+@mockable
+@dataclass
 class User:
     id: Integer()
     username: Varchar(50)
     phone: PhoneNumber()
     country: CountryCode()
     birth_date: Date()
+    address: Address  # Nested dataclass!
 
 # Generate mock instances
 user = User.mock()
 print(user.username)  # "Christina Wells"
 print(user.phone)     # "(555) 123-4567"
 print(user.country)   # "US"
+print(user.address.city)  # "New York"  # Nested fields are mocked too!
 
 # With overrides
 user = User.mock(username="test_user", country="GB")
@@ -221,49 +232,143 @@ The same `@mockable` decorator works with Pydantic models! Mock generation:
 - Supports specialized types with realistic data
 - Works with both dataclasses and Pydantic models
 - Automatically handles Python Enum types with random value selection
+- Supports nested dataclasses - automatically generates mock data for nested structures
 
 See mock examples:
 - [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Complete mock examples with dataclasses including enum support
 - [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Complete mock examples with Pydantic including enum support and built-in types
 
-## Clean Annotation Interface
+## Type Usage Patterns
 
-The library provides a clean, Pythonic interface for defining database types that works with both Pydantic and dataclasses:
+MockSmith types can be used in multiple ways with both Pydantic and dataclasses. Here are all the supported patterns:
+
+### With Pydantic (Full Validation)
 
 ```python
-# Works with Pydantic
+from typing import Optional, Annotated
 from pydantic import BaseModel
-from mocksmith import Varchar, Integer, Money, Date, Boolean, Text
+from mocksmith import Integer, Varchar, Money, Boolean, PositiveInteger, NonNegativeInteger
+from decimal import Decimal
 
+# Pattern 1: Direct usage (Recommended - cleanest syntax)
 class Product(BaseModel):
-    sku: Varchar(20)
+    id: Integer()
     name: Varchar(100)
-    description: Text()
-    price: Money()  # Alias for Decimal(19, 4)
-    in_stock: Boolean()
-
-# Also works with dataclasses!
-from dataclasses import dataclass
-from mocksmith.dataclass_integration import validate_dataclass
-
-@validate_dataclass
-@dataclass
-class Product:
-    sku: Varchar(20)
-    name: Varchar(100)
-    description: Text()
-    price: Money() = Decimal("0.00")
+    price: Money()
     in_stock: Boolean() = True
 
-# Instead of the verbose way:
-# from typing import Annotated
-# from mocksmith.types.string import VARCHAR
-# from mocksmith.types.numeric import DECIMAL
-# class Product:
-#     sku: Annotated[str, VARCHAR(20)]
-#     name: Annotated[str, VARCHAR(100)]
-#     price: Annotated[Decimal, DECIMAL(19, 4)]
+# Pattern 2: With constraints
+class ConstrainedModel(BaseModel):
+    age: Integer(ge=0, le=120)  # Age between 0-120
+    quantity: Integer(gt=0)      # Positive quantity
+    discount: Integer(ge=0, le=100, multiple_of=5)  # 0-100%, multiples of 5
+
+# Pattern 3: Using Annotated (explicit type hints)
+class AnnotatedModel(BaseModel):
+    id: Annotated[int, Integer()]
+    name: Annotated[str, Varchar(50)]
+    price: Annotated[Decimal, Money()]
+
+# Pattern 4: Constrained types (common patterns)
+class UserAccount(BaseModel):
+    user_id: PositiveInteger()       # > 0
+    balance: NonNegativeInteger()    # >= 0
+
+# Pattern 5: Optional fields
+class OptionalModel(BaseModel):
+    required_field: Varchar(50)
+    optional_field: Optional[Varchar(50)] = None  # Can be None
+    with_default: Boolean() = True                # Has default value
+
+# All patterns can be mixed in the same model!
 ```
+
+### With Dataclasses (Type Hints Only, No Validation)
+
+```python
+from dataclasses import dataclass
+from typing import Optional
+from decimal import Decimal
+from mocksmith import Integer, Varchar, Money, Text
+
+@dataclass
+class Product:
+    # Same syntax works, but NO validation occurs!
+    id: Integer()
+    name: Varchar(100)
+    price: Money() = Decimal("0.00")
+    optional_field: Optional[Text()] = None
+
+# WARNING: Dataclasses don't validate!
+product = Product(
+    id=999999999999,    # Accepts invalid values!
+    name="x" * 1000,    # No length check!
+    price="invalid"     # No type check!
+)
+```
+
+### Important Notes
+
+✅ **DO USE:**
+- `field: Integer()` - Direct pattern for clean, simple code
+- `field: Optional[Type()] = None` - For nullable fields
+- Pydantic `BaseModel` when you need validation
+- Constrained types like `PositiveInteger()` for common patterns
+
+❌ **DON'T USE:**
+- Plain dataclasses if you need validation (use Pydantic instead)
+- Complex nested Annotated types - keep it simple
+
+### Type Validation Features
+
+All numeric types enforce SQL bounds and validate at instantiation:
+- **TinyInt**: -128 to 127 (8-bit)
+- **SmallInt**: -32,768 to 32,767 (16-bit)
+- **Integer**: -2,147,483,648 to 2,147,483,647 (32-bit)
+- **BigInt**: -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807 (64-bit)
+
+Optional fields properly handle None values:
+```python
+class User(BaseModel):
+    name: Varchar(50)                        # Required
+    nickname: Optional[Varchar(30)] = None   # Optional, can be None
+
+user = User(name="John", nickname=None)  # ✓ Valid
+```
+
+### Literal Type Support
+
+MockSmith types work seamlessly with Python's `Literal` type for strict value constraints:
+
+```python
+from typing import Literal
+from pydantic import BaseModel
+from mocksmith import Varchar, Integer, mockable
+
+@mockable
+class ServerConfig(BaseModel):
+    environment: Literal["dev", "staging", "prod"]
+    status_code: Literal[200, 301, 404, 500]
+    port: Integer(ge=1024, le=65535)
+    log_level: Literal[0, 1, 2, 3, 4, 5]  # 0=OFF, 5=TRACE
+
+# Validation enforces Literal constraints
+config = ServerConfig(
+    environment="prod",      # ✓ Valid
+    status_code=200,        # ✓ Valid
+    port=8080,              # ✓ Valid (within range)
+    log_level=2             # ✓ Valid
+)
+
+# Mock generation respects Literal values
+mock = ServerConfig.mock()
+# mock.environment will be one of: "dev", "staging", "prod"
+# mock.status_code will be one of: 200, 301, 404, 500
+```
+
+## Clean Annotation Interface
+
+The library provides a clean, Pythonic interface for defining database types:
 
 ### Available Clean Types:
 
@@ -274,16 +379,21 @@ class Product:
 - `String` → Alias for Varchar
 
 **Numeric Types:**
-- `Integer()` → 32-bit integer
-- `BigInt()` → 64-bit integer
-- `SmallInt()` → 16-bit integer
-- `TinyInt()` → 8-bit integer
+- `Integer()` → 32-bit integer (-2,147,483,648 to 2,147,483,647)
+- `BigInt()` → 64-bit integer (-9,223,372,036,854,775,808 to 9,223,372,036,854,775,807)
+- `SmallInt()` → 16-bit integer (-32,768 to 32,767)
+- `TinyInt()` → 8-bit integer (-128 to 127)
 - `DecimalType(precision, scale)` → Fixed-point decimal
 - `Numeric(precision, scale)` → Alias for DecimalType
 - `Money()` → Alias for Decimal(19, 4)
 - `Float()` → Floating point (generates FLOAT SQL type)
 - `Real()` → Floating point (generates REAL SQL type, typically single precision in SQL)
 - `Double()` → Double precision
+
+All numeric types:
+- Enforce SQL bounds at instantiation (e.g., `TinyInt(200)` raises ValueError)
+- Generate mock data within valid ranges (e.g., `TinyInt(gt=5)` generates 6-127, not > 127)
+- Support constraints (gt, ge, lt, le, multiple_of)
 
 **Constrained Numeric Types:**
 - `PositiveInteger()` → Integer > 0
@@ -636,9 +746,6 @@ from datetime import datetime, date
 from decimal import Decimal
 
 from mocksmith import Varchar, Integer, Date, DecimalType, Text, BigInt, Timestamp
-from mocksmith.dataclass_integration import validate_dataclass
-
-@validate_dataclass
 @dataclass
 class Customer:
     customer_id: Integer()
@@ -648,7 +755,6 @@ class Customer:
     phone: Optional[Varchar(20)]
     date_of_birth: Optional[Date()]
 
-@validate_dataclass
 @dataclass
 class Order:
     order_id: BigInt()
@@ -684,40 +790,37 @@ print(order.to_sql_dict())
 For more complete examples including financial systems, authentication, and SQL testing integration,
 see the [`examples/`](examples/) directory.
 
-### Default Value Validation in Dataclasses
+### Validation in Dataclasses
 
-When using `@validate_dataclass`, default values are validated when an instance is created, not when the class is defined:
+Plain dataclasses don't provide validation for mocksmith types. For validation, use Pydantic BaseModel:
 
 ```python
-@validate_dataclass
-@dataclass
-class Config:
-    # This class definition succeeds even with invalid default
-    hour: SmallInt(ge=0, le=23) = 24
+from pydantic import BaseModel
+from mocksmith import SmallInt
 
-# But creating an instance fails with validation error
+class Config(BaseModel):  # Use BaseModel for validation
+    hour: SmallInt(ge=0, le=23)
+
+# Validation happens automatically
 try:
-    config = Config()  # Raises ValueError: Value 24 exceeds maximum 23
-except ValueError as e:
+    config = Config(hour=24)  # Raises ValidationError
+except ValidationError as e:
     print(f"Validation error: {e}")
 
-# You can override with valid values
 config = Config(hour=12)  # Works fine
 ```
 
-This behavior is consistent with Python's normal evaluation of default values and ensures that validation runs for all values, including defaults.
-
 ## Advanced Features
 
-### Custom Validation
+### Custom Validation with Pydantic
 
 ```python
-@validate_dataclass
-@dataclass
-class CustomProduct:
-    sku: Annotated[str, VARCHAR(20)]  # Required field
-    name: Annotated[str, VARCHAR(100)]  # Required field
-    description: Annotated[Optional[str], VARCHAR(500)]  # Optional field
+from pydantic import BaseModel
+
+class CustomProduct(BaseModel):
+    sku: Varchar(20)  # Required field
+    name: Varchar(100)  # Required field
+    description: Optional[Varchar(500)] = None  # Optional field
 ```
 
 ### Working with Different Types
@@ -746,6 +849,8 @@ bool_type.deserialize(0)        # False
 ```
 
 ### Constrained Numeric Types
+
+**Important:** All numeric types in mocksmith strictly enforce SQL bounds and validate at instantiation time. For example, `TinyInt` enforces the TINYINT range of -128 to 127, preventing invalid data from being created or generated.
 
 The library provides specialized numeric types with built-in constraints for common validation scenarios:
 

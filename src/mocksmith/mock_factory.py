@@ -533,6 +533,10 @@ def _mock_dataclass(cls: type[T], overrides: dict[str, Any]) -> T:
                 elif isinstance(metadata_item, DBType):
                     mock_value = metadata_item.mock()
                     break
+                # Handle mock providers with mock() method
+                elif hasattr(metadata_item, "mock") and callable(metadata_item.mock):
+                    mock_value = metadata_item.mock()
+                    break
 
         # If no DBType found, use regular generation
         if mock_value is None:
@@ -568,6 +572,10 @@ def _mock_pydantic_model(cls: type[T], overrides: dict[str, Any]) -> T:
                     break
                 # Also check if metadata item IS a DBType directly (for dataclasses)
                 elif isinstance(metadata_item, DBType):
+                    mock_value = metadata_item.mock()
+                    break
+                # Handle mock providers with mock() method
+                elif hasattr(metadata_item, "mock") and callable(metadata_item.mock):
                     mock_value = metadata_item.mock()
                     break
 
@@ -673,6 +681,15 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
         literal_values = list(get_args(field_type))
         return _get_faker().random_element(literal_values)
 
+    # Handle custom types with mock() class method
+    if hasattr(field_type, "mock") and callable(field_type.mock):
+        return field_type.mock()
+
+    # Handle nested dataclasses
+    if is_dataclass(field_type):
+        # Recursively generate mock for nested dataclass
+        return mock_factory(field_type)
+
     # Handle Pydantic built-in types (v2 uses Annotated)
     if hasattr(field_type, "__module__") and "pydantic" in field_type.__module__:
         return _generate_pydantic_type_mock(field_type, field_name)
@@ -702,6 +719,9 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
                 # Handle DBTypeValidator wrapper
                 elif hasattr(item, "db_type") and isinstance(item.db_type, DBType):
                     return item.db_type.mock()
+                # Handle mock providers with mock() method
+                elif hasattr(item, "mock") and callable(item.mock):
+                    return item.mock()
 
             # If no DBType found, continue with the actual type
             field_type = actual_type

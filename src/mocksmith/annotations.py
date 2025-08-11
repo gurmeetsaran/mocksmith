@@ -12,14 +12,22 @@ from mocksmith.types.binary import BINARY as _BINARY
 from mocksmith.types.binary import BLOB as _BLOB
 from mocksmith.types.binary import VARBINARY as _VARBINARY
 from mocksmith.types.boolean import BOOLEAN as _BOOLEAN
-from mocksmith.types.numeric import BIGINT as _BIGINT
-from mocksmith.types.numeric import DECIMAL as _DECIMAL
-from mocksmith.types.numeric import DOUBLE as _DOUBLE
-from mocksmith.types.numeric import FLOAT as _FLOAT
-from mocksmith.types.numeric import INTEGER as _INTEGER
-from mocksmith.types.numeric import REAL as _REAL
-from mocksmith.types.numeric import SMALLINT as _SMALLINT
-from mocksmith.types.numeric import TINYINT as _TINYINT
+
+# Import factory functions directly
+from mocksmith.types.numeric import BigInt as BigIntImpl
+from mocksmith.types.numeric import ConstrainedDecimal as ConstrainedDecimalImpl
+from mocksmith.types.numeric import ConstrainedFloat as ConstrainedFloatImpl
+from mocksmith.types.numeric import ConstrainedMoney as ConstrainedMoneyImpl
+from mocksmith.types.numeric import DecimalType as DecimalTypeImpl
+from mocksmith.types.numeric import Float as FloatImpl
+from mocksmith.types.numeric import Integer as IntegerImpl
+from mocksmith.types.numeric import Money as MoneyImpl
+from mocksmith.types.numeric import NegativeInteger as NegativeIntegerImpl
+from mocksmith.types.numeric import NonNegativeInteger as NonNegativeIntegerImpl
+from mocksmith.types.numeric import NonPositiveInteger as NonPositiveIntegerImpl
+from mocksmith.types.numeric import PositiveInteger as PositiveIntegerImpl
+from mocksmith.types.numeric import SmallInt as SmallIntImpl
+from mocksmith.types.numeric import TinyInt as TinyIntImpl
 from mocksmith.types.string import CHAR as _CHAR
 from mocksmith.types.string import TEXT as _TEXT
 from mocksmith.types.string import VARCHAR as _VARCHAR
@@ -213,7 +221,7 @@ def DecimalType(
             discount_rate: DecimalType(5, 4, ge=0, le=1)  # 0.0000 to 1.0000
             price: DecimalType(19, 4, gt=0)  # Positive price
     """
-    db_type = _DECIMAL(
+    return DecimalTypeImpl(
         precision,
         scale,
         gt=gt,
@@ -224,9 +232,6 @@ def DecimalType(
         strict=strict,
         **pydantic_kwargs,
     )
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[Decimal, _get_validator(db_type), db_type]
-    return Annotated[Decimal, db_type]
 
 
 def Money() -> Any:
@@ -237,7 +242,7 @@ def Money() -> Any:
             total: Money()
             discount: Money()
     """
-    return DecimalType(19, 4)
+    return MoneyImpl()
 
 
 def ConstrainedMoney(
@@ -270,21 +275,13 @@ def ConstrainedMoney(
             total: PositiveMoney()  # Same as ConstrainedMoney(gt=0)
             balance: NonNegativeMoney()  # Same as ConstrainedMoney(ge=0)
     """
-    try:
-        from pydantic import condecimal  # type: ignore[import-not-found]
-
-        return condecimal(
-            max_digits=19,
-            decimal_places=4,
-            gt=gt,
-            ge=ge,
-            lt=lt,
-            le=le,
-            multiple_of=multiple_of,
-        )
-    except ImportError:
-        # Fallback to regular Money if Pydantic not available
-        return DecimalType(19, 4)
+    return ConstrainedMoneyImpl(
+        gt=gt,
+        ge=ge,
+        lt=lt,
+        le=le,
+        multiple_of=multiple_of,
+    )
 
 
 def PositiveMoney() -> Any:
@@ -339,21 +336,15 @@ def ConstrainedDecimal(
             weight: ConstrainedDecimal(10, 2, gt=0)  # Positive weight
             temperature: ConstrainedDecimal(5, 2, ge=-273.15)  # Above absolute zero
     """
-    try:
-        from pydantic import condecimal  # type: ignore[import-not-found]
-
-        return condecimal(
-            max_digits=precision,
-            decimal_places=scale,
-            gt=gt,
-            ge=ge,
-            lt=lt,
-            le=le,
-            multiple_of=multiple_of,
-        )
-    except ImportError:
-        # Fallback to regular DecimalType if Pydantic not available
-        return DecimalType(precision, scale)
+    return ConstrainedDecimalImpl(
+        precision,
+        scale,
+        gt=gt,
+        ge=ge,
+        lt=lt,
+        le=le,
+        multiple_of=multiple_of,
+    )
 
 
 def ConstrainedFloat(
@@ -378,13 +369,13 @@ def ConstrainedFloat(
             probability: ConstrainedFloat(ge=0.0, le=1.0)  # 0-1 range
             temperature: ConstrainedFloat(gt=-273.15)  # Above absolute zero
     """
-    try:
-        from pydantic import confloat  # type: ignore[import-not-found]
-
-        return confloat(gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of)
-    except ImportError:
-        # Fallback to regular Float if Pydantic not available
-        return Float()
+    return ConstrainedFloatImpl(
+        gt=gt,
+        ge=ge,
+        lt=lt,
+        le=le,
+        multiple_of=multiple_of,
+    )
 
 
 def Float(
@@ -418,20 +409,15 @@ def Float(
             percentage: Float(ge=0.0, le=100.0)
             probability: Float(ge=0.0, le=1.0)
     """
-    db_type = _FLOAT(
-        precision=precision,
+    return FloatImpl(
         gt=gt,
         ge=ge,
         lt=lt,
         le=le,
         multiple_of=multiple_of,
-        allow_inf_nan=allow_inf_nan,
         strict=strict,
         **pydantic_kwargs,
     )
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[float, _get_validator(db_type), db_type]
-    return Annotated[float, db_type]
 
 
 def Double() -> Any:
@@ -442,10 +428,7 @@ def Double() -> Any:
             measurement: Double()
             calculation: Double()
     """
-    db_type = _DOUBLE()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[float, _get_validator(db_type), db_type]
-    return Annotated[float, db_type]
+    return FloatImpl()
 
 
 def Real() -> Any:
@@ -459,10 +442,9 @@ def Real() -> Any:
             temperature: Real()
             pressure: Real()
     """
-    db_type = _REAL()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[float, _get_validator(db_type), db_type]
-    return Annotated[float, db_type]
+    from mocksmith.types.numeric import REAL
+
+    return REAL
 
 
 # Constrained Numeric Types
@@ -494,13 +476,9 @@ def Integer(
             discount: Integer(ge=0, le=100)  # Percentage 0-100
             bulk_size: Integer(multiple_of=12)  # Dozen packs
     """
-    db_type = _INTEGER(
+    return IntegerImpl(
         gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of, strict=strict, **pydantic_kwargs
     )
-
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
 
 
 def BigInt(
@@ -530,13 +508,9 @@ def BigInt(
             timestamp_ms: BigInt(ge=0)  # Unix timestamp in milliseconds
             amount_cents: BigInt(ge=-1000000, le=1000000)
     """
-    db_type = _BIGINT(
+    return BigIntImpl(
         gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of, strict=strict, **pydantic_kwargs
     )
-
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
 
 
 def SmallInt(
@@ -565,13 +539,9 @@ def SmallInt(
             retry_count: SmallInt(ge=0, le=10)
             priority: SmallInt(gt=0, le=5)
     """
-    db_type = _SMALLINT(
+    return SmallIntImpl(
         gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of, strict=strict, **pydantic_kwargs
     )
-
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
 
 
 def PositiveInteger() -> Any:
@@ -582,7 +552,7 @@ def PositiveInteger() -> Any:
             id: PositiveInteger()
             age: PositiveInteger()
     """
-    return Integer(gt=0)
+    return PositiveIntegerImpl()
 
 
 def NegativeInteger() -> Any:
@@ -592,7 +562,7 @@ def NegativeInteger() -> Any:
         class Account(BaseModel):
             overdraft_limit: NegativeInteger()
     """
-    return Integer(lt=0)
+    return NegativeIntegerImpl()
 
 
 def NonNegativeInteger() -> Any:
@@ -603,7 +573,7 @@ def NonNegativeInteger() -> Any:
             quantity: NonNegativeInteger()
             views: NonNegativeInteger()
     """
-    return Integer(ge=0)
+    return NonNegativeIntegerImpl()
 
 
 def NonPositiveInteger() -> Any:
@@ -614,7 +584,7 @@ def NonPositiveInteger() -> Any:
             penalty_points: NonPositiveInteger()
             debt: NonPositiveInteger()
     """
-    return Integer(le=0)
+    return NonPositiveIntegerImpl()
 
 
 def TinyInt(
@@ -643,13 +613,9 @@ def TinyInt(
             flag_bits: TinyInt(ge=0, le=127)  # Only positive values
             level: TinyInt(ge=-10, le=10)
     """
-    db_type = _TINYINT(
+    return TinyIntImpl(
         gt=gt, ge=ge, lt=lt, le=le, multiple_of=multiple_of, strict=strict, **pydantic_kwargs
     )
-
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[int, _get_validator(db_type), db_type]
-    return Annotated[int, db_type]
 
 
 # Temporal Types

@@ -4,7 +4,7 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional
 
-from mocksmith import INTEGER, VARCHAR
+from mocksmith import Integer, Varchar
 from mocksmith.mock_factory import _handle_unsupported_type, mock_factory
 
 
@@ -134,12 +134,12 @@ class TestMockFactoryEdgeCases:
 
     def test_mock_factory_with_annotated_db_type(self):
         """Test mock_factory with Annotated types containing DBType."""
-        from typing import Annotated
 
+        # V3 types work differently - Integer() returns a class for type annotation
         @dataclass
         class AnnotatedModel:
-            id: Annotated[int, INTEGER()]
-            name: Annotated[str, VARCHAR(50)]
+            id: Integer()
+            name: Varchar(50)
 
         mock = mock_factory(AnnotatedModel)
         assert isinstance(mock.id, int)

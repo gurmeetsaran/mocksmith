@@ -5,7 +5,7 @@ from typing import Optional
 
 import pytest
 
-from mocksmith import BOOLEAN, DATE, INTEGER, VARCHAR, MockBuilder, mockable
+from mocksmith import MockBuilder, mockable
 from mocksmith.mock_factory import mock_factory
 
 
@@ -80,14 +80,15 @@ class TestMockCoverageWithoutPydantic:
 
     def test_mockable_decorator_with_db_types(self):
         """Test mockable decorator with DB types."""
+        from mocksmith import Boolean, Date, Integer, Varchar
 
         @mockable
         @dataclass
         class DBModel:
-            id: INTEGER()
-            name: VARCHAR(100)
-            active: BOOLEAN()
-            created: DATE()
+            id: Integer()
+            name: Varchar(100)
+            active: Boolean()
+            created: Date()
 
         mock = DBModel.mock()
         assert isinstance(mock, DBModel)
