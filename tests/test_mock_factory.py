@@ -437,12 +437,14 @@ class TestDefaultMockImplementation:
 
     def test_binary_types_default_mock(self):
         """Test that binary types use default mock implementation."""
-        from mocksmith import BINARY, VARBINARY
+        from mocksmith import Binary, VarBinary
 
-        binary_mock = BINARY(32).mock()
+        BinaryType = Binary(32)  # noqa: N806
+        binary_mock = BinaryType.mock()
         assert isinstance(binary_mock, bytes)
         assert len(binary_mock) == 32
 
-        varbinary_mock = VARBINARY(64).mock()
+        VarBinaryType = VarBinary(64)  # noqa: N806
+        varbinary_mock = VarBinaryType.mock()
         assert isinstance(varbinary_mock, bytes)
         assert len(varbinary_mock) <= 64

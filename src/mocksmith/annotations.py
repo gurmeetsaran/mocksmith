@@ -8,10 +8,10 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Annotated, Any, Optional, Union
 
-from mocksmith.types.binary import BINARY as _BINARY
-from mocksmith.types.binary import BLOB as _BLOB
-from mocksmith.types.binary import VARBINARY as _VARBINARY
-from mocksmith.types.boolean import BOOLEAN as _BOOLEAN
+from mocksmith.types.binary import Binary as BinaryImpl
+from mocksmith.types.binary import Blob as BlobImpl
+from mocksmith.types.binary import VarBinary as VarBinaryImpl
+from mocksmith.types.boolean import Boolean as BooleanImpl
 
 # Import factory functions directly
 from mocksmith.types.numeric import BigInt as BigIntImpl
@@ -682,10 +682,8 @@ def Boolean() -> Any:
             is_active: Boolean()
             is_verified: Boolean()
     """
-    db_type = _BOOLEAN()
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[bool, _get_validator(db_type), db_type]
-    return Annotated[bool, db_type]
+    # Use V3 Boolean type directly
+    return BooleanImpl()
 
 
 # Binary Types
@@ -697,10 +695,8 @@ def Binary(length: int) -> Any:
             hash: Binary(32)  # MD5 hash
             signature: Binary(64)
     """
-    db_type = _BINARY(length)
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[bytes, _get_validator(db_type), db_type]
-    return Annotated[bytes, db_type]
+    # Use V3 Binary type directly
+    return BinaryImpl(length)
 
 
 def VarBinary(max_length: int) -> Any:
@@ -711,10 +707,8 @@ def VarBinary(max_length: int) -> Any:
             thumbnail: VarBinary(1024)
             preview: VarBinary(10240)
     """
-    db_type = _VARBINARY(max_length)
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[bytes, _get_validator(db_type), db_type]
-    return Annotated[bytes, db_type]
+    # Use V3 VarBinary type directly
+    return VarBinaryImpl(max_length)
 
 
 def Blob(*, max_length: Optional[int] = None) -> Any:
@@ -725,10 +719,8 @@ def Blob(*, max_length: Optional[int] = None) -> Any:
             data: Blob()
             thumbnail: Blob(max_length=65536)  # 64KB max
     """
-    db_type = _BLOB(max_length=max_length)
-    if _PYDANTIC_AVAILABLE:
-        return Annotated[bytes, _get_validator(db_type), db_type]
-    return Annotated[bytes, db_type]
+    # Use V3 Blob type directly
+    return BlobImpl(max_length)
 
 
 # Aliases for common use cases
