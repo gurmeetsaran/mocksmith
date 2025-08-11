@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## 6.0.1 (2025-08-11)
+
+### Refactor
+
+- migrate string types to V3 pattern and eliminate DBTypeVali… (#25)
+- migrate string types to V3 pattern and eliminate DBTypeValidator
+
 ## 6.0.0 (2025-08-11)
 
 ### BREAKING CHANGE
