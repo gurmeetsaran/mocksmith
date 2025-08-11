@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## 6.0.0 (2025-08-11)
+
+### BREAKING CHANGE
+
+- Temporal types now extend native Python datetime types directly
+
+### Feat
+
+- migrate temporal types to V3 pattern (#24)
+
 ## 5.0.0 (2025-08-11)
 
 ### BREAKING CHANGE
