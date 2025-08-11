@@ -75,7 +75,7 @@ The standard installation includes Faker for mock data generation and custom val
 
 The library organizes types into two categories:
 
-### Core Database Types (V3 Pattern)
+### Core Database Types
 Core database types are available through factory functions from the main package:
 
 ```python
@@ -97,7 +97,7 @@ from mocksmith import (
 )
 ```
 
-**⚠️ Breaking Change in V3:** Direct class imports (VARCHAR, INTEGER, etc.) have been removed to prevent confusion. Use factory functions (Varchar, Integer, etc.) exclusively.
+**⚠️ Breaking Change:** Direct class imports (VARCHAR, INTEGER, etc.) have been removed to prevent confusion. Use factory functions (Varchar, Integer, etc.) exclusively.
 
 ### Specialized Types
 Specialized types for common use cases are available from the `specialized` submodule:
@@ -124,7 +124,7 @@ This separation keeps the main namespace clean and makes it clear which types ar
 
 ## Quick Start
 
-### Clean V3 Interface (Works with both Pydantic and Dataclasses!) ✨
+### Clean Interface (Works with both Pydantic and Dataclasses!) ✨
 
 ```python
 from pydantic import BaseModel
@@ -242,11 +242,11 @@ See mock examples:
 - [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Complete mock examples with dataclasses including enum support
 - [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Complete mock examples with Pydantic including enum support and built-in types
 
-## V3 Type Usage Patterns
+## Type Usage Patterns
 
-**Important:** MockSmith V3 uses factory functions exclusively. The old pattern of importing classes directly (VARCHAR, INTEGER, etc.) is no longer supported.
+**Important:** MockSmith uses factory functions exclusively. The old pattern of importing classes directly (VARCHAR, INTEGER, etc.) is no longer supported.
 
-### Correct V3 Pattern
+### Correct Pattern
 
 ```python
 from mocksmith import Varchar, Integer, Boolean  # Factory functions
@@ -265,11 +265,11 @@ class User(BaseModel):
 ### What Changed from V2
 
 ```python
-# ❌ OLD PATTERN (NO LONGER WORKS - REMOVED IN V3)
+# ❌ OLD PATTERN (NO LONGER WORKS - REMOVED)
 from mocksmith import VARCHAR  # This import fails now
 varchar_type = VARCHAR(30)  # Would create instance "30" - WRONG!
 
-# ✅ NEW V3 PATTERN (THE ONLY WAY)
+# ✅ NEW PATTERN (THE ONLY WAY)
 from mocksmith import Varchar  # Factory function
 UsernameType = Varchar(30)  # Creates type class - CORRECT!
 ```
@@ -339,16 +339,16 @@ product = Product(
 )
 ```
 
-### Important V3 Notes
+### Important Notes
 
-✅ **DO USE (V3 Pattern):**
+✅ **DO USE:**
 - `field: Varchar(50)` - Factory functions for type creation
 - `field: Integer(gt=0)` - Factory functions with constraints
 - `field: Optional[Varchar(50)] = None` - For nullable fields
 - Pydantic `BaseModel` when you need validation
 - Constrained types like `PositiveInteger()` for common patterns
 
-❌ **DON'T USE (Removed in V3):**
+❌ **DON'T USE (Removed):**
 - `from mocksmith import VARCHAR` - Direct class imports removed
 - `VARCHAR(30)` - Would create instance "30", not a type!
 - Plain dataclasses if you need validation (use Pydantic instead)
@@ -994,11 +994,11 @@ assert mock_order.tax >= 0
 assert 0 <= mock_order.discount_rate <= 0.3
 ```
 
-## Migration Guide from V2 to V3
+## Migration Guide
 
 ### Breaking Changes
 
-V3 introduces a critical breaking change to prevent confusion and subtle bugs:
+This version introduces a critical breaking change to prevent confusion and subtle bugs:
 
 1. **Direct class imports are removed** - `from mocksmith import VARCHAR` no longer works
 2. **Only factory functions are available** - Use `Varchar()`, not `VARCHAR()`
@@ -1006,7 +1006,7 @@ V3 introduces a critical breaking change to prevent confusion and subtle bugs:
 
 ### Why This Change?
 
-In V2, importing and using `VARCHAR(30)` would create a type class. In V3's simplified pattern, this would create a string instance with value "30" - highly confusing! To prevent this dangerous ambiguity, direct class access has been removed entirely.
+In previous versions, importing and using `VARCHAR(30)` would create a type class. In the new simplified pattern, this would create a string instance with value "30" - highly confusing! To prevent this dangerous ambiguity, direct class access has been removed entirely.
 
 ### Migration Steps
 
@@ -1021,7 +1021,7 @@ class User(BaseModel):
     age: Annotated[int, DBTypeValidator(INTEGER())]
     active: Annotated[bool, DBTypeValidator(BOOLEAN())]
 
-# ✅ NEW V3 CODE (Clean and simple)
+# ✅ NEW CODE (Clean and simple)
 from mocksmith import Varchar, Integer, Boolean
 
 class User(BaseModel):
@@ -1032,7 +1032,7 @@ class User(BaseModel):
 
 ### Common Migration Patterns
 
-| Old V2 Pattern | New V3 Pattern |
+| Old Pattern | New Pattern |
 |----------------|----------------|
 | `from mocksmith import VARCHAR` | `from mocksmith import Varchar` |
 | `from mocksmith.types.string import VARCHAR` | Not available - use factory functions |
@@ -1044,7 +1044,7 @@ class User(BaseModel):
 | `DATE()` | `Date()` |
 | `TIMESTAMP()` | `Timestamp()` |
 
-### Benefits of V3
+### Benefits
 
 1. **Cleaner API** - No more `DBTypeValidator` or `Annotated` boilerplate
 2. **Type safety** - Factory functions always return type classes
