@@ -69,6 +69,11 @@ pip install mocksmith
 pip install "mocksmith[pydantic]"
 ```
 
+**Requirements:**
+- Python 3.8+ (Python 3.10+ recommended for pipe union syntax support)
+- Faker (included in standard installation)
+- Pydantic 2.0+ (optional, for enhanced validation)
+
 The standard installation includes Faker for mock data generation and custom validation logic. Adding Pydantic provides better performance and integration with Pydantic types.
 
 ## Import Structure
@@ -237,10 +242,41 @@ The same `@mockable` decorator works with Pydantic models! Mock generation:
 - Works with both dataclasses and Pydantic models
 - Automatically handles Python Enum types with random value selection
 - Supports nested dataclasses - automatically generates mock data for nested structures
+- **Python 3.10+ pipe syntax support** - `field: Type() | None` works seamlessly with mocking
+
+### Optional Fields with Pipe Syntax (Python 3.10+)
+
+MockSmith fully supports Python 3.10+ pipe union syntax for optional fields:
+
+```python
+from mocksmith import Varchar, Integer, BigInt, DateTime, Timestamp, mockable
+from pydantic import BaseModel
+
+@mockable
+class User(BaseModel):
+    # Required fields
+    username: Varchar(50)
+
+    # Optional fields using pipe syntax - both work identically!
+    email: Varchar(100) | None          # With Annotated
+    user_id: BigInt() | None            # Simple type
+    age: Integer(ge=0, le=120) | None   # With constraints
+    created_at: DateTime() | None       # Temporal type
+    last_login: Timestamp() | None      # With timezone
+
+# Mock generation handles optional fields automatically
+user = User.mock()
+# Optional fields will randomly be None or have valid values (~20% None, ~80% value)
+print(user.user_id)     # Could be: 7786676712978416482 or None
+print(user.last_login)  # Could be: 2021-05-04 02:28:37+00:00 or None
+```
+
+**Note:** Both `Optional[Type()]` and `Type() | None` syntaxes work identically. Choose based on your Python version and style preference.
 
 See mock examples:
 - [`examples/dataclass_mock_example.py`](examples/dataclass_mock_example.py) - Complete mock examples with dataclasses including enum support
 - [`examples/pydantic_mock_example.py`](examples/pydantic_mock_example.py) - Complete mock examples with Pydantic including enum support and built-in types
+- [`examples/pipe_syntax_example.py`](examples/pipe_syntax_example.py) - Python 3.10+ pipe syntax examples with optional fields
 
 ## Type Usage Patterns
 
@@ -309,7 +345,8 @@ class UserAccount(BaseModel):
 # Pattern 5: Optional fields
 class OptionalModel(BaseModel):
     required_field: Varchar(50)
-    optional_field: Optional[Varchar(50)] = None  # Can be None
+    optional_field: Optional[Varchar(50)] = None  # Can be None (traditional syntax)
+    optional_new: Varchar(50) | None = None       # Can be None (Python 3.10+ pipe syntax)
     with_default: Boolean() = True                # Has default value
 
 # All patterns can be mixed in the same model!
@@ -344,7 +381,8 @@ product = Product(
 ✅ **DO USE:**
 - `field: Varchar(50)` - Factory functions for type creation
 - `field: Integer(gt=0)` - Factory functions with constraints
-- `field: Optional[Varchar(50)] = None` - For nullable fields
+- `field: Optional[Varchar(50)] = None` - For nullable fields (traditional syntax)
+- `field: Varchar(50) | None` - For nullable fields (Python 3.10+ pipe syntax)
 - Pydantic `BaseModel` when you need validation
 - Constrained types like `PositiveInteger()` for common patterns
 
@@ -361,13 +399,19 @@ All numeric types enforce SQL bounds and validate at instantiation:
 - **Integer**: -2,147,483,648 to 2,147,483,647 (32-bit)
 - **BigInt**: -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807 (64-bit)
 
-Optional fields properly handle None values:
+Optional fields properly handle None values with both traditional and modern syntax:
 ```python
+from typing import Optional
+
 class User(BaseModel):
     name: Varchar(50)                        # Required
-    nickname: Optional[Varchar(30)] = None   # Optional, can be None
+    nickname: Optional[Varchar(30)] = None   # Optional (traditional syntax)
+    bio: Varchar(200) | None = None          # Optional (Python 3.10+ pipe syntax)
 
-user = User(name="John", nickname=None)  # ✓ Valid
+user = User(name="John", nickname=None, bio=None)  # ✓ Valid
+
+# Both syntaxes work the same way - choose based on your Python version
+# Python 3.10+ supports both, but pipe syntax is more concise
 ```
 
 ### Literal Type Support

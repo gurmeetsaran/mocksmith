@@ -1,6 +1,7 @@
 """Mock factory for automatic mock generation of dataclasses and Pydantic models."""
 
 import enum
+import sys
 import warnings
 from dataclasses import MISSING, fields, is_dataclass
 from typing import Any, Literal, TypeVar, Union, get_args, get_origin
@@ -9,6 +10,14 @@ try:
     from typing import Annotated
 except ImportError:
     from typing import Annotated
+
+# Support for Python 3.10+ pipe union syntax (X | Y)
+if sys.version_info >= (3, 10):
+    import types
+
+    UnionType = types.UnionType
+else:
+    UnionType = None
 
 from mocksmith.types.base import DBType
 
@@ -659,7 +668,9 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
     origin = get_origin(field_type)
 
     # Handle Optional types (Union with None) FIRST
-    if origin is Union:
+    # Check both typing.Union and Python 3.10+ pipe syntax (types.UnionType)
+    is_union = origin is Union or (UnionType is not None and isinstance(field_type, UnionType))
+    if is_union:
         args = get_args(field_type)
         if type(None) in args:
             # It's an Optional type
@@ -798,21 +809,26 @@ def _generate_field_mock(field_type: Any, field_name: str = "", _depth: int = 0)
         return _get_faker().random.random() * 100
     elif field_type is bool:
         return _get_faker().boolean()
-    elif field_type.__name__ == "date":
-        return _get_faker().date_object()
-    elif field_type.__name__ == "datetime":
-        return _get_faker().date_time()
-    elif field_type.__name__ == "time":
-        return _get_faker().time_object()
-    elif field_type.__name__ == "Decimal":
-        from decimal import Decimal
-
-        return Decimal(str(_get_faker().pyfloat(left_digits=5, right_digits=2)))
     elif field_type is bytes:
         return _get_faker().binary(length=32)
-    elif field_type.__name__ == "UUID":
-        # Handle uuid.UUID type
-        return str(_get_faker().uuid4())
+    elif hasattr(field_type, "__name__"):
+        # Check types by name for common built-in types
+        if field_type.__name__ == "date":
+            return _get_faker().date_object()
+        elif field_type.__name__ == "datetime":
+            return _get_faker().date_time()
+        elif field_type.__name__ == "time":
+            return _get_faker().time_object()
+        elif field_type.__name__ == "Decimal":
+            from decimal import Decimal
+
+            return Decimal(str(_get_faker().pyfloat(left_digits=5, right_digits=2)))
+        elif field_type.__name__ == "UUID":
+            # Handle uuid.UUID type
+            return str(_get_faker().uuid4())
+        else:
+            # Unknown type with __name__ attribute
+            return _handle_unsupported_type(field_type, field_name)
     else:
-        # Unknown/unsupported type
+        # Unknown/unsupported type without __name__ attribute
         return _handle_unsupported_type(field_type, field_name)
