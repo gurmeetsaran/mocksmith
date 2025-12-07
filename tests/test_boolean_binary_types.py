@@ -118,7 +118,7 @@ class TestBINARY:
         assert val == b"hi\x00\x00\x00"
 
         # Too long should fail
-        with pytest.raises(ValueError, match="Binary data length .* exceeds fixed length"):
+        with pytest.raises(ValueError, match=r"Binary data length .* exceeds fixed length"):
             BinaryType(b"too long")
 
     def test_serialize(self):
@@ -162,7 +162,7 @@ class TestVARBINARY:
         assert val == b"hello"
 
         # Too long should fail
-        with pytest.raises(ValueError, match="Binary data length .* exceeds maximum length"):
+        with pytest.raises(ValueError, match=r"Binary data length .* exceeds maximum length"):
             VarBinaryType(b"this is too long")
 
     def test_no_padding(self):
@@ -203,7 +203,7 @@ class TestBLOB:
         assert len(val) == 1000
 
         # Too large should fail
-        with pytest.raises(ValueError, match="Binary data length .* exceeds maximum length"):
+        with pytest.raises(ValueError, match=r"Binary data length .* exceeds maximum length"):
             BlobType(b"x" * 1001)
 
     def test_large_data(self):

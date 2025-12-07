@@ -165,10 +165,10 @@ class TestInstantiationValidation:
         assert my_float(0.999) == 0.999
 
         # Invalid values
-        with pytest.raises(ValueError, match="must be less than 1.0"):
+        with pytest.raises(ValueError, match=r"must be less than 1.0"):
             my_float(1.0)
 
-        with pytest.raises(ValueError, match="must be greater than or equal to 0.0"):
+        with pytest.raises(ValueError, match=r"must be greater than or equal to 0.0"):
             my_float(-0.001)
 
     def test_string_to_numeric_conversion(self):
