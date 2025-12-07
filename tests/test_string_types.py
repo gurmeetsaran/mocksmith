@@ -20,10 +20,10 @@ class TestVARCHAR:
 
     def test_startswith_endswith_length_validation(self):
         # Test that startswith/endswith can't be longer than the field
-        with pytest.raises(ValueError, match="startswith .* is too long"):
+        with pytest.raises(ValueError, match=r"startswith .* is too long"):
             Varchar(5, startswith="TOOLONG")
 
-        with pytest.raises(ValueError, match="endswith .* is too long"):
+        with pytest.raises(ValueError, match=r"endswith .* is too long"):
             Varchar(5, endswith="TOOLONG")
 
         with pytest.raises(ValueError, match="startswith \\+ endswith is too long"):
@@ -74,7 +74,7 @@ class TestVARCHAR:
     def test_validation_failure(self):
         VarcharType = Varchar(5)
         # String too long
-        with pytest.raises(ValueError, match="String length.*exceeds maximum"):
+        with pytest.raises(ValueError, match=r"String length.*exceeds maximum"):
             VarcharType("too long string")
 
         # Numbers are converted to string in V3
@@ -129,7 +129,7 @@ class TestVARCHAR:
         assert value == "hello"
 
         # Too short
-        with pytest.raises(ValueError, match="String length.*is less than minimum"):
+        with pytest.raises(ValueError, match=r"String length.*is less than minimum"):
             MinType("hi")
 
 
@@ -148,10 +148,10 @@ class TestCHAR:
 
     def test_startswith_endswith_length_validation(self):
         # Test that startswith/endswith can't be longer than the field
-        with pytest.raises(ValueError, match="startswith .* is too long"):
+        with pytest.raises(ValueError, match=r"startswith .* is too long"):
             Char(5, startswith="TOOLONG")
 
-        with pytest.raises(ValueError, match="endswith .* is too long"):
+        with pytest.raises(ValueError, match=r"endswith .* is too long"):
             Char(5, endswith="TOOLONG")
 
     def test_startswith_endswith_constraints(self):
@@ -190,7 +190,7 @@ class TestCHAR:
         assert value == "abc"
 
         # Too long
-        with pytest.raises(ValueError, match="String length.*exceeds maximum"):
+        with pytest.raises(ValueError, match=r"String length.*exceeds maximum"):
             CharType("abcd")
 
     def test_transformations(self):
@@ -220,10 +220,10 @@ class TestTEXT:
 
     def test_startswith_endswith_length_validation(self):
         # Test that startswith/endswith can't be longer than max_length
-        with pytest.raises(ValueError, match="startswith .* is too long"):
+        with pytest.raises(ValueError, match=r"startswith .* is too long"):
             Text(max_length=5, startswith="TOOLONG")
 
-        with pytest.raises(ValueError, match="endswith .* is too long"):
+        with pytest.raises(ValueError, match=r"endswith .* is too long"):
             Text(max_length=5, endswith="TOOLONG")
 
     def test_startswith_endswith_constraints(self):
@@ -251,7 +251,7 @@ class TestTEXT:
         note = NoteType("Note: This is a valid note with enough content.")
         assert note.startswith("Note: ")
         # Too short
-        with pytest.raises(ValueError, match="Text length.*is less than minimum"):
+        with pytest.raises(ValueError, match=r"Text length.*is less than minimum"):
             NoteType("Note: Too short")
 
     def test_with_max_length(self):
@@ -261,7 +261,7 @@ class TestTEXT:
         assert len(value) == 1000
 
         # Too long
-        with pytest.raises(ValueError, match="Text length.*exceeds maximum"):
+        with pytest.raises(ValueError, match=r"Text length.*exceeds maximum"):
             LimitedText("x" * 1001)
 
     def test_serialize_deserialize(self):
@@ -284,7 +284,7 @@ class TestTEXT:
         assert len(value) == 100
 
         # Too short
-        with pytest.raises(ValueError, match="Text length.*is less than minimum"):
+        with pytest.raises(ValueError, match=r"Text length.*is less than minimum"):
             MinText("too short")
 
     def test_transformations(self):
