@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 6.1.0 (2025-12-07)
+
+### Feat
+
+- add Python 3.10+ pipe union syntax support for optional fields (#33)
+
 ## 6.0.1 (2025-08-11)
 
 ### Refactor
