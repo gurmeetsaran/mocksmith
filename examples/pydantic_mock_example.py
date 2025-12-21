@@ -18,8 +18,7 @@ from pydantic import (
     constr,
 )
 
-from mocksmith import (  # Basic types with clean syntax for Pydantic; Raw types; For mocking
-    VARCHAR,
+from mocksmith import (  # Basic types with clean syntax for Pydantic
     Boolean,
     Date,
     DecimalType,
@@ -209,7 +208,7 @@ def demo_mock_generation():
 
     # Mock individual fields
     print("\n\nMocking individual fields:")
-    print(f"  Name: {VARCHAR(50).mock()}")
+    print(f"  Name: {Varchar(50).mock()}")
     # Note: Email type was removed - use Pydantic's EmailStr instead
     print(f"  Country: {CountryCodeType().mock()}")
     print(f"  City: {CityType().mock()}")

@@ -1042,11 +1042,15 @@ assert 0 <= mock_order.discount_rate <= 0.3
 
 ### Breaking Changes
 
-This version introduces a critical breaking change to prevent confusion and subtle bugs:
+This version introduces critical breaking changes to simplify the architecture:
 
 1. **Direct class imports are removed** - `from mocksmith import VARCHAR` no longer works
 2. **Only factory functions are available** - Use `Varchar()`, not `VARCHAR()`
 3. **DBTypeValidator is removed** - Types work directly with Pydantic
+4. **DBType base class is removed** - V3 pattern is now the only supported approach
+   - All types now inherit from native Python types (str, int, Decimal, etc.)
+   - Mock factory uses duck typing - any object with a `.mock()` method works as a mock provider
+   - If you subclassed `DBType`, migrate to V3 pattern (inherit from native types, implement `__get_pydantic_core_schema__`)
 
 ### Why This Change?
 
@@ -1094,7 +1098,8 @@ class User(BaseModel):
 2. **Type safety** - Factory functions always return type classes
 3. **No confusion** - Can't accidentally create instances when you mean types
 4. **Better IDE support** - Direct type usage improves autocomplete
-5. **Simpler codebase** - Less complexity, easier to maintain
+5. **Simpler codebase** - V3 pattern only, duck typing for extensibility
+6. **More Pythonic** - Any object with a `.mock()` method can provide mocks (no inheritance required)
 
 ## Development
 

@@ -23,8 +23,9 @@ class UserRegistration(BaseModel):
     # Username: 3-20 chars with transformations
     username: Varchar(20, min_length=3, to_lower=True, strip_whitespace=True)
 
-    # Email: auto-lowercase and trim whitespace, must be company email
-    email: Varchar(255, to_lower=True, strip_whitespace=True, endswith="@company.com")
+    # Email: auto-lowercase and trim whitespace
+    # Note: endswith constraint removed because it checks before to_lower transformation
+    email: Varchar(255, to_lower=True, strip_whitespace=True)
 
     # Display name: 2-50 chars, no extra constraints
     display_name: Varchar(50, min_length=2)
@@ -35,8 +36,9 @@ class UserRegistration(BaseModel):
     # Bio: optional text with min/max length
     bio: Text(min_length=10, max_length=500, strip_whitespace=True)
 
-    # Referral code: must start with 'REF-' prefix
-    referral_code: Varchar(12, startswith="REF-", to_upper=True)
+    # Referral code: auto-uppercase (startswith constraint removed to allow transformation)
+    # Note: startswith constraint removed because it checks before to_upper transformation
+    referral_code: Varchar(12, to_upper=True)
 
 
 # Test validation
@@ -176,8 +178,8 @@ class OrderSystem(BaseModel):
     # Invoice numbers start with INV- and end with current year
     invoice_number: Varchar(20, startswith="INV-", endswith="-2024")
 
-    # Support ticket with prefix
-    ticket_id: Char(10, startswith="TKT-", to_upper=True)
+    # Support ticket with prefix (no transformation to avoid conflict)
+    ticket_id: Char(10, startswith="TKT-")
 
     # Customer notes with standard prefix
     customer_note: Text(max_length=1000, startswith="Customer feedback: ")
@@ -187,7 +189,7 @@ class OrderSystem(BaseModel):
 order = OrderSystem(
     order_id="ORD-12345",
     invoice_number="INV-001-2024",
-    ticket_id="tkt-abc123",  # Will be uppercased
+    ticket_id="TKT-ABC123",
     customer_note="Customer feedback: Great service and fast delivery!",
 )
 
