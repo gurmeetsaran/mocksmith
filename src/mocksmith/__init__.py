@@ -1,6 +1,6 @@
 """Specialized database types with validation for Python."""
 
-__version__ = "7.0.0"
+__version__ = "7.1.0"
 
 from mocksmith.annotations import (
     BigInt,

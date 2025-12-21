@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "mocksmith"
-version = "7.0.0"
+version = "7.1.0"
 description = "Type-safe data validation and mocking for Python dataclasses and Pydantic models"
 authors = ["Gurmeet Saran <gurmeetx@gmail.com>"]
 license = "MIT"

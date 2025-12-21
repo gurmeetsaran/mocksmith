@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## 7.1.0 (2025-12-21)
+
+### Feat
+
+- add date constraints (ge, le, gt, lt) to Date type (#35)
+
 ## 7.0.0 (2025-12-21)
 
 ### BREAKING CHANGE
