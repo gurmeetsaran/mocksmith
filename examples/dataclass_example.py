@@ -458,25 +458,20 @@ def demonstrate_sql_serialization():
         passed_qc=True,
     )
 
-    # Get SQL representation
-    sql_data = measurement.to_sql_dict()
-    print("\nSQL representation (selected fields):")
-    for field in [
-        "measurement_id",
-        "temperature_celsius",
-        "weight_grams",
-        "measurement_time",
-        "is_calibrated",
-    ]:
-        print(f"  {field}: {sql_data[field]!r}")
+    # Show dataclass representation
+    print("\nDataclass values (selected fields):")
+    print(f"  measurement_id: {measurement.measurement_id}")
+    print(f"  temperature_celsius: {measurement.temperature_celsius}")
+    print(f"  weight_grams: {measurement.weight_grams}")
+    print(f"  measurement_time: {measurement.measurement_time}")
+    print(f"  is_calibrated: {measurement.is_calibrated}")
 
-    # Get database types
-    db_types = measurement.get_db_types()
-    print("\nDatabase type information:")
-    print(f"  temperature_celsius: {db_types['temperature_celsius'].sql_type}")
-    print(f"  pressure_pascals: {db_types['pressure_pascals'].sql_type}")
-    print(f"  weight_grams: {db_types['weight_grams'].sql_type}")
-    print(f"  measurement_time: {db_types['measurement_time'].sql_type}")
+    # Show field information
+    print("\nField type information:")
+    print("  temperature_celsius: Float() -> FLOAT SQL type")
+    print("  pressure_pascals: Real() -> REAL SQL type")
+    print("  weight_grams: DecimalType(10, 6) -> DECIMAL(10,6) SQL type")
+    print("  measurement_time: Timestamp(precision=6) -> TIMESTAMP(6) SQL type")
 
 
 def demonstrate_validation_errors():

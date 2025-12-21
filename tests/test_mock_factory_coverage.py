@@ -133,7 +133,7 @@ class TestMockFactoryEdgeCases:
     """Test edge cases in mock factory."""
 
     def test_mock_factory_with_annotated_db_type(self):
-        """Test mock_factory with Annotated types containing DBType."""
+        """Test mock_factory with Annotated types containing database types."""
 
         # V3 types work differently - Integer() returns a class for type annotation
         @dataclass
@@ -147,10 +147,10 @@ class TestMockFactoryEdgeCases:
         assert len(mock.name) <= 50
 
     def test_mock_factory_field_with_none_mock(self):
-        """Test when DBType mock returns None."""
+        """Test when a mock provider returns None."""
 
-        class NullDBType:
-            """A DBType that always returns None for mock."""
+        class NullMockProvider:
+            """A mock provider that always returns None for mock."""
 
             def mock(self):
                 return None
@@ -159,7 +159,7 @@ class TestMockFactoryEdgeCases:
 
         @dataclass
         class ModelWithNullType:
-            nullable: Annotated[Optional[str], NullDBType()]
+            nullable: Annotated[Optional[str], NullMockProvider()]
 
         # Should handle None gracefully
         mock = mock_factory(ModelWithNullType)

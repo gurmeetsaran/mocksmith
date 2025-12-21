@@ -14,8 +14,6 @@ from mocksmith.specialized import City, CountryCode, PhoneNumber
 try:
     from pydantic import BaseModel
 
-    from mocksmith.pydantic_integration import DBTypeValidator
-
     PYDANTIC_AVAILABLE = True
 except ImportError:
     PYDANTIC_AVAILABLE = False
@@ -392,7 +390,7 @@ class TestPydanticMocking:
         class ValidatedModel(BaseModel):
             username: Varchar(20)
             age: Integer()
-            phone: Annotated[str, DBTypeValidator(PhoneNumber())]
+            phone: Annotated[str, PhoneNumber()]
 
         # Generate 10 mocks and ensure they all pass validation
         for _ in range(10):
@@ -405,7 +403,7 @@ class TestPydanticMocking:
 
 
 class TestDefaultMockImplementation:
-    """Test the default mock implementation in base DBType."""
+    """Test the default mock implementation for database types."""
 
     def test_numeric_types_default_mock(self):
         """Test that numeric types use default mock implementation."""

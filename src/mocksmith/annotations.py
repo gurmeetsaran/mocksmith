@@ -416,9 +416,9 @@ def Real() -> Any:
             temperature: Real()
             pressure: Real()
     """
-    from mocksmith.types.numeric import REAL
+    from mocksmith.types.numeric import Real as RealImpl
 
-    return REAL
+    return RealImpl()
 
 
 # Constrained Numeric Types
