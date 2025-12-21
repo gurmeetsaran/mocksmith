@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## 7.0.0 (2025-12-21)
+
+### BREAKING CHANGE
+
+- DBType base class removed. Users who subclassed DBType should migrate to V3 pattern (inherit from native Python types).
+
+### Refactor
+
+- remove legacy DBType base class and simplify mock factory (#34)
+
 ## 6.1.0 (2025-12-07)
 
 ### Feat
