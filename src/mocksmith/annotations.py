@@ -593,16 +593,28 @@ def TinyInt(
 
 
 # Temporal Types
-def Date() -> Any:
-    """Date type (year, month, day).
+def Date(
+    *,
+    gt: Optional[Any] = None,
+    ge: Optional[Any] = None,
+    lt: Optional[Any] = None,
+    le: Optional[Any] = None,
+) -> Any:
+    """Date type with optional constraints.
+
+    Args:
+        gt: Date must be after this value
+        ge: Date must be on or after this value
+        lt: Date must be before this value
+        le: Date must be on or before this value
 
     Example:
         class Person(BaseModel):
-            birth_date: Date()
-            hire_date: Date()
+            birth_date: Date(lt=date.today())
+            hire_date: Date(ge=date(2020, 1, 1))
     """
     # Use V3 Date type directly
-    return DateImpl()
+    return DateImpl(gt=gt, ge=ge, lt=lt, le=le)
 
 
 def Time(*, precision: int = 6) -> Any:

@@ -1,7 +1,7 @@
 """Temporal types with V3 pattern - extends Python datetime types directly."""
 
-from datetime import date, datetime, time, timezone
-from typing import Any, ClassVar
+from datetime import date, datetime, time, timedelta, timezone
+from typing import Any, ClassVar, Optional
 
 try:
     from pydantic import GetCoreSchemaHandler  # type: ignore
@@ -19,6 +19,24 @@ class _DATE(date):
     """Date type that validates at instantiation."""
 
     SQL_TYPE: ClassVar[str] = "DATE"
+
+    # Constraint class variables
+    _gt: ClassVar[Optional[date]] = None
+    _ge: ClassVar[Optional[date]] = None
+    _lt: ClassVar[Optional[date]] = None
+    _le: ClassVar[Optional[date]] = None
+
+    @classmethod
+    def _validate_constraints(cls, result_date: date) -> None:
+        """Validate date against constraints."""
+        if cls._gt is not None and result_date <= cls._gt:
+            raise ValueError(f"Date must be after {cls._gt}, got {result_date}")
+        if cls._ge is not None and result_date < cls._ge:
+            raise ValueError(f"Date must be on or after {cls._ge}, got {result_date}")
+        if cls._lt is not None and result_date >= cls._lt:
+            raise ValueError(f"Date must be before {cls._lt}, got {result_date}")
+        if cls._le is not None and result_date > cls._le:
+            raise ValueError(f"Date must be on or before {cls._le}, got {result_date}")
 
     def __new__(cls, year: Any, month: Any = None, day: Any = None):  # type: ignore
         """Create new date with validation.
@@ -38,22 +56,31 @@ class _DATE(date):
 
             # Handle existing date/datetime
             if isinstance(value, datetime):
-                return super().__new__(cls, value.year, value.month, value.day)
+                result = super().__new__(cls, value.year, value.month, value.day)
+                cls._validate_constraints(result)
+                return result
             elif isinstance(value, date):
-                return super().__new__(cls, value.year, value.month, value.day)
+                result = super().__new__(cls, value.year, value.month, value.day)
+                cls._validate_constraints(result)
+                return result
             # Handle string
             elif isinstance(value, str):  # type: ignore[unreachable]
                 try:
                     parsed = date.fromisoformat(value)
-                    return super().__new__(cls, parsed.year, parsed.month, parsed.day)
                 except ValueError as e:
                     raise ValueError(f"Invalid date string: {value}") from e
+
+                result = super().__new__(cls, parsed.year, parsed.month, parsed.day)
+                cls._validate_constraints(result)
+                return result
             else:
                 raise ValueError(f"Cannot convert {type(value).__name__} to date")
 
         # Handle three argument case (year, month, day)
         try:
-            return super().__new__(cls, int(year), int(month), int(day))
+            result = super().__new__(cls, int(year), int(month), int(day))
+            cls._validate_constraints(result)
+            return result
         except (ValueError, TypeError) as e:
             raise ValueError(
                 f"Invalid date components: year={year}, month={month}, day={day}"
@@ -101,14 +128,39 @@ class _DATE(date):
 
     @classmethod
     def mock(cls) -> date:
-        """Generate mock date value."""
+        """Generate mock date value respecting constraints."""
         try:
             from faker import Faker  # type: ignore
 
             fake = Faker()
-            return fake.date_object()
         except ImportError:
             raise ImportError("faker library is required for mock generation") from None
+
+        # Calculate effective date bounds
+        start_date = None
+        end_date = None
+
+        if cls._gt is not None:
+            start_date = cls._gt + timedelta(days=1)
+        elif cls._ge is not None:
+            start_date = cls._ge
+
+        if cls._lt is not None:
+            end_date = cls._lt - timedelta(days=1)
+        elif cls._le is not None:
+            end_date = cls._le
+
+        # Generate date within bounds
+        if start_date and end_date:
+            if start_date > end_date:
+                raise ValueError(f"Invalid date range: {start_date} to {end_date}")
+            return fake.date_between(start_date=start_date, end_date=end_date)
+        elif start_date:
+            return fake.date_between(start_date=start_date, end_date="+30y")
+        elif end_date:
+            return fake.date_between(start_date="-30y", end_date=end_date)
+        else:
+            return fake.date_object()
 
 
 class _TIME(time):
@@ -594,15 +646,36 @@ class _TIMESTAMP(datetime):
 
 
 # Factory functions
-def Date() -> type:  # noqa: N802
-    """Create a Date type for use as type annotation.
+def Date(  # noqa: N802
+    *,
+    gt: Optional[date] = None,
+    ge: Optional[date] = None,
+    lt: Optional[date] = None,
+    le: Optional[date] = None,
+) -> type:
+    """Create a Date type with optional constraints.
+
+    Args:
+        gt: Date must be after this value
+        ge: Date must be on or after this value
+        lt: Date must be before this value
+        le: Date must be on or before this value
 
     Example:
-        class Person(BaseModel):
-            birth_date: Date()
-            hire_date: Date()
+        class Employee(BaseModel):
+            birth_date: Date(lt=date.today())  # Must be in past
+            hire_date: Date(ge=date(2020, 1, 1))  # After 2020
     """
-    return _DATE
+    if not any([gt is not None, ge is not None, lt is not None, le is not None]):
+        return _DATE
+
+    class ConstrainedDate(_DATE):
+        _gt = gt
+        _ge = ge
+        _lt = lt
+        _le = le
+
+    return ConstrainedDate
 
 
 def Time(precision: int = 6) -> type:  # noqa: N802
