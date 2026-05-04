@@ -364,7 +364,12 @@ def _generate_pydantic_annotated_mock(field_type: Any, field_name: str = "") -> 
                     max_val = m.lt - 0.01
 
             # Handle Lt, Le, Gt, Ge constraints (e.g., NegativeFloat)
-            if hasattr(m, "__class__") and m.__class__.__name__ == "Lt" and hasattr(m, "lt"):
+            if (
+                hasattr(m, "__class__")
+                and m.__class__.__name__ == "Lt"
+                and hasattr(m, "lt")
+                and m.lt is not None
+            ):
                 if base_type is int:
                     max_val = m.lt - 1
                 elif base_type is Decimal:
@@ -373,7 +378,12 @@ def _generate_pydantic_annotated_mock(field_type: Any, field_name: str = "") -> 
                     max_val = m.lt - 0.01
             elif hasattr(m, "__class__") and m.__class__.__name__ == "Le" and hasattr(m, "le"):
                 max_val = m.le
-            elif hasattr(m, "__class__") and m.__class__.__name__ == "Gt" and hasattr(m, "gt"):
+            elif (
+                hasattr(m, "__class__")
+                and m.__class__.__name__ == "Gt"
+                and hasattr(m, "gt")
+                and m.gt is not None
+            ):
                 if base_type is int:
                     min_val = m.gt + 1
                 elif base_type is Decimal:
